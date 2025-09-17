@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/zeromicro/go-zero/core/conf"
+	"github.com/zeromicro/go-zero/core/proc"
 	"github.com/zeromicro/go-zero/rest"
 
 	"github.com/zero-net-panel/zero-net-panel/internal/config"
@@ -26,6 +27,10 @@ func main() {
 		log.Fatalf("failed to initialise service context: %v", err)
 	}
 	defer ctx.Cleanup()
+
+	proc.AddShutdownListener(func() {
+		ctx.Cancel()
+	})
 
 	server := rest.MustNewServer(c.RestConf)
 	defer server.Stop()

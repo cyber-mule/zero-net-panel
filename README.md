@@ -2,6 +2,21 @@
 
 Zero Network Panel 旨在以 xboard 的功能体系为基线，提供面向节点运营、用户订阅、套餐计费等全栈后端能力。本项目采用 Go 语言与 [go-zero](https://go-zero.dev/) 微服务框架构建，默认以 RESTful API 的方式对外暴露接口，并结合 GORM、可插拔缓存服务以及自动化 CI/CD，支撑后续协议层和运营扩展。
 
+## 核心模块
+- **节点发现 (kernel discovery)**：内置 HTTP 与 gRPC Provider 注册表，可在后台一键触发节点配置同步，确保协议资源与内核保持一致。
+- **订阅模板管理**：提供模板 CRUD、版本发布、历史追溯及默认模板切换，变量描述采用 GitHub 风格的分页与字段规范。
+- **用户订阅能力**：支持订阅列表查询、模板预览与定制选择，同时输出渲染后的内容、ETag 及内容类型信息，方便前端或客户端下载。
+- **仓储抽象层**：节点、模板、订阅均由内存仓储模拟真实数据库行为，后续可平滑替换为 GORM 与实际数据源实现。
+
+## 可用 API 示例
+- `GET /api/v1/ping`：健康检查。
+- `GET /api/v1/admin/nodes`：按分页/过滤获取节点列表。
+- `POST /api/v1/admin/nodes/{id}/kernels/sync`：触发节点与内核的即时同步。
+- `GET /api/v1/admin/subscription-templates`：查看模板列表及变量定义。
+- `POST /api/v1/admin/subscription-templates/{id}/publish`：发布模板并记录版本历史。
+- `GET /api/v1/user/subscriptions`：查询当前用户订阅列表。
+- `GET /api/v1/user/subscriptions/{id}/preview`：渲染订阅内容并返回预览。
+
 ## 项目结构
 ```
 .
