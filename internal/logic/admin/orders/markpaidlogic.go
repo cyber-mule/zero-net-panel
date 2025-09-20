@@ -47,10 +47,15 @@ func (l *MarkPaidLogic) MarkPaid(req *types.AdminMarkOrderPaidRequest) (*types.A
 		return nil, err
 	}
 
-	if strings.EqualFold(order.Status, repository.OrderStatusPaid) {
-		return l.buildResponse(order, items)
+	paymentsMap, err := l.svcCtx.Repositories.Order.ListPayments(l.ctx, []uint64{order.ID})
+	if err != nil {
+		return nil, err
 	}
-	if !strings.EqualFold(order.Status, repository.OrderStatusPending) {
+
+	if strings.EqualFold(order.Status, repository.OrderStatusPaid) {
+		return l.buildResponse(order, items, paymentsMap[order.ID])
+	}
+	if !strings.EqualFold(order.Status, repository.OrderStatusPendingPayment) {
 		return nil, repository.ErrInvalidArgument
 	}
 
@@ -60,12 +65,9 @@ func (l *MarkPaidLogic) MarkPaid(req *types.AdminMarkOrderPaidRequest) (*types.A
 		if err != nil {
 			return err
 		}
-		var balanceRepo repository.BalanceRepository
-		if req.ChargeBalance {
-			balanceRepo, err = repository.NewBalanceRepository(tx)
-			if err != nil {
-				return err
-			}
+		balanceRepo, err := repository.NewBalanceRepository(tx)
+		if err != nil {
+			return err
 		}
 
 		paidAt := time.Now().UTC()
@@ -80,63 +82,62 @@ func (l *MarkPaidLogic) MarkPaid(req *types.AdminMarkOrderPaidRequest) (*types.A
 		if note != "" {
 			metadata["manual_payment_note"] = note
 		}
-		reference := strings.TrimSpace(req.Reference)
-		if reference != "" {
-			metadata["manual_payment_reference"] = reference
+		providedMethod := strings.TrimSpace(req.PaymentMethod)
+		if providedMethod != "" {
+			metadata["manual_payment_method"] = providedMethod
 		}
-
-		params := repository.UpdateOrderStatusParams{
-			Status:        repository.OrderStatusPaid,
-			PaidAt:        &paidAt,
-			MetadataPatch: metadata,
-		}
-		method := strings.TrimSpace(req.PaymentMethod)
+		method := providedMethod
 		if req.ChargeBalance {
-			if order.TotalCents <= 0 {
-				return repository.ErrInvalidArgument
-			}
+			method = repository.PaymentMethodBalance
+		}
 
+		if req.ChargeBalance && order.TotalCents > 0 {
 			currency := order.Currency
-			if currency == "" {
+			if strings.TrimSpace(currency) == "" {
 				currency = "CNY"
 			}
-
-			chargeMetadata := map[string]any{
-				"order_id":     order.ID,
-				"order_number": order.Number,
-				"operator":     actor.Email,
-			}
-			if reference != "" {
-				chargeMetadata["reference"] = reference
-			}
-			if note != "" {
-				chargeMetadata["note"] = note
-			}
-
-			chargeTx := repository.BalanceTransaction{
+			txRecord := repository.BalanceTransaction{
 				Type:        "purchase",
 				AmountCents: -order.TotalCents,
 				Currency:    currency,
 				Reference:   fmt.Sprintf("order:%s", order.Number),
-				Description: fmt.Sprintf("订单 %s 手动扣款", order.Number),
-				Metadata:    chargeMetadata,
+				Description: fmt.Sprintf("Manual charge for order %s", order.Number),
+				Metadata: map[string]any{
+					"order_id":      order.ID,
+					"manual_charge": true,
+				},
 			}
+			if _, _, err := balanceRepo.ApplyTransaction(l.ctx, order.UserID, txRecord); err != nil {
+				return err
+			}
+			metadata["balance_charged"] = true
+		}
 
-			createdTx, _, err := balanceRepo.ApplyTransaction(l.ctx, order.UserID, chargeTx)
+		stateParams := repository.UpdateOrderPaymentStateParams{
+			PaymentStatus: repository.OrderPaymentStatusSucceeded,
+			OrderStatus:   pointerOf(repository.OrderStatusPaid),
+			PaidAt:        &paidAt,
+			MetadataPatch: metadata,
+		}
+		if ref := strings.TrimSpace(req.Reference); ref != "" {
+			stateParams.PaymentReference = &ref
+		}
+
+		updatedOrder, err := repo.UpdatePaymentState(l.ctx, req.OrderID, stateParams)
+		if err != nil {
+			return err
+		}
+		if method != "" && !strings.EqualFold(updatedOrder.PaymentMethod, method) {
+			statusParams := repository.UpdateOrderStatusParams{
+				Status:        repository.OrderStatusPaid,
+				PaymentMethod: &method,
+				PaidAt:        &paidAt,
+			}
+			refreshed, err := repo.UpdateStatus(l.ctx, req.OrderID, statusParams)
 			if err != nil {
 				return err
 			}
-
-			metadata["manual_payment_tx_id"] = createdTx.ID
-			method = repository.PaymentMethodBalance
-		}
-		if method != "" {
-			params.PaymentMethod = &method
-		}
-
-		updatedOrder, err := repo.UpdateStatus(l.ctx, req.OrderID, params)
-		if err != nil {
-			return err
+			updatedOrder = refreshed
 		}
 		updated = updatedOrder
 		return nil
@@ -145,11 +146,11 @@ func (l *MarkPaidLogic) MarkPaid(req *types.AdminMarkOrderPaidRequest) (*types.A
 		return nil, err
 	}
 
-	return l.buildResponse(updated, items)
+	return l.buildResponse(updated, items, paymentsMap[order.ID])
 }
 
-func (l *MarkPaidLogic) buildResponse(order repository.Order, items []repository.OrderItem) (*types.AdminOrderResponse, error) {
-	detail := orderutil.ToOrderDetail(order, items)
+func (l *MarkPaidLogic) buildResponse(order repository.Order, items []repository.OrderItem, payments []repository.OrderPayment) (*types.AdminOrderResponse, error) {
+	detail := orderutil.ToOrderDetail(order, items, nil, payments)
 	u, err := l.svcCtx.Repositories.User.Get(l.ctx, order.UserID)
 	if err != nil {
 		return nil, err
@@ -165,4 +166,8 @@ func (l *MarkPaidLogic) buildResponse(order repository.Order, items []repository
 		},
 	}
 	return &resp, nil
+}
+
+func pointerOf[T any](v T) *T {
+	return &v
 }
