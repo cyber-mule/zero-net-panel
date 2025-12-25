@@ -60,6 +60,8 @@ FLUSH PRIVILEGES;
    seed demo data completed
    ```
 
+使用 `--seed-demo` 会创建默认管理员/用户账号供登录；当前不提供注册/找回接口。
+
 ## 启动服务
 
 启动一体化服务（HTTP + gRPC）：

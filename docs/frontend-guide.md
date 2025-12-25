@@ -53,6 +53,8 @@ async function request(url, options = {}) {
 - 登录接口：`POST /api/v1/auth/login`
 - 刷新接口：`POST /api/v1/auth/refresh`
 
+> 当前版本未提供注册/找回/重置接口，账号需通过安装向导或 `--seed-demo` 生成；后台用户管理能力仍待补齐。
+
 建议流程：
 
 1. 登录成功后缓存 `access_token` 与 `refresh_token`。

@@ -175,6 +175,8 @@ Metrics:
 
 登录成功后可取得访问令牌（Bearer Token），用于访问 `/api/v1/{AdminPrefix}` 与 `/api/v1/user` 下的受保护接口。
 
+> 当前版本未提供用户注册/找回与后台用户管理 API，账号需通过安装向导、`--seed-demo` 或数据库手动维护。
+
 ## CLI 工具集
 项目内置 `znp` 命令行用于统一管理服务：
 
