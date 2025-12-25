@@ -46,6 +46,9 @@ func (l *CreateLogic) Create(req *types.UserCreateOrderRequest) (resp *types.Use
 	if method == "" {
 		method = repository.PaymentMethodBalance
 	}
+	if method == "offline" {
+		method = repository.PaymentMethodManual
+	}
 	paymentMethod := method
 	defer func() {
 		result := "success"
@@ -55,7 +58,7 @@ func (l *CreateLogic) Create(req *types.UserCreateOrderRequest) (resp *types.Use
 		metrics.ObserveOrderCreate(paymentMethod, result, time.Since(start))
 	}()
 
-	if method != repository.PaymentMethodBalance && method != repository.PaymentMethodExternal {
+	if method != repository.PaymentMethodBalance && method != repository.PaymentMethodExternal && method != repository.PaymentMethodManual {
 		return nil, repository.ErrInvalidArgument
 	}
 
@@ -213,7 +216,7 @@ func (l *CreateLogic) Create(req *types.UserCreateOrderRequest) (resp *types.Use
 				orderModel.PaymentStatus = repository.OrderPaymentStatusSucceeded
 				orderModel.PaidAt = &paidAt
 			}
-		} else {
+		} else if method == repository.PaymentMethodExternal {
 			intentID := fmt.Sprintf("%s-%s", channel, orderNumber)
 			if channel == "" {
 				intentID = orderNumber

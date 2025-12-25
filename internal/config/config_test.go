@@ -52,3 +52,24 @@ func TestConfigNormalizeSyncsMiddlewares(t *testing.T) {
 		t.Fatal("metrics middleware should be disabled when metrics is off")
 	}
 }
+
+func TestConfigNormalizeSiteDefaults(t *testing.T) {
+	cfg := Config{
+		Project: ProjectConfig{
+			Name: " Zero Network Panel ",
+		},
+		Site: SiteConfig{
+			Name:    "   ",
+			LogoURL: " https://example.com/logo.png ",
+		},
+	}
+
+	cfg.Normalize()
+
+	if cfg.Site.Name != "Zero Network Panel" {
+		t.Fatalf("expected site name to default to project name, got %q", cfg.Site.Name)
+	}
+	if cfg.Site.LogoURL != "https://example.com/logo.png" {
+		t.Fatalf("expected trimmed logo url, got %q", cfg.Site.LogoURL)
+	}
+}

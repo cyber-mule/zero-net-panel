@@ -15,6 +15,7 @@ type PingResponse {
 	status    string
 	service   string
 	version   string
+	site_name string
+	logo_url  string
 	timestamp int64
 }
-

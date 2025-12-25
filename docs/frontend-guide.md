@@ -79,7 +79,7 @@ async function request(url, options = {}) {
 - 套餐列表：`GET /plans`
 - 公告列表：`GET /announcements`
 - 余额与流水：`GET /account/balance`
-- 订单：`POST /orders`、`GET /orders`、`GET /orders/{id}`、`POST /orders/{id}/cancel`
+- 订单：`POST /orders`、`GET /orders`、`GET /orders/{id}`、`GET /orders/{id}/payment-status`、`POST /orders/{id}/cancel`
 
 完整字段说明请参考 `docs/api-reference.md`，或使用 `./scripts/gen-api-docs.sh` 生成的 `docs/api-generated/`。
 
@@ -95,8 +95,9 @@ async function request(url, options = {}) {
 
 ## 7. 订单与支付流程提示
 
-- `POST /user/orders` 支持 `payment_method=balance|external`。
+- `POST /user/orders` 支持 `payment_method=balance|external|manual`（manual 表示线下/人工支付）。
 - `payment_method=external` 且金额大于 0 时，需要传 `payment_channel`，响应会带 `payment_intent_id` 与 `payments`。
+- `payment_method=manual` 会创建待支付订单，需管理员通过 `/api/v1/{adminPrefix}/orders/{id}/pay` 标记已支付。
 - 推荐前端传 `idempotency_key`（如点击下单时生成 UUID），避免重复下单。
 
 ## 8. 第三方签名开关

@@ -94,6 +94,28 @@ type UserGetOrderRequest struct {
 	OrderID uint64 `path:"id"`
 }
 
+// UserOrderPaymentStatusRequest 用户订单支付状态查询请求。
+type UserOrderPaymentStatusRequest struct {
+	OrderID uint64 `path:"id"`
+}
+
+// UserOrderPaymentStatusResponse 用户订单支付状态响应。
+type UserOrderPaymentStatusResponse struct {
+	OrderID               uint64  `json:"order_id"`
+	Status                string  `json:"status"`
+	PaymentStatus         string  `json:"payment_status"`
+	PaymentMethod         string  `json:"payment_method"`
+	PaymentIntentID       *string `json:"payment_intent_id,omitempty"`
+	PaymentReference      *string `json:"payment_reference,omitempty"`
+	PaymentFailureCode    *string `json:"payment_failure_code,omitempty"`
+	PaymentFailureMessage *string `json:"payment_failure_message,omitempty"`
+	PaidAt                *int64  `json:"paid_at,omitempty"`
+	CancelledAt           *int64  `json:"cancelled_at,omitempty"`
+	RefundedCents         int64   `json:"refunded_cents"`
+	RefundedAt            *int64  `json:"refunded_at,omitempty"`
+	UpdatedAt             int64   `json:"updated_at"`
+}
+
 // UserCancelOrderRequest 用户主动取消订单。
 type UserCancelOrderRequest struct {
 	OrderID uint64 `path:"id"`

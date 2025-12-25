@@ -121,7 +121,7 @@
    }
    ```
 4. 客户端后续请求需携带 `X-ZNP-API-Key`、`X-ZNP-Timestamp`、`X-ZNP-Nonce` 与 `X-ZNP-Signature`，并在开启加密时附加 `X-ZNP-IV` 与 `X-ZNP-Encrypted: true`。
-5. 支付回调建议使用 Webhook 配置：Stripe 使用 `Stripe-Signature`（在 `Webhook.Stripe.SigningSecret` 配置），或通过 `Webhook.SharedToken` 携带 `X-ZNP-Webhook-Token`。
+5. 支付回调建议使用 Webhook 配置：Stripe 使用 `Stripe-Signature`（在 `Webhook.Stripe.SigningSecret` 配置），或通过 `Webhook.SharedToken` 携带 `X-ZNP-Webhook-Token`。回调地址可用 `/api/v1/{adminPrefix}/orders/payments/callback` 或免登录的 `/api/v1/payments/callback`。
 6. 若收到 `code=401001`（signature mismatch），请检查第三方签名顺序是否为 `timestamp + "\n" + nonce + "\n" + body`，并确保时间戳处于允许窗口内。
 
 更多巡检、升级与排障方案请继续阅读 [docs/service-upgrade.md](service-upgrade.md)。

@@ -1,0 +1,33 @@
+syntax = "v1"
+
+@server (
+    name: znp
+    prefix: /api/v1
+    group: admin/site
+)
+service znp {
+    @doc "Get site settings"
+    @handler AdminGetSiteSetting
+    get /admin/site-settings() returns (AdminSiteSettingResponse)
+
+    @doc "Update site settings"
+    @handler AdminUpdateSiteSetting
+    patch /admin/site-settings(AdminUpdateSiteSettingRequest) returns (AdminSiteSettingResponse)
+}
+
+type SiteSetting {
+    id uint64
+    name string
+    logo_url string
+    created_at int64
+    updated_at int64
+}
+
+type AdminSiteSettingResponse {
+    setting SiteSetting
+}
+
+type AdminUpdateSiteSettingRequest {
+    name string(optional)
+    logo_url string(optional)
+}

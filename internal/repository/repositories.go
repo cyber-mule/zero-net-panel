@@ -17,6 +17,8 @@ type Repositories struct {
 	Announcement         AnnouncementRepository
 	Balance              BalanceRepository
 	Security             SecurityRepository
+	Site                 SiteRepository
+	PaymentChannel       PaymentChannelRepository
 	Order                OrderRepository
 }
 
@@ -71,6 +73,16 @@ func NewRepositories(db *gorm.DB) (*Repositories, error) {
 		return nil, err
 	}
 
+	siteRepo, err := NewSiteRepository(db)
+	if err != nil {
+		return nil, err
+	}
+
+	channelRepo, err := NewPaymentChannelRepository(db)
+	if err != nil {
+		return nil, err
+	}
+
 	orderRepo, err := NewOrderRepository(db)
 	if err != nil {
 		return nil, err
@@ -86,6 +98,8 @@ func NewRepositories(db *gorm.DB) (*Repositories, error) {
 		Announcement:         announcementRepo,
 		Balance:              balanceRepo,
 		Security:             securityRepo,
+		Site:                 siteRepo,
+		PaymentChannel:       channelRepo,
 		Order:                orderRepo,
 	}, nil
 }

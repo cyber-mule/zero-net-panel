@@ -216,6 +216,42 @@ var migrationRegistry = []Migration{
 			return nil
 		},
 	},
+	{
+		Version: 2025031501,
+		Name:    "site-settings",
+		Up: func(ctx context.Context, db *gorm.DB) error {
+			return db.WithContext(ctx).AutoMigrate(
+				&repository.SiteSetting{},
+			)
+		},
+		Down: func(ctx context.Context, db *gorm.DB) error {
+			migrator := db.WithContext(ctx).Migrator()
+			if migrator.HasTable(&repository.SiteSetting{}) {
+				if err := migrator.DropTable(&repository.SiteSetting{}); err != nil {
+					return err
+				}
+			}
+			return nil
+		},
+	},
+	{
+		Version: 2025032001,
+		Name:    "payment-channels",
+		Up: func(ctx context.Context, db *gorm.DB) error {
+			return db.WithContext(ctx).AutoMigrate(
+				&repository.PaymentChannel{},
+			)
+		},
+		Down: func(ctx context.Context, db *gorm.DB) error {
+			migrator := db.WithContext(ctx).Migrator()
+			if migrator.HasTable(&repository.PaymentChannel{}) {
+				if err := migrator.DropTable(&repository.PaymentChannel{}); err != nil {
+					return err
+				}
+			}
+			return nil
+		},
+	},
 }
 
 func init() {

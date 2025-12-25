@@ -9,6 +9,10 @@ Project:
   Description: Production deployment
   Version: 1.0.0
 
+Site:
+  Name: Zero Network Panel
+  LogoURL: ""                         # 可选：站点 Logo URL
+
 Database:
   Driver: mysql           # 可选 mysql/postgres/sqlite
   DSN: "<user>:<pass>@tcp(db:3306)/znp?parseTime=true&loc=Local"  # 必填：生产 DSN

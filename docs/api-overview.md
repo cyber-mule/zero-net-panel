@@ -29,7 +29,9 @@
 - 用户端 `POST /api/v1/user/orders` 新增 `payment_method`、`payment_channel`、`payment_return_url` 字段：
   - 默认 `payment_method = balance`，系统直接扣减余额、记录 `balance_transactions`，订单状态立即变为 `paid`、`payment_status = succeeded`。
   - 当 `payment_method = external` 且金额大于零时，会生成 `pending_payment` 订单，创建 `order_payments` 预订单记录，并返回 `payment_intent_id`、`payments` 列表供前端跳转支付；余额不会变动。
+  - 当 `payment_method = manual` 时，会生成待支付订单；需管理员通过 `/api/v1/{admin}/orders/{id}/pay` 标记已支付。
 - 用户端 `POST /api/v1/user/orders/{id}/cancel` 仅允许取消待支付或零金额订单，不触发余额回滚。
+- 用户端 `GET /api/v1/user/orders/{id}/payment-status` 用于前端轮询确认支付结果。
 - 管理端提供 `POST /api/v1/{admin}/orders/{id}/pay`、`/cancel` 与 `/refund`，需管理员角色；退款仅适用于余额支付订单，成功后会写入退款流水并回滚余额。
 - 所有用户端接口默认需要 JWT 鉴权，同时可选启用第三方加密认证中间件，对请求进行签名验证与 AES-GCM 解密。
 - 外部支付回调可按以下流程接入：

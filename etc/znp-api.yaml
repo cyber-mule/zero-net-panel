@@ -8,6 +8,10 @@ Project:
   Description: Backend service benchmarked against xboard capabilities
   Version: 0.1.0
 
+Site:
+  Name: Zero Network Panel
+  LogoURL: ""
+
 Database:
   Driver: mysql
   DSN: root:password@tcp(127.0.0.1:3306)/znp?parseTime=true

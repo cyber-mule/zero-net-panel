@@ -24,6 +24,10 @@ service znp {
     @handler UserGetOrder
     get /user/orders/:id(UserGetOrderRequest) returns (UserOrderResponse)
 
+    @doc "Get user order payment status"
+    @handler UserGetOrderPaymentStatus
+    get /user/orders/:id/payment-status(UserOrderPaymentStatusRequest) returns (UserOrderPaymentStatusResponse)
+
     @doc "Cancel a pending user order"
     @handler UserCancelOrder
     post /user/orders/:id/cancel(UserCancelOrderRequest) returns (UserOrderResponse)
@@ -61,6 +65,26 @@ type UserOrderResponse {
 
 type UserGetOrderRequest {
     id uint64
+}
+
+type UserOrderPaymentStatusRequest {
+    id uint64
+}
+
+type UserOrderPaymentStatusResponse {
+    order_id uint64
+    status string
+    payment_status string
+    payment_method string
+    payment_intent_id *string
+    payment_reference *string
+    payment_failure_code *string
+    payment_failure_message *string
+    paid_at *int64
+    cancelled_at *int64
+    refunded_cents int64
+    refunded_at *int64
+    updated_at int64
 }
 
 type UserCancelOrderRequest {

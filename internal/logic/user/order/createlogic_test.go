@@ -184,6 +184,63 @@ func TestCreateOrderWithExternalPayment(t *testing.T) {
 	require.Equal(t, repository.OrderPaymentStatusPending, paymentsMap[storedOrder.ID][0].Status)
 }
 
+func TestCreateOrderWithManualPayment(t *testing.T) {
+	svcCtx, cleanup := setupCreateLogicTest(t)
+	defer cleanup()
+
+	ctx := context.Background()
+	now := time.Now().UTC()
+
+	user := repository.User{
+		Email:       "buyer-manual@test.dev",
+		DisplayName: "Buyer Manual",
+		Roles:       []string{"user"},
+		Status:      "active",
+		CreatedAt:   now,
+		UpdatedAt:   now,
+	}
+	require.NoError(t, svcCtx.DB.Create(&user).Error)
+
+	plan := repository.Plan{
+		Name:              "Manual Plan",
+		Slug:              "manual-plan",
+		Description:       "Manual payment plan",
+		PriceCents:        1800,
+		Currency:          "CNY",
+		DurationDays:      30,
+		TrafficLimitBytes: 1024,
+		DevicesLimit:      2,
+		Status:            "active",
+		Visible:           true,
+		CreatedAt:         now,
+		UpdatedAt:         now,
+	}
+	require.NoError(t, svcCtx.DB.Create(&plan).Error)
+
+	claims := security.UserClaims{ID: user.ID, Email: user.Email, Roles: []string{"user"}}
+	reqCtx := security.WithUser(ctx, claims)
+
+	logic := NewCreateLogic(reqCtx, svcCtx)
+	resp, err := logic.Create(&types.UserCreateOrderRequest{
+		PlanID:        plan.ID,
+		PaymentMethod: repository.PaymentMethodManual,
+	})
+	require.NoError(t, err)
+
+	require.Equal(t, repository.OrderStatusPendingPayment, resp.Order.Status)
+	require.Equal(t, repository.OrderPaymentStatusPending, resp.Order.PaymentStatus)
+	require.Equal(t, repository.PaymentMethodManual, resp.Order.PaymentMethod)
+	require.Empty(t, resp.Order.PaymentIntentID)
+	require.Nil(t, resp.Transaction)
+	require.Empty(t, resp.Order.Payments)
+
+	storedOrder, _, err := svcCtx.Repositories.Order.Get(ctx, resp.Order.ID)
+	require.NoError(t, err)
+	require.Equal(t, repository.OrderStatusPendingPayment, storedOrder.Status)
+	require.Equal(t, repository.OrderPaymentStatusPending, storedOrder.PaymentStatus)
+	require.Equal(t, repository.PaymentMethodManual, storedOrder.PaymentMethod)
+}
+
 func TestCreateOrderIdempotent(t *testing.T) {
 	svcCtx, cleanup := setupCreateLogicTest(t)
 	defer cleanup()

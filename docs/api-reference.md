@@ -184,6 +184,8 @@ METHOD\nPATH\nRAW_QUERY\nTIMESTAMP\nNONCE\nBASE64(BODY)
   - `status` string
   - `service` string
   - `version` string
+  - `site_name` string
+  - `logo_url` string
   - `timestamp` int64
 
 ### 认证
@@ -391,6 +393,52 @@ PlanSummary 字段：
   - `sort_order`、`status`、`visible`
 - 响应：PlanSummary
 
+#### GET /api/v1/{adminPrefix}/payment-channels
+
+- 说明：支付通道列表
+- 查询参数：`page`、`per_page`、`q`、`provider`、`enabled`、`sort`、`direction`
+- `sort` 可选：`name`、`created`、`updated`
+- 响应：
+  - `channels` []PaymentChannelSummary
+  - `pagination` PaginationMeta
+
+PaymentChannelSummary 字段：
+
+- `id`、`name`、`code`、`provider`
+- `enabled`、`sort_order`、`config`
+- `created_at`、`updated_at`
+
+#### GET /api/v1/{adminPrefix}/payment-channels/{id}
+
+- 说明：支付通道详情
+- 路径参数：`id` uint64
+- 响应：PaymentChannelSummary
+
+#### POST /api/v1/{adminPrefix}/payment-channels
+
+- 说明：创建支付通道
+- 请求体：
+  - `name` string
+  - `code` string
+  - `provider` string（可选）
+  - `enabled` bool（可选）
+  - `sort_order` int（可选）
+  - `config` object（可选）
+- 响应：PaymentChannelSummary
+
+#### PATCH /api/v1/{adminPrefix}/payment-channels/{id}
+
+- 说明：更新支付通道
+- 路径参数：`id` uint64
+- 请求体：
+  - `name` string（可选）
+  - `code` string（可选）
+  - `provider` string（可选）
+  - `enabled` bool（可选）
+  - `sort_order` int（可选）
+  - `config` object（可选）
+- 响应：PaymentChannelSummary
+
 #### GET /api/v1/{adminPrefix}/announcements
 
 - 说明：公告列表
@@ -430,6 +478,25 @@ AnnouncementSummary 字段：
   - `visible_to` int64（可选）
   - `operator` string（可选）
 - 响应：AnnouncementSummary
+
+#### GET /api/v1/{adminPrefix}/site-settings
+
+- 说明：查询站点配置
+- 响应：
+  - `setting` SiteSetting
+
+SiteSetting 字段：
+
+- `id`、`name`、`logo_url`
+- `created_at`、`updated_at`
+
+#### PATCH /api/v1/{adminPrefix}/site-settings
+
+- 说明：更新站点配置
+- 请求体：
+  - `name` string（可选）
+  - `logo_url` string（可选）
+- 响应：同 GET
 
 #### GET /api/v1/{adminPrefix}/security-settings
 
@@ -481,7 +548,7 @@ AdminOrderDetail 字段：
 - 说明：人工标记订单已支付
 - 路径参数：`id` uint64
 - 请求体：
-  - `payment_method` string（可选）
+  - `payment_method` string（可选，线下支付可用 `manual`）
   - `paid_at` int64（可选）
   - `note` string（可选）
   - `reference` string（可选）
@@ -526,6 +593,13 @@ AdminOrderDetail 字段：
   - `paid_at` int64（可选）
 - 响应：
   - `order` AdminOrderDetail
+
+#### POST /api/v1/payments/callback
+
+- 说明：外部支付回调（免登录，Webhook 专用）
+- 认证：`X-ZNP-Webhook-Token` 或 `Stripe-Signature`（取决于 `Webhook` 配置）
+- 请求体：同 `/api/v1/{adminPrefix}/orders/payments/callback`
+- 响应：同上
 
 ### 用户端（需要 user 权限）
 
@@ -614,7 +688,7 @@ UserAnnouncementSummary 字段：
 - 请求体：
   - `plan_id` uint64
   - `quantity` int
-  - `payment_method` string（可选，默认 `balance`）
+  - `payment_method` string（可选，默认 `balance`；线下可用 `manual`）
   - `payment_channel` string（可选，外部支付通道）
   - `payment_return_url` string（可选）
   - `idempotency_key` string（可选，幂等键）
@@ -650,3 +724,22 @@ UserAnnouncementSummary 字段：
   - `order` OrderDetail
   - `balance` BalanceSnapshot
   - `transaction` BalanceTransactionSummary（可选）
+
+#### GET /api/v1/user/orders/{id}/payment-status
+
+- 说明：确认订单支付状态
+- 路径参数：`id` uint64
+- 响应：
+  - `order_id` uint64
+  - `status` string
+  - `payment_status` string
+  - `payment_method` string
+  - `payment_intent_id` string（可选）
+  - `payment_reference` string（可选）
+  - `payment_failure_code` string（可选）
+  - `payment_failure_message` string（可选）
+  - `paid_at` int64（可选）
+  - `cancelled_at` int64（可选）
+  - `refunded_cents` int64
+  - `refunded_at` int64（可选）
+  - `updated_at` int64

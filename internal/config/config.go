@@ -14,6 +14,7 @@ type Config struct {
 	rest.RestConf
 
 	Project  ProjectConfig    `json:"project" yaml:"Project"`
+	Site     SiteConfig       `json:"site" yaml:"Site"`
 	Database database.Config  `json:"database" yaml:"Database"`
 	Cache    cache.Config     `json:"cache" yaml:"Cache"`
 	Kernel   KernelConfig     `json:"kernel" yaml:"Kernel"`
@@ -28,6 +29,11 @@ type ProjectConfig struct {
 	Name        string `json:"name" yaml:"Name"`
 	Description string `json:"description" yaml:"Description"`
 	Version     string `json:"version" yaml:"Version"`
+}
+
+type SiteConfig struct {
+	Name    string `json:"name" yaml:"Name"`
+	LogoURL string `json:"logoUrl" yaml:"LogoURL"`
 }
 
 type KernelConfig struct {
@@ -86,6 +92,12 @@ func (m MetricsConfig) Enabled() bool {
 // Standalone reports whether metrics should be served on an independent listener.
 func (m MetricsConfig) Standalone() bool {
 	return m.Enable && m.ListenOn != ""
+}
+
+// Normalize trims user-facing site values.
+func (s *SiteConfig) Normalize() {
+	s.Name = strings.TrimSpace(s.Name)
+	s.LogoURL = strings.TrimSpace(s.LogoURL)
 }
 
 // AdminConfig 控制管理端路由相关配置。
@@ -206,6 +218,13 @@ func (g GRPCServerConfig) ReflectionEnabled() bool {
 
 // Normalize 将配置补齐默认值。
 func (c *Config) Normalize() {
+	c.Project.Name = strings.TrimSpace(c.Project.Name)
+	c.Project.Description = strings.TrimSpace(c.Project.Description)
+	c.Project.Version = strings.TrimSpace(c.Project.Version)
+	c.Site.Normalize()
+	if c.Site.Name == "" {
+		c.Site.Name = c.Project.Name
+	}
 	c.Metrics.Normalize()
 	c.Admin.Normalize()
 	c.Webhook.Normalize()

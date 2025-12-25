@@ -31,6 +31,10 @@ service znp {
     @doc "Process external payment callback"
     @handler AdminPaymentCallback
     post /admin/orders/payments/callback(AdminPaymentCallbackRequest) returns (AdminOrderResponse)
+
+    @doc "Process external payment callback without admin prefix"
+    @handler AdminPaymentCallback
+    post /payments/callback(AdminPaymentCallbackRequest) returns (AdminOrderResponse)
 }
 
 type AdminListOrdersRequest {

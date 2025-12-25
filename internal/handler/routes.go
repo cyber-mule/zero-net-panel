@@ -9,8 +9,10 @@ import (
 	adminDashboard "github.com/zero-net-panel/zero-net-panel/internal/handler/admin/dashboard"
 	adminNodes "github.com/zero-net-panel/zero-net-panel/internal/handler/admin/nodes"
 	adminOrders "github.com/zero-net-panel/zero-net-panel/internal/handler/admin/orders"
+	adminPaymentChannels "github.com/zero-net-panel/zero-net-panel/internal/handler/admin/paymentchannels"
 	adminPlans "github.com/zero-net-panel/zero-net-panel/internal/handler/admin/plans"
 	adminSecurity "github.com/zero-net-panel/zero-net-panel/internal/handler/admin/security"
+	adminSite "github.com/zero-net-panel/zero-net-panel/internal/handler/admin/site"
 	adminTemplates "github.com/zero-net-panel/zero-net-panel/internal/handler/admin/templates"
 	authhandlers "github.com/zero-net-panel/zero-net-panel/internal/handler/auth"
 	sharedhandlers "github.com/zero-net-panel/zero-net-panel/internal/handler/shared"
@@ -110,6 +112,26 @@ func RegisterHandlers(server *rest.Server, svcCtx *svc.ServiceContext) {
 			Handler: adminPlans.AdminListPlansHandler(svcCtx),
 		},
 		{
+			Method:  http.MethodGet,
+			Path:    "/payment-channels",
+			Handler: adminPaymentChannels.AdminListPaymentChannelsHandler(svcCtx),
+		},
+		{
+			Method:  http.MethodGet,
+			Path:    "/payment-channels/:id",
+			Handler: adminPaymentChannels.AdminGetPaymentChannelHandler(svcCtx),
+		},
+		{
+			Method:  http.MethodPost,
+			Path:    "/payment-channels",
+			Handler: adminPaymentChannels.AdminCreatePaymentChannelHandler(svcCtx),
+		},
+		{
+			Method:  http.MethodPatch,
+			Path:    "/payment-channels/:id",
+			Handler: adminPaymentChannels.AdminUpdatePaymentChannelHandler(svcCtx),
+		},
+		{
 			Method:  http.MethodPost,
 			Path:    "/plans",
 			Handler: adminPlans.AdminCreatePlanHandler(svcCtx),
@@ -133,6 +155,16 @@ func RegisterHandlers(server *rest.Server, svcCtx *svc.ServiceContext) {
 			Method:  http.MethodPost,
 			Path:    "/announcements/:id/publish",
 			Handler: adminAnnouncements.AdminPublishAnnouncementHandler(svcCtx),
+		},
+		{
+			Method:  http.MethodGet,
+			Path:    "/site-settings",
+			Handler: adminSite.AdminGetSiteSettingHandler(svcCtx),
+		},
+		{
+			Method:  http.MethodPatch,
+			Path:    "/site-settings",
+			Handler: adminSite.AdminUpdateSiteSettingHandler(svcCtx),
 		},
 		{
 			Method:  http.MethodGet,
@@ -188,6 +220,16 @@ func RegisterHandlers(server *rest.Server, svcCtx *svc.ServiceContext) {
 	webhookRoutes = rest.WithMiddlewares([]rest.Middleware{webhookMiddleware.Handler}, webhookRoutes...)
 	server.AddRoutes(webhookRoutes, rest.WithPrefix(adminBase))
 
+	publicWebhookRoutes := []rest.Route{
+		{
+			Method:  http.MethodPost,
+			Path:    "/payments/callback",
+			Handler: adminOrders.AdminPaymentCallbackHandler(svcCtx),
+		},
+	}
+	publicWebhookRoutes = rest.WithMiddlewares([]rest.Middleware{webhookMiddleware.Handler}, publicWebhookRoutes...)
+	server.AddRoutes(publicWebhookRoutes, rest.WithPrefix("/api/v1"))
+
 	userRoutes := []rest.Route{
 		{
 			Method:  http.MethodGet,
@@ -238,6 +280,11 @@ func RegisterHandlers(server *rest.Server, svcCtx *svc.ServiceContext) {
 			Method:  http.MethodGet,
 			Path:    "/orders/:id",
 			Handler: userOrders.UserGetOrderHandler(svcCtx),
+		},
+		{
+			Method:  http.MethodGet,
+			Path:    "/orders/:id/payment-status",
+			Handler: userOrders.UserGetOrderPaymentStatusHandler(svcCtx),
 		},
 		{
 			Method:  http.MethodPost,
