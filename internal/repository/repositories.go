@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"errors"
 
 	"gorm.io/gorm"
@@ -8,11 +9,14 @@ import (
 
 // Repositories 聚合各领域仓储，方便在 ServiceContext 中注入。
 type Repositories struct {
+	db *gorm.DB
+
 	AdminModule          AdminModuleRepository
 	Node                 NodeRepository
 	SubscriptionTemplate SubscriptionTemplateRepository
 	Subscription         SubscriptionRepository
 	User                 UserRepository
+	UserCredential       UserCredentialRepository
 	Plan                 PlanRepository
 	Announcement         AnnouncementRepository
 	Balance              BalanceRepository
@@ -20,6 +24,10 @@ type Repositories struct {
 	Site                 SiteRepository
 	PaymentChannel       PaymentChannelRepository
 	Order                OrderRepository
+	AuditLog             AuditLogRepository
+	ProtocolConfig       ProtocolConfigRepository
+	ProtocolBinding      ProtocolBindingRepository
+	TrafficUsage         TrafficUsageRepository
 }
 
 // NewRepositories 根据数据库实例创建仓储集合。
@@ -39,6 +47,11 @@ func NewRepositories(db *gorm.DB) (*Repositories, error) {
 	}
 
 	userRepo, err := NewUserRepository(db)
+	if err != nil {
+		return nil, err
+	}
+
+	credentialRepo, err := NewUserCredentialRepository(db)
 	if err != nil {
 		return nil, err
 	}
@@ -88,12 +101,34 @@ func NewRepositories(db *gorm.DB) (*Repositories, error) {
 		return nil, err
 	}
 
+	auditRepo, err := NewAuditLogRepository(db)
+	if err != nil {
+		return nil, err
+	}
+
+	protocolConfigRepo, err := NewProtocolConfigRepository(db)
+	if err != nil {
+		return nil, err
+	}
+
+	protocolBindingRepo, err := NewProtocolBindingRepository(db)
+	if err != nil {
+		return nil, err
+	}
+
+	trafficRepo, err := NewTrafficUsageRepository(db)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Repositories{
+		db:                   db,
 		AdminModule:          adminModuleRepo,
 		Node:                 nodeRepo,
 		SubscriptionTemplate: templateRepo,
 		Subscription:         subscriptionRepo,
 		User:                 userRepo,
+		UserCredential:       credentialRepo,
 		Plan:                 planRepo,
 		Announcement:         announcementRepo,
 		Balance:              balanceRepo,
@@ -101,5 +136,27 @@ func NewRepositories(db *gorm.DB) (*Repositories, error) {
 		Site:                 siteRepo,
 		PaymentChannel:       channelRepo,
 		Order:                orderRepo,
+		AuditLog:             auditRepo,
+		ProtocolConfig:       protocolConfigRepo,
+		ProtocolBinding:      protocolBindingRepo,
+		TrafficUsage:         trafficRepo,
 	}, nil
+}
+
+// Transaction executes the callback within a DB transaction with repositories bound to the same transaction.
+func (r *Repositories) Transaction(ctx context.Context, fn func(txRepos *Repositories) error) error {
+	if r == nil || r.db == nil {
+		return errors.New("repository: database connection is required")
+	}
+	if fn == nil {
+		return errors.New("repository: transaction callback is required")
+	}
+
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		txRepos, err := NewRepositories(tx)
+		if err != nil {
+			return err
+		}
+		return fn(txRepos)
+	})
 }

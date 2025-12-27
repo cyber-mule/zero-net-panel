@@ -1,0 +1,76 @@
+syntax = "v1"
+
+import "shared/types.api"
+
+@server (
+    name: znp
+    prefix: /api/v1
+    group: admin/protocol-configs
+)
+service znp {
+    @doc "List protocol configs"
+    @handler AdminListProtocolConfigs
+    get /admin/protocol-configs(AdminListProtocolConfigsRequest) returns (AdminProtocolConfigListResponse)
+
+    @doc "Create protocol config"
+    @handler AdminCreateProtocolConfig
+    post /admin/protocol-configs(AdminCreateProtocolConfigRequest) returns (ProtocolConfigSummary)
+
+    @doc "Update protocol config"
+    @handler AdminUpdateProtocolConfig
+    patch /admin/protocol-configs/:id(AdminUpdateProtocolConfigRequest) returns (ProtocolConfigSummary)
+
+    @doc "Delete protocol config"
+    @handler AdminDeleteProtocolConfig
+    delete /admin/protocol-configs/:id(AdminDeleteProtocolConfigRequest)
+}
+
+type AdminListProtocolConfigsRequest {
+    page int(optional)
+    per_page int(optional)
+    sort string(optional)
+    direction string(optional)
+    q string(optional)
+    protocol string(optional)
+    status string(optional)
+}
+
+type ProtocolConfigSummary {
+    id uint64
+    name string
+    protocol string
+    status string
+    tags []string
+    description string
+    profile map[string]any
+    created_at int64
+    updated_at int64
+}
+
+type AdminProtocolConfigListResponse {
+    configs []ProtocolConfigSummary
+    pagination PaginationMeta
+}
+
+type AdminCreateProtocolConfigRequest {
+    name string
+    protocol string
+    status string(optional)
+    tags []string(optional)
+    description string(optional)
+    profile map[string]any(optional)
+}
+
+type AdminUpdateProtocolConfigRequest {
+    id uint64
+    name string(optional)
+    protocol string(optional)
+    status string(optional)
+    tags []string(optional)
+    description string(optional)
+    profile map[string]any(optional)
+}
+
+type AdminDeleteProtocolConfigRequest {
+    id uint64
+}

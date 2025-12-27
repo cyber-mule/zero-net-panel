@@ -1,0 +1,133 @@
+syntax = "v1"
+
+import "shared/types.api"
+
+@server (
+    name: znp
+    prefix: /api/v1
+    group: admin/protocol-bindings
+)
+service znp {
+    @doc "List protocol bindings"
+    @handler AdminListProtocolBindings
+    get /admin/protocol-bindings(AdminListProtocolBindingsRequest) returns (AdminProtocolBindingListResponse)
+
+    @doc "Create protocol binding"
+    @handler AdminCreateProtocolBinding
+    post /admin/protocol-bindings(AdminCreateProtocolBindingRequest) returns (ProtocolBindingSummary)
+
+    @doc "Update protocol binding"
+    @handler AdminUpdateProtocolBinding
+    patch /admin/protocol-bindings/:id(AdminUpdateProtocolBindingRequest) returns (ProtocolBindingSummary)
+
+    @doc "Delete protocol binding"
+    @handler AdminDeleteProtocolBinding
+    delete /admin/protocol-bindings/:id(AdminDeleteProtocolBindingRequest)
+
+    @doc "Sync protocol binding"
+    @handler AdminSyncProtocolBinding
+    post /admin/protocol-bindings/:id/sync(AdminSyncProtocolBindingRequest) returns (ProtocolBindingSyncResult)
+
+    @doc "Sync protocol bindings"
+    @handler AdminSyncProtocolBindings
+    post /admin/protocol-bindings/sync(AdminSyncProtocolBindingsRequest) returns (AdminSyncProtocolBindingsResponse)
+}
+
+type AdminListProtocolBindingsRequest {
+    page int(optional)
+    per_page int(optional)
+    sort string(optional)
+    direction string(optional)
+    q string(optional)
+    status string(optional)
+    protocol string(optional)
+    node_id uint64(optional)
+    protocol_config_id uint64(optional)
+}
+
+type ProtocolBindingSummary {
+    id uint64
+    name string
+    node_id uint64
+    node_name string
+    protocol_config_id uint64
+    protocol string
+    role string
+    listen string
+    connect string
+    status string
+    kernel_id string
+    sync_status string
+    health_status string
+    last_synced_at int64
+    last_heartbeat_at int64
+    last_sync_error string
+    tags []string
+    description string
+    metadata map[string]any
+    created_at int64
+    updated_at int64
+}
+
+type AdminProtocolBindingListResponse {
+    bindings []ProtocolBindingSummary
+    pagination PaginationMeta
+}
+
+type AdminCreateProtocolBindingRequest {
+    name string(optional)
+    node_id uint64
+    protocol_config_id uint64
+    role string
+    listen string(optional)
+    connect string(optional)
+    status string(optional)
+    kernel_id string(optional)
+    tags []string(optional)
+    description string(optional)
+    metadata map[string]any(optional)
+}
+
+type AdminUpdateProtocolBindingRequest {
+    id uint64
+    name string(optional)
+    node_id uint64(optional)
+    protocol_config_id uint64(optional)
+    role string(optional)
+    listen string(optional)
+    connect string(optional)
+    status string(optional)
+    kernel_id string(optional)
+    sync_status string(optional)
+    health_status string(optional)
+    last_synced_at int64(optional)
+    last_heartbeat_at int64(optional)
+    last_sync_error string(optional)
+    tags []string(optional)
+    description string(optional)
+    metadata map[string]any(optional)
+}
+
+type AdminDeleteProtocolBindingRequest {
+    id uint64
+}
+
+type ProtocolBindingSyncResult {
+    binding_id uint64
+    status string
+    message string
+    synced_at int64
+}
+
+type AdminSyncProtocolBindingRequest {
+    id uint64
+}
+
+type AdminSyncProtocolBindingsRequest {
+    binding_ids []uint64(optional)
+    node_ids []uint64(optional)
+}
+
+type AdminSyncProtocolBindingsResponse {
+    results []ProtocolBindingSyncResult
+}

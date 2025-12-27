@@ -39,19 +39,20 @@ func (l *CreateLogic) Create(req *types.AdminCreatePlanRequest) (*types.PlanSumm
 	}
 
 	plan := repository.Plan{
-		Name:              strings.TrimSpace(req.Name),
-		Slug:              strings.TrimSpace(req.Slug),
-		Description:       strings.TrimSpace(req.Description),
-		Tags:              append([]string(nil), req.Tags...),
-		Features:          append([]string(nil), req.Features...),
-		PriceCents:        req.PriceCents,
-		Currency:          strings.ToUpper(currency),
-		DurationDays:      req.DurationDays,
-		TrafficLimitBytes: req.TrafficLimitBytes,
-		DevicesLimit:      req.DevicesLimit,
-		SortOrder:         req.SortOrder,
-		Status:            status,
-		Visible:           req.Visible,
+		Name:               strings.TrimSpace(req.Name),
+		Slug:               strings.TrimSpace(req.Slug),
+		Description:        strings.TrimSpace(req.Description),
+		Tags:               append([]string(nil), req.Tags...),
+		Features:           append([]string(nil), req.Features...),
+		PriceCents:         req.PriceCents,
+		Currency:           strings.ToUpper(currency),
+		DurationDays:       req.DurationDays,
+		TrafficLimitBytes:  req.TrafficLimitBytes,
+		TrafficMultipliers: normalizeTrafficMultipliers(req.TrafficMultipliers),
+		DevicesLimit:       req.DevicesLimit,
+		SortOrder:          req.SortOrder,
+		Status:             status,
+		Visible:            req.Visible,
 	}
 
 	created, err := l.svcCtx.Repositories.Plan.Create(l.ctx, plan)

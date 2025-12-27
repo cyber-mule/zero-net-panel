@@ -10,6 +10,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/zero-net-panel/zero-net-panel/internal/logic/orderutil"
+	"github.com/zero-net-panel/zero-net-panel/internal/logic/subscriptionutil"
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 	"github.com/zero-net-panel/zero-net-panel/internal/security"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
@@ -53,7 +54,18 @@ func (l *MarkPaidLogic) MarkPaid(req *types.AdminMarkOrderPaidRequest) (*types.A
 	}
 
 	if strings.EqualFold(order.Status, repository.OrderStatusPaid) {
-		return l.buildResponse(order, items, paymentsMap[order.ID])
+		provisionedOrder := order
+		if err := l.svcCtx.Repositories.Transaction(l.ctx, func(txRepos *repository.Repositories) error {
+			result, err := subscriptionutil.EnsureOrderSubscription(l.ctx, txRepos, order, items)
+			if err != nil {
+				return err
+			}
+			provisionedOrder = result.Order
+			return nil
+		}); err != nil {
+			return nil, err
+		}
+		return l.buildResponse(provisionedOrder, items, paymentsMap[order.ID])
 	}
 	if !strings.EqualFold(order.Status, repository.OrderStatusPendingPayment) {
 		return nil, repository.ErrInvalidArgument
@@ -139,7 +151,16 @@ func (l *MarkPaidLogic) MarkPaid(req *types.AdminMarkOrderPaidRequest) (*types.A
 			}
 			updatedOrder = refreshed
 		}
-		updated = updatedOrder
+
+		txRepos, err := repository.NewRepositories(tx)
+		if err != nil {
+			return err
+		}
+		provisioned, err := subscriptionutil.EnsureOrderSubscription(l.ctx, txRepos, updatedOrder, items)
+		if err != nil {
+			return err
+		}
+		updated = provisioned.Order
 		return nil
 	})
 	if err != nil {

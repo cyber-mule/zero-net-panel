@@ -4,6 +4,7 @@ Zero Network Panel 旨在以 xboard 的功能体系为基线，提供面向节�
 
 ## 核心模块
 - **节点发现 (kernel discovery)**：内置 HTTP 与 gRPC Provider 注册表，可在后台一键触发节点配置同步，确保协议资源与内核保持一致。
+- **协议配置与绑定**：支持协议 profile 配置、节点协议绑定与手动下发，结合回调/轮询维护协议健康状态与流量倍数计费。
 - **订阅模板管理**：提供模板 CRUD、版本发布、历史追溯及默认模板切换，变量描述采用 GitHub 风格的分页与字段规范。
 - **用户订阅能力**：支持订阅列表查询、模板预览与定制选择，同时输出渲染后的内容、ETag 及内容类型信息，方便前端或客户端下载。
 - **套餐/公告/余额**：实现 `plans`、`announcements`、`user_balances` 等核心表，对齐 xboard 套餐管理、公告通知与钱包查询能力，并支持第三方加密校验开关。
@@ -26,6 +27,14 @@ Zero Network Panel 旨在以 xboard 的功能体系为基线，提供面向节�
 - `POST /api/v1/{AdminPrefix}/nodes/{id}/kernels/sync`：触发节点与内核的即时同步。
 - `GET /api/v1/{AdminPrefix}/subscription-templates`：查看模板列表及变量定义。
 - `POST /api/v1/{AdminPrefix}/subscription-templates/{id}/publish`：发布模板并记录版本历史。
+
+**协议与流量**
+
+- `GET /api/v1/{AdminPrefix}/protocol-configs` / `POST /api/v1/{AdminPrefix}/protocol-configs`：协议配置管理。
+- `GET /api/v1/{AdminPrefix}/protocol-bindings` / `POST /api/v1/{AdminPrefix}/protocol-bindings` / `POST /api/v1/{AdminPrefix}/protocol-bindings/{id}/sync`：协议绑定管理与手动下发。
+- `POST /api/v1/kernel/events`：内核协议健康事件回调。
+- `POST /api/v1/kernel/traffic`：内核用户流量回调。
+- `GET /api/v1/user/subscriptions/{id}/traffic`：查询订阅原始/倍数流量明细。
 
 **套餐与公告**
 
@@ -175,7 +184,7 @@ Metrics:
 
 登录成功后可取得访问令牌（Bearer Token），用于访问 `/api/v1/{AdminPrefix}` 与 `/api/v1/user` 下的受保护接口。
 
-> 当前版本未提供用户注册/找回与后台用户管理 API，账号需通过安装向导、`--seed-demo` 或数据库手动维护。
+> 注册/找回与后台用户管理 API 已提供，需在配置中开启注册开关并配置邮件发送与验证码策略。
 
 ## CLI 工具集
 项目内置 `znp` 命令行用于统一管理服务：

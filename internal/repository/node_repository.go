@@ -63,8 +63,11 @@ type ListNodesOptions struct {
 type NodeRepository interface {
 	List(ctx context.Context, opts ListNodesOptions) ([]Node, int64, error)
 	Get(ctx context.Context, nodeID uint64) (Node, error)
+	Create(ctx context.Context, node Node) (Node, error)
+	Update(ctx context.Context, nodeID uint64, input UpdateNodeInput) (Node, error)
 	GetKernels(ctx context.Context, nodeID uint64) ([]NodeKernel, error)
 	RecordKernelSync(ctx context.Context, nodeID uint64, kernel NodeKernel) (NodeKernel, error)
+	UpsertKernel(ctx context.Context, nodeID uint64, input UpsertNodeKernelInput) (NodeKernel, error)
 }
 
 type nodeRepository struct {
@@ -131,6 +134,112 @@ func (r *nodeRepository) Get(ctx context.Context, nodeID uint64) (Node, error) {
 	}
 
 	return node, nil
+}
+
+func (r *nodeRepository) Create(ctx context.Context, node Node) (Node, error) {
+	if err := ctx.Err(); err != nil {
+		return Node{}, err
+	}
+
+	node.Name = strings.TrimSpace(node.Name)
+	if node.Name == "" {
+		return Node{}, ErrInvalidArgument
+	}
+	node.Region = strings.TrimSpace(node.Region)
+	node.Country = strings.TrimSpace(node.Country)
+	node.ISP = strings.TrimSpace(node.ISP)
+	node.Status = strings.TrimSpace(node.Status)
+	node.Description = strings.TrimSpace(node.Description)
+	if node.Tags == nil {
+		node.Tags = []string{}
+	}
+	if node.Protocols == nil {
+		node.Protocols = []string{}
+	}
+
+	now := time.Now().UTC()
+	if node.CreatedAt.IsZero() {
+		node.CreatedAt = now
+	}
+	node.UpdatedAt = now
+
+	if err := r.db.WithContext(ctx).Create(&node).Error; err != nil {
+		return Node{}, translateError(err)
+	}
+	return node, nil
+}
+
+func (r *nodeRepository) Update(ctx context.Context, nodeID uint64, input UpdateNodeInput) (Node, error) {
+	if err := ctx.Err(); err != nil {
+		return Node{}, err
+	}
+
+	updates := map[string]any{}
+	if input.Name != nil {
+		updates["name"] = strings.TrimSpace(*input.Name)
+	}
+	if input.Region != nil {
+		updates["region"] = strings.TrimSpace(*input.Region)
+	}
+	if input.Country != nil {
+		updates["country"] = strings.TrimSpace(*input.Country)
+	}
+	if input.ISP != nil {
+		updates["isp"] = strings.TrimSpace(*input.ISP)
+	}
+	if input.Status != nil {
+		updates["status"] = strings.TrimSpace(*input.Status)
+	}
+	if input.Tags != nil {
+		updates["tags"] = append([]string(nil), (*input.Tags)...)
+	}
+	if input.Protocols != nil {
+		updates["protocols"] = append([]string(nil), (*input.Protocols)...)
+	}
+	if input.CapacityMbps != nil {
+		updates["capacity_mbps"] = *input.CapacityMbps
+	}
+	if input.Description != nil {
+		updates["description"] = strings.TrimSpace(*input.Description)
+	}
+	if input.LastSyncedAt != nil {
+		updates["last_synced_at"] = input.LastSyncedAt.UTC()
+	}
+
+	if len(updates) == 0 {
+		return Node{}, ErrInvalidArgument
+	}
+	updates["updated_at"] = time.Now().UTC()
+
+	if err := r.db.WithContext(ctx).Model(&Node{}).Where("id = ?", nodeID).Updates(updates).Error; err != nil {
+		return Node{}, translateError(err)
+	}
+
+	return r.Get(ctx, nodeID)
+}
+
+// UpdateNodeInput defines mutable node fields.
+type UpdateNodeInput struct {
+	Name         *string
+	Region       *string
+	Country      *string
+	ISP          *string
+	Status       *string
+	Tags         *[]string
+	Protocols    *[]string
+	CapacityMbps *int
+	Description  *string
+	LastSyncedAt *time.Time
+}
+
+// UpsertNodeKernelInput defines node kernel configuration updates.
+type UpsertNodeKernelInput struct {
+	Protocol     string
+	Endpoint     string
+	Revision     *string
+	Status       *string
+	Config       map[string]any
+	LastSyncedAt *time.Time
 }
 
 func (r *nodeRepository) GetKernels(ctx context.Context, nodeID uint64) ([]NodeKernel, error) {
@@ -216,6 +325,99 @@ func (r *nodeRepository) RecordKernelSync(ctx context.Context, nodeID uint64, ke
 		return tx.Save(&node).Error
 	})
 
+	if err != nil {
+		return NodeKernel{}, translateError(err)
+	}
+
+	return kernel, nil
+}
+
+func (r *nodeRepository) UpsertKernel(ctx context.Context, nodeID uint64, input UpsertNodeKernelInput) (NodeKernel, error) {
+	if err := ctx.Err(); err != nil {
+		return NodeKernel{}, err
+	}
+
+	proto := normalizeProtocol(input.Protocol)
+	endpoint := strings.TrimSpace(input.Endpoint)
+	if endpoint == "" || proto == "" {
+		return NodeKernel{}, ErrInvalidArgument
+	}
+
+	now := time.Now().UTC()
+	kernel := NodeKernel{
+		NodeID:   nodeID,
+		Protocol: proto,
+		Endpoint: endpoint,
+	}
+	if input.Revision != nil {
+		kernel.Revision = strings.TrimSpace(*input.Revision)
+	}
+	if input.Status != nil {
+		kernel.Status = strings.TrimSpace(*input.Status)
+	}
+	if input.Config != nil {
+		kernel.Config = input.Config
+	} else {
+		kernel.Config = map[string]any{}
+	}
+	if input.LastSyncedAt != nil {
+		kernel.LastSyncedAt = input.LastSyncedAt.UTC()
+	}
+
+	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var node Node
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&node, nodeID).Error; err != nil {
+			return err
+		}
+
+		var existing NodeKernel
+		err := tx.Where("node_id = ? AND LOWER(protocol) = ?", nodeID, proto).First(&existing).Error
+		switch {
+		case errors.Is(err, gorm.ErrRecordNotFound):
+			if kernel.CreatedAt.IsZero() {
+				kernel.CreatedAt = now
+			}
+			kernel.UpdatedAt = now
+			if kernel.Status == "" {
+				kernel.Status = "configured"
+			}
+			if err := tx.Create(&kernel).Error; err != nil {
+				return err
+			}
+		case err != nil:
+			return err
+		default:
+			existing.Endpoint = kernel.Endpoint
+			if input.Revision != nil {
+				existing.Revision = kernel.Revision
+			}
+			if input.Status != nil {
+				existing.Status = kernel.Status
+			}
+			if input.Config != nil {
+				existing.Config = kernel.Config
+			}
+			if input.LastSyncedAt != nil {
+				existing.LastSyncedAt = kernel.LastSyncedAt
+			}
+			existing.UpdatedAt = now
+			if err := tx.Save(&existing).Error; err != nil {
+				return err
+			}
+			kernel = existing
+		}
+
+		if !containsIgnoreCase(node.Protocols, proto) {
+			node.Protocols = append(node.Protocols, proto)
+			sort.Strings(node.Protocols)
+		}
+		if input.LastSyncedAt != nil && kernel.LastSyncedAt.After(node.LastSyncedAt) {
+			node.LastSyncedAt = kernel.LastSyncedAt
+		}
+		node.UpdatedAt = now
+
+		return tx.Save(&node).Error
+	})
 	if err != nil {
 		return NodeKernel{}, translateError(err)
 	}

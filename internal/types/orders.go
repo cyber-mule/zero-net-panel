@@ -58,22 +58,22 @@ type OrderDetail struct {
 type UserCreateOrderRequest struct {
 	PlanID           uint64 `json:"plan_id"`
 	Quantity         int    `json:"quantity"`
-	PaymentMethod    string `json:"payment_method,omitempty"`
-	PaymentChannel   string `json:"payment_channel,omitempty"`
-	PaymentReturnURL string `json:"payment_return_url,omitempty"`
-	IdempotencyKey   string `json:"idempotency_key,omitempty"`
+	PaymentMethod    string `json:"payment_method,omitempty,optional"`
+	PaymentChannel   string `json:"payment_channel,omitempty,optional"`
+	PaymentReturnURL string `json:"payment_return_url,omitempty,optional"`
+	IdempotencyKey   string `json:"idempotency_key,omitempty,optional"`
 }
 
 // UserOrderListRequest 用户订单列表查询参数。
 type UserOrderListRequest struct {
-	Page          int    `form:"page"`
-	PerPage       int    `form:"per_page"`
-	Status        string `form:"status"`
-	PaymentMethod string `form:"payment_method"`
-	PaymentStatus string `form:"payment_status"`
-	Number        string `form:"number"`
-	Sort          string `form:"sort"`
-	Direction     string `form:"direction"`
+	Page          int    `form:"page,optional" json:"page,optional"`
+	PerPage       int    `form:"per_page,optional" json:"per_page,optional"`
+	Status        string `form:"status,optional" json:"status,optional"`
+	PaymentMethod string `form:"payment_method,optional" json:"payment_method,optional"`
+	PaymentStatus string `form:"payment_status,optional" json:"payment_status,optional"`
+	Number        string `form:"number,optional" json:"number,optional"`
+	Sort          string `form:"sort,optional" json:"sort,optional"`
+	Direction     string `form:"direction,optional" json:"direction,optional"`
 }
 
 // UserOrderListResponse 用户订单列表响应。
@@ -119,20 +119,20 @@ type UserOrderPaymentStatusResponse struct {
 // UserCancelOrderRequest 用户主动取消订单。
 type UserCancelOrderRequest struct {
 	OrderID uint64 `path:"id"`
-	Reason  string `json:"reason,omitempty"`
+	Reason  string `json:"reason,omitempty,optional"`
 }
 
 // AdminListOrdersRequest 管理端订单列表查询。
 type AdminListOrdersRequest struct {
-	Page          int    `form:"page"`
-	PerPage       int    `form:"per_page"`
-	Status        string `form:"status"`
-	PaymentMethod string `form:"payment_method"`
-	PaymentStatus string `form:"payment_status"`
-	Number        string `form:"number"`
-	Sort          string `form:"sort"`
-	Direction     string `form:"direction"`
-	UserID        uint64 `form:"user_id"`
+	Page          int    `form:"page,optional" json:"page,optional"`
+	PerPage       int    `form:"per_page,optional" json:"per_page,optional"`
+	Status        string `form:"status,optional" json:"status,optional"`
+	PaymentMethod string `form:"payment_method,optional" json:"payment_method,optional"`
+	PaymentStatus string `form:"payment_status,optional" json:"payment_status,optional"`
+	Number        string `form:"number,optional" json:"number,optional"`
+	Sort          string `form:"sort,optional" json:"sort,optional"`
+	Direction     string `form:"direction,optional" json:"direction,optional"`
+	UserID        uint64 `form:"user_id,optional" json:"user_id,optional"`
 }
 
 // OrderPayment 外部支付流水。
@@ -185,28 +185,34 @@ type AdminOrderResponse struct {
 // AdminMarkOrderPaidRequest 管理端手动标记订单为已支付。
 type AdminMarkOrderPaidRequest struct {
 	OrderID       uint64 `path:"id"`
-	PaymentMethod string `json:"payment_method,omitempty"`
-	PaidAt        *int64 `json:"paid_at,omitempty"`
-	Note          string `json:"note,omitempty"`
-	Reference     string `json:"reference,omitempty"`
-	ChargeBalance bool   `json:"charge_balance,omitempty"`
+	PaymentMethod string `json:"payment_method,omitempty,optional"`
+	PaidAt        *int64 `json:"paid_at,omitempty,optional"`
+	Note          string `json:"note,omitempty,optional"`
+	Reference     string `json:"reference,omitempty,optional"`
+	ChargeBalance bool   `json:"charge_balance,omitempty,optional"`
 }
 
 // AdminCancelOrderRequest 管理端取消订单。
 type AdminCancelOrderRequest struct {
 	OrderID     uint64 `path:"id"`
-	Reason      string `json:"reason,omitempty"`
-	CancelledAt *int64 `json:"cancelled_at,omitempty"`
+	Reason      string `json:"reason,omitempty,optional"`
+	CancelledAt *int64 `json:"cancelled_at,omitempty,optional"`
 }
 
 // AdminRefundOrderRequest 管理端发起退款。
 type AdminRefundOrderRequest struct {
 	OrderID       uint64         `path:"id"`
 	AmountCents   int64          `json:"amount_cents"`
-	Reason        string         `json:"reason,omitempty"`
-	Metadata      map[string]any `json:"metadata,omitempty"`
-	RefundAt      *int64         `json:"refund_at,omitempty"`
-	CreditBalance bool           `json:"credit_balance,omitempty"`
+	Reason        string         `json:"reason,omitempty,optional"`
+	Metadata      map[string]any `json:"metadata,omitempty,optional"`
+	RefundAt      *int64         `json:"refund_at,omitempty,optional"`
+	CreditBalance bool           `json:"credit_balance,omitempty,optional"`
+}
+
+// AdminReconcilePaymentRequest 管理端支付对账请求。
+type AdminReconcilePaymentRequest struct {
+	OrderID   uint64 `json:"order_id"`
+	PaymentID uint64 `json:"payment_id"`
 }
 
 // AdminPaymentCallbackRequest 外部支付回调请求。
@@ -214,8 +220,8 @@ type AdminPaymentCallbackRequest struct {
 	OrderID        uint64 `json:"order_id"`
 	PaymentID      uint64 `json:"payment_id"`
 	Status         string `json:"status"`
-	Reference      string `json:"reference,omitempty"`
-	FailureCode    string `json:"failure_code,omitempty"`
-	FailureMessage string `json:"failure_message,omitempty"`
-	PaidAt         *int64 `json:"paid_at,omitempty"`
+	Reference      string `json:"reference,omitempty,optional"`
+	FailureCode    string `json:"failure_code,omitempty,optional"`
+	FailureMessage string `json:"failure_message,omitempty,optional"`
+	PaidAt         *int64 `json:"paid_at,omitempty,optional"`
 }

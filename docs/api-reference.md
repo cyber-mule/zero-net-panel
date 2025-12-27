@@ -14,6 +14,9 @@
 
 - 登录：`POST /api/v1/auth/login` 获取 `access_token` 与 `refresh_token`。
 - 刷新：`POST /api/v1/auth/refresh` 换取新令牌。
+- 注册：`POST /api/v1/auth/register` 创建账号，若要求验证会返回 `requires_verification=true`。
+- 验证：`POST /api/v1/auth/verify` 使用验证码激活账号并返回令牌。
+- 找回：`POST /api/v1/auth/forgot` 获取验证码，`POST /api/v1/auth/reset` 完成重置。
 - 鉴权方式：`Authorization: Bearer <access_token>`
 - 角色约束：
   - 管理端接口需要 `admin` 角色。
@@ -28,7 +31,7 @@
   - `403` 权限不足或访问受限
   - `404` 资源不存在
   - `409` 冲突（并发/状态不允许）
-  - `429` 超出速率限制（管理端 IP 限流）
+  - `429` 超出速率限制（管理端 IP 限流/验证码频控）
   - `500` 未捕获错误
 
 ## 第三方签名与加密（可选）
@@ -142,7 +145,7 @@ METHOD\nPATH\nRAW_QUERY\nTIMESTAMP\nNONCE\nBASE64(BODY)
 - `currency` string
 - `failure_code` string
 - `failure_message` string
-- `metadata` object
+- `metadata` object（常见字段：`pay_url`、`qr_code`、`gateway_intent_id`、`notify_url`、`return_url`）
 - `created_at` int64
 - `updated_at` int64
 
@@ -211,6 +214,50 @@ METHOD\nPATH\nRAW_QUERY\nTIMESTAMP\nNONCE\nBASE64(BODY)
   - `refresh_token` string
 - 响应：同 `auth/login`
 
+#### POST /api/v1/auth/register
+
+- 说明：注册账号
+- 请求体：
+  - `email` string
+  - `password` string
+  - `display_name` string（可选）
+  - `invite_code` string（可选）
+- 备注：当 `Auth.Registration.InviteOnly=true` 时，必须提供 `invite_code`。
+- 响应：
+  - `requires_verification` bool
+  - `access_token` string（可选）
+  - `refresh_token` string（可选）
+  - `token_type` string（可选）
+  - `expires_in` int64（可选）
+  - `refresh_expires_in` int64（可选）
+  - `user` AuthenticatedUser
+
+#### POST /api/v1/auth/verify
+
+- 说明：邮箱验证码验证
+- 请求体：
+  - `email` string
+  - `code` string
+- 响应：同 `auth/login`
+
+#### POST /api/v1/auth/forgot
+
+- 说明：发送密码重置验证码
+- 请求体：
+  - `email` string
+- 响应：
+  - `message` string
+
+#### POST /api/v1/auth/reset
+
+- 说明：使用验证码重置密码
+- 请求体：
+  - `email` string
+  - `code` string
+  - `password` string
+- 响应：
+  - `message` string
+
 ### 管理端（需要 admin 权限）
 
 > 实际路径：`/api/v1/{adminPrefix}`
@@ -227,6 +274,71 @@ METHOD\nPATH\nRAW_QUERY\nTIMESTAMP\nNONCE\nBASE64(BODY)
     - `route` string
     - `permissions` []string
 
+#### GET /api/v1/{adminPrefix}/users
+
+- 说明：用户列表
+- 查询参数：`page`、`per_page`、`q`、`status`、`role`
+- 响应：
+  - `users` []AdminUserSummary
+  - `pagination` PaginationMeta
+
+AdminUserSummary 字段：
+
+- `id`、`email`、`display_name`、`roles`、`status`
+- `email_verified_at`（可选）、`failed_login_attempts`
+- `locked_until`（可选）、`last_login_at`（可选）
+- `created_at`、`updated_at`
+
+#### POST /api/v1/{adminPrefix}/users
+
+- 说明：创建用户
+- 请求体：
+  - `email` string
+  - `password` string
+  - `display_name` string（可选）
+  - `roles` []string（可选）
+  - `status` string（可选）
+  - `email_verified` bool（可选）
+- 响应：
+  - `user` AdminUserSummary
+
+#### PATCH /api/v1/{adminPrefix}/users/{id}/status
+
+- 说明：更新用户状态
+- 请求体：
+  - `status` string（示例：`active`、`disabled`、`pending`）
+- 响应：
+  - `user` AdminUserSummary
+
+#### PATCH /api/v1/{adminPrefix}/users/{id}/roles
+
+- 说明：更新用户角色
+- 请求体：
+  - `roles` []string
+- 响应：
+  - `user` AdminUserSummary
+
+#### POST /api/v1/{adminPrefix}/users/{id}/reset-password
+
+- 说明：重置用户密码
+- 请求体：
+  - `password` string
+- 响应：
+  - `message` string
+
+#### POST /api/v1/{adminPrefix}/users/{id}/force-logout
+
+- 说明：强制下线用户
+- 响应：
+  - `message` string
+
+#### POST /api/v1/{adminPrefix}/users/{id}/credentials/rotate
+
+- 说明：手动轮换用户协议鉴权凭据
+- 响应：
+  - `user_id` uint64
+  - `credential` CredentialSummary
+
 #### GET /api/v1/{adminPrefix}/nodes
 
 - 说明：节点列表
@@ -241,6 +353,68 @@ NodeSummary 字段：
 - `id`、`name`、`region`、`country`、`isp`、`status`、`tags`、`protocols`
 - `capacity_mbps`、`description`、`last_synced_at`、`updated_at`
 
+#### POST /api/v1/{adminPrefix}/nodes
+
+- 说明：创建节点
+- 请求体：
+  - `name` string
+  - `region` string（可选）
+  - `country` string（可选）
+  - `isp` string（可选）
+  - `status` string（可选）
+  - `tags` []string（可选）
+  - `protocols` []string（可选）
+  - `capacity_mbps` int（可选）
+  - `description` string（可选）
+- 响应：
+  - `node` NodeSummary
+- 示例请求体：
+```json
+{
+  "name": "hk-edge-1",
+  "region": "hk",
+  "country": "HK",
+  "isp": "HKT",
+  "status": "online",
+  "tags": ["edge"],
+  "protocols": ["vless", "ss"],
+  "capacity_mbps": 1000,
+  "description": "HK edge"
+}
+```
+
+#### PATCH /api/v1/{adminPrefix}/nodes/{id}
+
+- 说明：更新节点
+- 路径参数：`id` uint64
+- 请求体：
+  - `name` string（可选）
+  - `region` string（可选）
+  - `country` string（可选）
+  - `isp` string（可选）
+  - `status` string（可选）
+  - `tags` []string（可选）
+  - `protocols` []string（可选）
+  - `capacity_mbps` int（可选）
+  - `description` string（可选）
+- 响应：
+  - `node` NodeSummary
+- 示例请求体：
+```json
+{
+  "status": "maintenance",
+  "tags": ["edge", "maintenance"],
+  "capacity_mbps": 500
+}
+```
+
+#### POST /api/v1/{adminPrefix}/nodes/{id}/disable
+
+- 说明：禁用节点（软删除）
+- 路径参数：`id` uint64
+- 响应：
+  - `node` NodeSummary
+
 #### GET /api/v1/{adminPrefix}/nodes/{id}/kernels
 
 - 说明：节点内核配置列表
@@ -252,6 +426,7 @@ NodeSummary 字段：
 NodeKernelSummary 字段：
 
 - `protocol`、`endpoint`、`revision`、`status`、`config`、`last_synced_at`
+- 备注：该接口返回内核端点与配置，属于管理端敏感信息。
 
 #### POST /api/v1/{adminPrefix}/nodes/{id}/kernels/sync
 
@@ -265,6 +440,189 @@ NodeKernelSummary 字段：
   - `revision` string
   - `synced_at` int64
   - `message` string
+
+#### GET /api/v1/{adminPrefix}/protocol-configs
+
+- 说明：协议配置列表
+- 查询参数：`page`、`per_page`、`sort`、`direction`、`q`、`protocol`、`status`
+- 响应：
+  - `configs` []ProtocolConfigSummary
+  - `pagination` PaginationMeta
+
+ProtocolConfigSummary 字段：
+
+- `id`、`name`、`protocol`、`status`、`tags`、`description`
+- `profile`、`created_at`、`updated_at`
+
+#### POST /api/v1/{adminPrefix}/protocol-configs
+
+- 说明：创建协议配置
+- 请求体：
+  - `name` string
+  - `protocol` string
+  - `status` string（可选）
+  - `tags` []string（可选）
+  - `description` string（可选）
+  - `profile` map（可选）
+- 响应：
+  - ProtocolConfigSummary
+
+#### PATCH /api/v1/{adminPrefix}/protocol-configs/{id}
+
+- 说明：更新协议配置
+- 路径参数：`id` uint64
+- 请求体：同创建（均可选）
+- 响应：
+  - ProtocolConfigSummary
+
+#### DELETE /api/v1/{adminPrefix}/protocol-configs/{id}
+
+- 说明：删除协议配置
+- 路径参数：`id` uint64
+- 响应：204
+
+#### GET /api/v1/{adminPrefix}/protocol-bindings
+
+- 说明：协议绑定列表
+- 查询参数：`page`、`per_page`、`sort`、`direction`、`q`、`status`、`protocol`、`node_id`、`protocol_config_id`
+- 响应：
+  - `bindings` []ProtocolBindingSummary
+  - `pagination` PaginationMeta
+
+ProtocolBindingSummary 字段：
+
+- `id`、`name`、`node_id`、`node_name`、`protocol_config_id`、`protocol`
+- `role`、`listen`、`connect`、`status`、`kernel_id`
+- `sync_status`、`health_status`、`last_synced_at`、`last_heartbeat_at`、`last_sync_error`
+- `tags`、`description`、`metadata`
+- `created_at`、`updated_at`
+
+#### POST /api/v1/{adminPrefix}/protocol-bindings
+
+- 说明：创建协议绑定
+- 请求体：
+  - `node_id` uint64
+  - `protocol_config_id` uint64
+  - `role` string
+  - `listen` string（可选）
+  - `connect` string（可选）
+  - `status` string（可选）
+  - `kernel_id` string（可选）
+  - `tags` []string（可选）
+  - `description` string（可选）
+  - `metadata` map（可选）
+- 响应：
+  - ProtocolBindingSummary
+
+#### PATCH /api/v1/{adminPrefix}/protocol-bindings/{id}
+
+- 说明：更新协议绑定
+- 路径参数：`id` uint64
+- 请求体：同创建（均可选）
+- 响应：
+  - ProtocolBindingSummary
+
+#### DELETE /api/v1/{adminPrefix}/protocol-bindings/{id}
+
+- 说明：删除协议绑定
+- 路径参数：`id` uint64
+- 响应：204
+
+#### POST /api/v1/{adminPrefix}/protocol-bindings/{id}/sync
+
+- 说明：同步单条协议绑定
+- 路径参数：`id` uint64
+- 响应：
+  - ProtocolBindingSyncResult
+
+#### POST /api/v1/{adminPrefix}/protocol-bindings/sync
+
+- 说明：批量同步协议绑定
+- 请求体：
+  - `binding_ids` []uint64（可选）
+  - `node_ids` []uint64（可选）
+- 响应：
+  - `results` []ProtocolBindingSyncResult
+
+#### GET /api/v1/{adminPrefix}/subscriptions
+
+- 说明：订阅列表
+- 查询参数：`page`、`per_page`、`q`、`status`、`user_id`、`plan_name`、`template_id`
+- 响应：
+  - `subscriptions` []AdminSubscriptionSummary
+  - `pagination` PaginationMeta
+
+AdminSubscriptionUserSummary 字段：
+
+- `id`、`email`、`display_name`
+
+AdminSubscriptionSummary 字段：
+
+- `id`、`user`
+- `name`、`plan_name`、`status`
+- `template_id`、`available_template_ids`
+- `token`、`expires_at`
+- `traffic_total_bytes`、`traffic_used_bytes`
+- `devices_limit`、`last_refreshed_at`
+- `created_at`、`updated_at`
+
+#### GET /api/v1/{adminPrefix}/subscriptions/{id}
+
+- 说明：订阅详情
+- 路径参数：`id` uint64
+- 响应：
+  - `subscription` AdminSubscriptionSummary
+
+#### POST /api/v1/{adminPrefix}/subscriptions
+
+- 说明：创建订阅
+- 请求体：
+  - `user_id` uint64
+  - `name` string
+  - `plan_name` string
+  - `status` string（可选）
+  - `template_id` uint64
+  - `available_template_ids` []uint64（可选）
+  - `token` string（可选）
+  - `expires_at` int64
+  - `traffic_total_bytes` int64
+  - `traffic_used_bytes` int64（可选）
+  - `devices_limit` int
+- 响应：
+  - `subscription` AdminSubscriptionSummary
+
+#### PATCH /api/v1/{adminPrefix}/subscriptions/{id}
+
+- 说明：更新订阅
+- 路径参数：`id` uint64
+- 请求体（字段均可选）：
+  - `name`、`plan_name`、`status`
+  - `template_id`、`available_template_ids`
+  - `token`、`expires_at`
+  - `traffic_total_bytes`、`traffic_used_bytes`
+  - `devices_limit`
+- 响应：
+  - `subscription` AdminSubscriptionSummary
+
+#### POST /api/v1/{adminPrefix}/subscriptions/{id}/disable
+
+- 说明：禁用订阅
+- 路径参数：`id` uint64
+- 请求体：
+  - `reason` string（可选）
+- 响应：
+  - `subscription` AdminSubscriptionSummary
+
+#### POST /api/v1/{adminPrefix}/subscriptions/{id}/extend
+
+- 说明：延长订阅有效期（`extend_days`/`extend_hours` 与 `expires_at` 二选一）
+- 路径参数：`id` uint64
+- 请求体：
+  - `extend_days` int（可选）
+  - `extend_hours` int（可选）
+  - `expires_at` int64（可选）
+- 响应：
+  - `subscription` AdminSubscriptionSummary
 
 #### GET /api/v1/{adminPrefix}/subscription-templates
 
@@ -359,7 +717,7 @@ PlanSummary 字段：
 
 - `id`、`name`、`slug`、`description`、`tags`、`features`
 - `price_cents`、`currency`、`duration_days`
-- `traffic_limit_bytes`、`devices_limit`
+- `traffic_limit_bytes`、`traffic_multipliers`、`devices_limit`
 - `sort_order`、`status`、`visible`
 - `created_at`、`updated_at`
 
@@ -376,6 +734,7 @@ PlanSummary 字段：
   - `currency` string
   - `duration_days` int
   - `traffic_limit_bytes` int64（可选）
+  - `traffic_multipliers` map（可选，协议流量倍数）
   - `devices_limit` int（可选）
   - `sort_order` int（可选）
   - `status` string（可选，默认 draft）
@@ -389,7 +748,7 @@ PlanSummary 字段：
 - 请求体（字段均可选）：
   - `name`、`slug`、`description`、`tags`、`features`
   - `price_cents`、`currency`、`duration_days`
-  - `traffic_limit_bytes`、`devices_limit`
+  - `traffic_limit_bytes`、`traffic_multipliers`、`devices_limit`
   - `sort_order`、`status`、`visible`
 - 响应：PlanSummary
 
@@ -407,6 +766,87 @@ PaymentChannelSummary 字段：
 - `id`、`name`、`code`、`provider`
 - `enabled`、`sort_order`、`config`
 - `created_at`、`updated_at`
+
+支付通道 `config`（外部支付发起）示例：
+
+```json
+{
+  "mode": "http",
+  "notify_url": "https://example.com/api/v1/payments/callback?order_id={{order_id}}&payment_id={{payment_id}}",
+  "return_url": "https://example.com/orders/{{order_number}}",
+  "http": {
+    "endpoint": "https://gateway.example.com/pay",
+    "method": "POST",
+    "body_type": "json",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "payload": {
+      "order_no": "{{order_number}}",
+      "amount": "{{amount}}",
+      "notify_url": "{{notify_url}}",
+      "return_url": "{{return_url}}"
+    }
+  },
+  "response": {
+    "pay_url": "data.pay_url",
+    "qr_code": "data.qr_code",
+    "reference": "data.reference"
+  },
+  "webhook": {
+    "signature_type": "hmac_sha256",
+    "signature_header": "X-Pay-Signature",
+    "secret": "your-signing-secret"
+  },
+  "refund": {
+    "http": {
+      "endpoint": "https://gateway.example.com/refund",
+      "method": "POST",
+      "body_type": "json",
+      "payload": {
+        "payment_ref": "{{payment_reference}}",
+        "amount": "{{refund_amount}}",
+        "reason": "{{refund_reason}}"
+      }
+    },
+    "response": {
+      "reference": "data.refund_id",
+      "status": "data.status"
+    },
+    "status_map": {
+      "success": "succeeded",
+      "failed": "failed"
+    }
+  },
+  "reconcile": {
+    "http": {
+      "endpoint": "https://gateway.example.com/query",
+      "method": "POST",
+      "body_type": "json",
+      "payload": {
+        "payment_ref": "{{payment_reference}}"
+      }
+    },
+    "response": {
+      "status": "data.status",
+      "reference": "data.reference"
+    },
+    "status_map": {
+      "paid": "succeeded",
+      "failed": "failed",
+      "processing": "pending"
+    }
+  }
+}
+```
+
+`notify_url`/`return_url`/`payload` 支持模板变量：`{{order_id}}`、`{{order_number}}`、`{{order_status}}`、`{{payment_id}}`、`{{payment_intent_id}}`、`{{payment_reference}}`、`{{payment_status}}`、`{{amount_cents}}`、`{{amount}}`、`{{currency}}`、`{{user_id}}`、`{{plan_id}}`、`{{plan_name}}`、`{{quantity}}`、`{{payment_channel}}`、`{{payment_provider}}`、`{{refund_amount_cents}}`、`{{refund_amount}}`、`{{refund_reason}}`。
+
+`response` 字段支持点路径（如 `data.pay_url`），`pay_url` 设为 `$` 可直接使用原始响应体字符串。
+
+`webhook` 签名默认使用 `hmac_sha256`，签名体为原始回调请求体（body）。
+
+外部支付联调示例见 `docs/payment-gateway-demo.md`。
 
 #### GET /api/v1/{adminPrefix}/payment-channels/{id}
 
@@ -523,6 +963,32 @@ SecuritySetting 字段：
   - `nonce_ttl_seconds` int（可选）
 - 响应：同 GET
 
+#### GET /api/v1/{adminPrefix}/audit-logs
+
+- 说明：审计日志列表
+- 查询参数：`page`、`per_page`、`actor_id`、`action`、`resource_type`、`resource_id`、`since`、`until`
+- `since`/`until` 为 Unix 秒
+- 响应：
+  - `logs` []AuditLogSummary
+  - `pagination` PaginationMeta
+
+AuditLogSummary 字段：
+
+- `id`、`actor_id`、`actor_email`、`actor_roles`
+- `action`、`resource_type`、`resource_id`
+- `source_ip`、`metadata`
+- `created_at`
+
+#### GET /api/v1/{adminPrefix}/audit-logs/export
+
+- 说明：导出审计日志
+- 查询参数：`page`、`per_page`、`actor_id`、`action`、`resource_type`、`resource_id`、`since`、`until`、`format`
+- `format` 可选：`json`、`csv`（默认 `json`）
+- `per_page` 导出上限为 5000（默认 1000）
+- 响应：
+  - `json`：`logs` []AuditLogSummary + `total_count` + `exported_at`
+  - `csv`：CSV 文件下载
+
 #### GET /api/v1/{adminPrefix}/orders
 
 - 说明：订单列表
@@ -568,7 +1034,7 @@ AdminOrderDetail 字段：
 
 #### POST /api/v1/{adminPrefix}/orders/{id}/refund
 
-- 说明：退款（余额退款）
+- 说明：退款（余额或外部支付）
 - 路径参数：`id` uint64
 - 请求体：
   - `amount_cents` int64
@@ -576,13 +1042,25 @@ AdminOrderDetail 字段：
   - `metadata` object（可选）
   - `refund_at` int64（可选）
   - `credit_balance` bool（可选）
+- 外部支付说明：
+  - 订单为 `payment_method=external` 时，会按支付通道 `config.refund` 发起退款。
+  - 回调验签由通道 `config.webhook` 控制（不配置则不校验）。
+- 响应：
+  - `order` AdminOrderDetail
+
+#### POST /api/v1/{adminPrefix}/orders/payments/reconcile
+
+- 说明：外部支付对账
+- 请求体：
+  - `order_id` uint64
+  - `payment_id` uint64
 - 响应：
   - `order` AdminOrderDetail
 
 #### POST /api/v1/{adminPrefix}/orders/payments/callback
 
 - 说明：外部支付回调（Webhook 专用）
-- 认证：`X-ZNP-Webhook-Token` 或 `Stripe-Signature`（取决于 `Webhook` 配置）
+- 认证：`X-ZNP-Webhook-Token` 或 `Stripe-Signature`（取决于 `Webhook` 配置），或通道 `config.webhook` 签名
 - 请求体：
   - `order_id` uint64
   - `payment_id` uint64
@@ -600,6 +1078,22 @@ AdminOrderDetail 字段：
 - 认证：`X-ZNP-Webhook-Token` 或 `Stripe-Signature`（取决于 `Webhook` 配置）
 - 请求体：同 `/api/v1/{adminPrefix}/orders/payments/callback`
 - 响应：同上
+
+#### POST /api/v1/kernel/traffic
+
+- 说明：内核流量回调（免登录，Webhook 专用）
+- 认证：`X-ZNP-Webhook-Token`
+- 请求体：`records` 数组，字段见 `KernelTrafficRecord`
+- 响应：
+  - `accepted`、`failed`
+
+#### POST /api/v1/kernel/events
+
+- 说明：内核节点事件回调（免登录，Webhook 专用）
+- 认证：`X-ZNP-Webhook-Token`
+- 请求体：`event`、`id`/`node_id`、`status`、`observed_at`、`message`
+- 响应：
+  - `status`
 
 ### 用户端（需要 user 权限）
 
@@ -643,6 +1137,28 @@ UserSubscriptionSummary 字段：
   - `template_id` uint64
   - `updated_at` int64
 
+#### GET /api/v1/user/subscriptions/{id}/traffic
+
+- 说明：订阅流量明细
+- 路径参数：`id` uint64
+- 查询参数：`page`、`per_page`、`protocol`、`node_id`、`binding_id`、`from`、`to`
+- `from`/`to` 为 Unix 秒
+- 响应：
+  - `summary` UserSubscriptionTrafficSummary
+  - `records` []UserTrafficUsageRecord
+  - `pagination` PaginationMeta
+
+UserSubscriptionTrafficSummary 字段：
+
+- `raw_bytes`、`charged_bytes`
+
+UserTrafficUsageRecord 字段：
+
+- `id`、`protocol`、`node_id`、`binding_id`
+- `bytes_up`、`bytes_down`
+- `raw_bytes`、`charged_bytes`、`multiplier`
+- `observed_at`
+
 #### GET /api/v1/user/plans
 
 - 说明：可购买套餐列表
@@ -655,6 +1171,146 @@ UserPlanSummary 字段：
 - `id`、`name`、`description`、`features`
 - `price_cents`、`currency`、`duration_days`
 - `traffic_limit_bytes`、`devices_limit`、`tags`
+
+#### GET /api/v1/user/nodes
+
+- 说明：用户侧节点运行状态列表（脱敏）
+- 查询参数：`page`、`per_page`、`status`、`protocol`
+- 响应：
+  - `nodes` []UserNodeStatusSummary
+  - `pagination` PaginationMeta
+
+UserNodeStatusSummary 字段：
+
+- `id`、`name`、`region`、`country`、`isp`、`status`
+- `tags`、`protocols`、`capacity_mbps`、`description`
+- `last_synced_at`、`updated_at`
+- `kernel_statuses` []UserNodeKernelStatusSummary
+- `protocol_statuses` []UserNodeProtocolStatusSummary
+
+UserNodeKernelStatusSummary 字段：
+
+- `protocol`、`status`、`last_synced_at`
+
+UserNodeProtocolStatusSummary 字段：
+
+- `binding_id`、`protocol`、`role`、`status`
+- `health_status`、`last_heartbeat_at`
+
+说明：
+- `status` 与节点状态枚举一致（`online`/`offline`/`maintenance`/`disabled`）。
+- `kernel_statuses.status` 表示同步记录状态（如 `synced`、`configured`）。
+
+响应示例：
+```json
+{
+  "nodes": [
+    {
+      "id": 1,
+      "name": "hk-edge-1",
+      "region": "hk",
+      "country": "HK",
+      "isp": "HKT",
+      "status": "online",
+      "tags": ["edge"],
+      "protocols": ["vless", "ss"],
+      "capacity_mbps": 1000,
+      "description": "HK edge",
+      "last_synced_at": 1734001010,
+      "updated_at": 1734001010,
+      "kernel_statuses": [
+        {"protocol": "vless", "status": "synced", "last_synced_at": 1734001010},
+        {"protocol": "ss", "status": "synced", "last_synced_at": 1734001001}
+      ]
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "per_page": 20,
+    "total_count": 1,
+    "has_next": false,
+    "has_prev": false
+  }
+}
+```
+
+备注：不返回内核端点、Revision、配置等敏感信息；需要查看详细配置请使用管理端接口。
+提示：`kernel_statuses` 来自最近一次同步记录，并非内核实时心跳。
+
+#### GET /api/v1/user/account/profile
+
+- 说明：用户资料
+- 响应：
+  - `profile` UserProfile
+
+UserProfile 字段：
+
+- `id`、`email`、`display_name`、`status`
+- `email_verified_at`（可选）
+- `created_at`、`updated_at`
+
+#### PATCH /api/v1/user/account/profile
+
+- 说明：更新用户资料
+- 请求体：
+  - `display_name` string
+- 响应：
+  - `profile` UserProfile
+
+#### POST /api/v1/user/account/password
+
+- 说明：用户自主改密
+- 请求体：
+  - `current_password` string
+  - `new_password` string
+- 响应：
+  - `message` string
+
+备注：密码策略由 `Auth.PasswordPolicy` 控制。
+提示：修改密码会刷新 `token_invalid_before`，旧令牌需重新登录。
+
+#### POST /api/v1/user/account/credentials/rotate
+
+- 说明：手动轮换用户协议鉴权凭据
+- 响应：
+  - `credential` CredentialSummary
+
+CredentialSummary 字段：
+
+- `version`、`status`
+- `issued_at`
+- `deprecated_at`（可选）、`revoked_at`（可选）
+- `last_seen_at`（可选）
+
+#### POST /api/v1/user/account/email/code
+
+- 说明：发送邮箱变更验证码
+- 请求体：
+  - `email` string
+- 响应：
+  - `message` string
+
+#### POST /api/v1/user/account/email
+
+- 说明：变更用户邮箱
+- 请求体：
+  - `email` string
+  - `code` string
+  - `password` string
+- 响应：
+  - `profile` UserProfile
+
+#### GET /api/v1/user/account/balance
+
+- 说明：用户余额与流水
+- 查询参数：`page`、`per_page`、`entry_type`
+- 响应：
+  - `user_id` uint64
+  - `balance_cents` int64
+  - `currency` string
+  - `updated_at` int64
+  - `transactions` []BalanceTransactionSummary
+  - `pagination` PaginationMeta
 
 #### GET /api/v1/user/announcements
 
@@ -670,17 +1326,17 @@ UserAnnouncementSummary 字段：
 - `visible_from`、`visible_to`（可选）
 - `published_at`（可选）
 
-#### GET /api/v1/user/account/balance
+#### GET /api/v1/user/payment-channels
 
-- 说明：用户余额与流水
-- 查询参数：`page`、`per_page`、`entry_type`
+- 说明：用户侧支付通道列表（仅返回启用通道）
+- 查询参数：`provider`（可选）
 - 响应：
-  - `user_id` uint64
-  - `balance_cents` int64
-  - `currency` string
-  - `updated_at` int64
-  - `transactions` []BalanceTransactionSummary
-  - `pagination` PaginationMeta
+  - `channels` []UserPaymentChannelSummary
+
+UserPaymentChannelSummary 字段：
+
+- `id`、`name`、`code`、`provider`
+- `sort_order`、`config`
 
 #### POST /api/v1/user/orders
 
@@ -692,6 +1348,9 @@ UserAnnouncementSummary 字段：
   - `payment_channel` string（可选，外部支付通道）
   - `payment_return_url` string（可选）
   - `idempotency_key` string（可选，幂等键）
+- 外部支付说明：
+  - `payment_method=external` 且金额大于 0 时，需传启用的 `payment_channel` 且通道 `config` 已配置网关发起信息。
+  - 响应 `order.payments[].metadata` 将包含 `pay_url` 或 `qr_code`，用于跳转支付页或展示二维码。
 - 响应：
   - `order` OrderDetail
   - `balance` BalanceSnapshot

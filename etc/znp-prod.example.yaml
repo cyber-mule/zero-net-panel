@@ -35,6 +35,7 @@ Cache:
 
 Kernel:
   DefaultProtocol: http
+  StatusPollInterval: 30s
   HTTP:
     BaseURL: "https://kernel.example.com"  # 必填：内核 HTTP 入口
     Token: "<token>"                       # 必填：内核访问令牌
@@ -49,6 +50,45 @@ Auth:
   AccessExpire: 24h
   RefreshSecret: "<refresh-secret>"        # 必填：强随机字符串
   RefreshExpire: 720h
+  Registration:
+    Enabled: false                         # 是否开放注册
+    InviteOnly: true                       # 邀请制注册
+    InviteCodes: []                        # 邀请码白名单
+    DefaultRoles:
+      - user
+    RequireEmailVerification: true
+  Verification:
+    CodeLength: 6
+    CodeTTL: 15m
+    SendCooldown: 1m
+    SendLimitPerHour: 5
+  PasswordReset:
+    CodeLength: 6
+    CodeTTL: 15m
+    SendCooldown: 1m
+    SendLimitPerHour: 5
+  PasswordPolicy:
+    MinLength: 8
+    MaxLength: 0
+    RequireUpper: false
+    RequireLower: false
+    RequireDigit: false
+    RequireSpecial: false
+  Lockout:
+    MaxAttempts: 5
+    LockDuration: 15m
+  Email:
+    Provider: log                          # log 或 smtp
+    From: "no-reply@example.com"
+    SMTP:
+      Host: ""
+      Port: 587
+      Username: ""
+      Password: ""
+      UseTLS: false
+
+Credentials:
+  MasterKey: "<credential-secret>"         # 必填：用户认证密钥派生主密钥
 
 Metrics:
   Enable: true

@@ -9,11 +9,13 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/proc"
 	"github.com/zeromicro/go-zero/rest"
 
 	"github.com/zero-net-panel/zero-net-panel/internal/config"
 	"github.com/zero-net-panel/zero-net-panel/internal/handler"
+	kernellogic "github.com/zero-net-panel/zero-net-panel/internal/logic/kernel"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 )
 
@@ -68,6 +70,14 @@ func RunServices(ctx context.Context, cfg config.Config) error {
 		}()
 	}
 
+	if svcCtx.KernelControl != nil && cfg.Kernel.StatusPollInterval > 0 {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			runKernelStatusPoller(runCtx, svcCtx, cfg.Kernel.StatusPollInterval)
+		}()
+	}
+
 	var runErr error
 	select {
 	case <-runCtx.Done():
@@ -78,6 +88,25 @@ func RunServices(ctx context.Context, cfg config.Config) error {
 	wg.Wait()
 
 	return runErr
+}
+
+func runKernelStatusPoller(ctx context.Context, svcCtx *svc.ServiceContext, interval time.Duration) {
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	logger := logx.WithContext(ctx)
+
+	for {
+		if err := kernellogic.SyncStatus(ctx, svcCtx); err != nil {
+			logger.Errorf("kernel status poll failed: %v", err)
+		}
+
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+		}
+	}
 }
 
 func runHTTPServer(ctx context.Context, cfg config.Config, svcCtx *svc.ServiceContext) error {

@@ -12,22 +12,23 @@ import (
 
 // Plan represents purchasable subscription bundles similar to xboard 套餐。
 type Plan struct {
-	ID                uint64   `gorm:"primaryKey"`
-	Name              string   `gorm:"size:255"`
-	Slug              string   `gorm:"size:128;uniqueIndex"`
-	Description       string   `gorm:"type:text"`
-	Tags              []string `gorm:"serializer:json"`
-	Features          []string `gorm:"serializer:json"`
-	PriceCents        int64    `gorm:"column:price_cents"`
-	Currency          string   `gorm:"size:16"`
-	DurationDays      int      `gorm:"column:duration_days"`
-	TrafficLimitBytes int64    `gorm:"column:traffic_limit_bytes"`
-	DevicesLimit      int      `gorm:"column:devices_limit"`
-	SortOrder         int      `gorm:"column:sort_order"`
-	Status            string   `gorm:"size:32"`
-	Visible           bool     `gorm:"column:is_visible"`
-	CreatedAt         time.Time
-	UpdatedAt         time.Time
+	ID                 uint64             `gorm:"primaryKey"`
+	Name               string             `gorm:"size:255"`
+	Slug               string             `gorm:"size:128;uniqueIndex"`
+	Description        string             `gorm:"type:text"`
+	Tags               []string           `gorm:"serializer:json"`
+	Features           []string           `gorm:"serializer:json"`
+	PriceCents         int64              `gorm:"column:price_cents"`
+	Currency           string             `gorm:"size:16"`
+	DurationDays       int                `gorm:"column:duration_days"`
+	TrafficLimitBytes  int64              `gorm:"column:traffic_limit_bytes"`
+	TrafficMultipliers map[string]float64 `gorm:"serializer:json"`
+	DevicesLimit       int                `gorm:"column:devices_limit"`
+	SortOrder          int                `gorm:"column:sort_order"`
+	Status             string             `gorm:"size:32"`
+	Visible            bool               `gorm:"column:is_visible"`
+	CreatedAt          time.Time
+	UpdatedAt          time.Time
 }
 
 // TableName provides explicit table binding.
@@ -50,6 +51,7 @@ type PlanRepository interface {
 	Create(ctx context.Context, plan Plan) (Plan, error)
 	Update(ctx context.Context, id uint64, updates Plan) (Plan, error)
 	Get(ctx context.Context, id uint64) (Plan, error)
+	GetByName(ctx context.Context, name string) (Plan, error)
 }
 
 type planRepository struct {
@@ -119,6 +121,9 @@ func (r *planRepository) Create(ctx context.Context, plan Plan) (Plan, error) {
 	if plan.Status == "" {
 		plan.Status = "draft"
 	}
+	if plan.TrafficMultipliers == nil {
+		plan.TrafficMultipliers = map[string]float64{}
+	}
 
 	if err := r.db.WithContext(ctx).Create(&plan).Error; err != nil {
 		return Plan{}, translateError(err)
@@ -145,6 +150,7 @@ func (r *planRepository) Update(ctx context.Context, id uint64, updates Plan) (P
 		"currency":            updates.Currency,
 		"duration_days":       updates.DurationDays,
 		"traffic_limit_bytes": updates.TrafficLimitBytes,
+		"traffic_multipliers": updates.TrafficMultipliers,
 		"devices_limit":       updates.DevicesLimit,
 		"sort_order":          updates.SortOrder,
 		"status":              updates.Status,
@@ -167,6 +173,24 @@ func (r *planRepository) Get(ctx context.Context, id uint64) (Plan, error) {
 		return Plan{}, translateError(err)
 	}
 
+	return plan, nil
+}
+
+func (r *planRepository) GetByName(ctx context.Context, name string) (Plan, error) {
+	if err := ctx.Err(); err != nil {
+		return Plan{}, err
+	}
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return Plan{}, ErrInvalidArgument
+	}
+
+	var plan Plan
+	if err := r.db.WithContext(ctx).
+		Where("LOWER(name) = ?", strings.ToLower(name)).
+		First(&plan).Error; err != nil {
+		return Plan{}, translateError(err)
+	}
 	return plan, nil
 }
 

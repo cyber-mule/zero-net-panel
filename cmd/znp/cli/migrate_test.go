@@ -67,6 +67,9 @@ Auth:
   RefreshSecret: test-refresh
   RefreshExpire: 1h
 
+Credentials:
+  MasterKey: test-credentials
+
 Metrics:
   Enable: false
   Path: /metrics

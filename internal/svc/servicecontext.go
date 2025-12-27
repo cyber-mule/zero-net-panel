@@ -9,6 +9,7 @@ import (
 
 	"github.com/zero-net-panel/zero-net-panel/internal/config"
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
+	"github.com/zero-net-panel/zero-net-panel/internal/security"
 	"github.com/zero-net-panel/zero-net-panel/pkg/auth"
 	"github.com/zero-net-panel/zero-net-panel/pkg/cache"
 	"github.com/zero-net-panel/zero-net-panel/pkg/database"
@@ -16,12 +17,14 @@ import (
 )
 
 type ServiceContext struct {
-	Config       config.Config
-	DB           *gorm.DB
-	Cache        cache.Cache
-	Repositories *repository.Repositories
-	Kernel       *kernel.Registry
-	Auth         *auth.Generator
+	Config        config.Config
+	DB            *gorm.DB
+	Cache         cache.Cache
+	Repositories  *repository.Repositories
+	Kernel        *kernel.Registry
+	KernelControl *kernel.ControlClient
+	Auth          *auth.Generator
+	Credentials   *security.CredentialManager
 
 	Ctx    context.Context
 	cancel context.CancelFunc
@@ -68,6 +71,18 @@ func NewServiceContext(c config.Config) (*ServiceContext, error) {
 		return nil, fmt.Errorf("init kernel registry: %w", err)
 	}
 
+	var kernelControl *kernel.ControlClient
+	if opts.HTTP.BaseURL != "" {
+		control, err := kernel.NewControlClient(opts.HTTP)
+		if err != nil {
+			_ = kernelRegistry.Close()
+			_ = cacheProvider.Close()
+			dbClose()
+			return nil, fmt.Errorf("init kernel control client: %w", err)
+		}
+		kernelControl = control
+	}
+
 	repos, err := repository.NewRepositories(db)
 	if err != nil {
 		_ = kernelRegistry.Close()
@@ -85,15 +100,25 @@ func NewServiceContext(c config.Config) (*ServiceContext, error) {
 		c.Auth.RefreshExpire,
 	)
 
+	credentialManager, err := security.NewCredentialManager(c.Credentials.MasterKey)
+	if err != nil {
+		_ = kernelRegistry.Close()
+		_ = cacheProvider.Close()
+		dbClose()
+		return nil, fmt.Errorf("init credential manager: %w", err)
+	}
+
 	svcCtx := &ServiceContext{
-		Config:       c,
-		DB:           db,
-		Cache:        cacheProvider,
-		Repositories: repos,
-		Kernel:       kernelRegistry,
-		Auth:         authGenerator,
-		Ctx:          ctx,
-		cancel:       cancel,
+		Config:        c,
+		DB:            db,
+		Cache:         cacheProvider,
+		Repositories:  repos,
+		Kernel:        kernelRegistry,
+		KernelControl: kernelControl,
+		Auth:          authGenerator,
+		Credentials:   credentialManager,
+		Ctx:           ctx,
+		cancel:        cancel,
 	}
 
 	svcCtx.cleanup = func() {

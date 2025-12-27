@@ -40,7 +40,7 @@ FLUSH PRIVILEGES;
 | ---- | -------- | ------ | -------- |
 | 开发环境 | `etc/znp-sqlite.yaml` | SQLite | 开启 `--seed-demo` 以注入演示数据；`Metrics.ListenOn` 可保持空值复用主服务端口。 |
 | 测试/集成环境 | `etc/znp-api.yaml` | MySQL | 自定义 `Database.DSN` 指向独立测试库，建议为 CI/CD 准备专用凭据。 |
-| 生产环境 | 基于 `etc/znp-api.yaml` 衍生 | MySQL 或 PostgreSQL | 调整 `Auth` 密钥、缓存 Provider 及 `Kernel` 地址，启用 HTTPS/TLS 与只读副本。 |
+| 生产环境 | 基于 `etc/znp-api.yaml` 衍生 | MySQL 或 PostgreSQL | 调整 `Auth` 与 `Credentials` 密钥、缓存 Provider 及 `Kernel` 地址，启用 HTTPS/TLS 与只读副本。 |
 
 将配置副本放置在安全位置（如 `/etc/znp/production.yaml`），并通过 `--config`/`-f` 参数显式指定。
 
@@ -60,7 +60,7 @@ FLUSH PRIVILEGES;
    seed demo data completed
    ```
 
-使用 `--seed-demo` 会创建默认管理员/用户账号供登录；当前不提供注册/找回接口。
+使用 `--seed-demo` 会创建默认管理员/用户账号供登录；注册/找回流程需在配置中启用（见 `Auth.Registration` 与 `Auth.PasswordReset`）。密码复杂度要求可在 `Auth.PasswordPolicy` 中配置。
 
 ## 启动服务
 

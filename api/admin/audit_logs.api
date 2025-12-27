@@ -1,0 +1,65 @@
+syntax = "v1"
+
+import "shared/types.api"
+
+@server (
+    name: znp
+    prefix: /api/v1
+    group: admin/audit-logs
+)
+service znp {
+    @doc "List audit logs"
+    @handler AdminAuditLogList
+    get /admin/audit-logs(AdminAuditLogListRequest) returns (AdminAuditLogListResponse)
+
+    @doc "Export audit logs"
+    @handler AdminAuditLogExport
+    get /admin/audit-logs/export(AdminAuditLogExportRequest) returns (AdminAuditLogExportResponse)
+}
+
+type AuditLogSummary {
+    id uint64
+    actor_id *uint64
+    actor_email string
+    actor_roles []string
+    action string
+    resource_type string
+    resource_id string
+    source_ip string
+    metadata map[string]any
+    created_at int64
+}
+
+type AdminAuditLogListRequest {
+    page int(optional)
+    per_page int(optional)
+    actor_id *uint64(optional)
+    action string(optional)
+    resource_type string(optional)
+    resource_id string(optional)
+    since int64(optional)
+    until int64(optional)
+}
+
+type AdminAuditLogListResponse {
+    logs []AuditLogSummary
+    pagination PaginationMeta
+}
+
+type AdminAuditLogExportRequest {
+    page int(optional)
+    per_page int(optional)
+    actor_id *uint64(optional)
+    action string(optional)
+    resource_type string(optional)
+    resource_id string(optional)
+    since int64(optional)
+    until int64(optional)
+    format string(optional)
+}
+
+type AdminAuditLogExportResponse {
+    logs []AuditLogSummary
+    total_count int64
+    exported_at int64
+}

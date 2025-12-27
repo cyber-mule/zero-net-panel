@@ -95,3 +95,11 @@ type OrderPayment {
 	updated_at      int64
 }
 
+type CredentialSummary {
+	version int
+	status string
+	issued_at int64
+	deprecated_at *int64
+	revoked_at *int64
+	last_seen_at *int64
+}

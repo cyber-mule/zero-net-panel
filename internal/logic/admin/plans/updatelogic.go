@@ -60,6 +60,9 @@ func (l *UpdateLogic) Update(req *types.AdminUpdatePlanRequest) (*types.PlanSumm
 	if req.TrafficLimitBytes != nil {
 		plan.TrafficLimitBytes = *req.TrafficLimitBytes
 	}
+	if req.TrafficMultipliers != nil {
+		plan.TrafficMultipliers = normalizeTrafficMultipliers(req.TrafficMultipliers)
+	}
 	if req.DevicesLimit != nil {
 		plan.DevicesLimit = *req.DevicesLimit
 	}

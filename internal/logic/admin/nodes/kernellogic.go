@@ -38,14 +38,7 @@ func (l *KernelLogic) Kernels(req *types.AdminNodeKernelsRequest) (*types.AdminN
 	}
 
 	for _, kernel := range kernels {
-		resp.Kernels = append(resp.Kernels, types.NodeKernelSummary{
-			Protocol:     kernel.Protocol,
-			Endpoint:     kernel.Endpoint,
-			Revision:     kernel.Revision,
-			Status:       kernel.Status,
-			Config:       kernel.Config,
-			LastSyncedAt: kernel.LastSyncedAt.Unix(),
-		})
+		resp.Kernels = append(resp.Kernels, mapKernelSummary(kernel))
 	}
 
 	return resp, nil

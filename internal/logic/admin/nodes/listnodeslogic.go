@@ -63,24 +63,6 @@ func (l *ListLogic) List(req *types.AdminListNodesRequest) (*types.AdminNodeList
 	}, nil
 }
 
-func mapNodeSummary(node repository.Node) types.NodeSummary {
-	summary := types.NodeSummary{
-		ID:           node.ID,
-		Name:         node.Name,
-		Region:       node.Region,
-		Country:      node.Country,
-		ISP:          node.ISP,
-		Status:       node.Status,
-		Tags:         append([]string(nil), node.Tags...),
-		Protocols:    append([]string(nil), node.Protocols...),
-		CapacityMbps: node.CapacityMbps,
-		Description:  node.Description,
-		LastSyncedAt: node.LastSyncedAt.Unix(),
-		UpdatedAt:    node.UpdatedAt.Unix(),
-	}
-	return summary
-}
-
 func normalizePage(page, perPage int) (int, int) {
 	if page <= 0 {
 		page = 1

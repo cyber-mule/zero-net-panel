@@ -9,6 +9,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/zero-net-panel/zero-net-panel/internal/logic/orderutil"
+	"github.com/zero-net-panel/zero-net-panel/internal/logic/subscriptionutil"
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
@@ -67,12 +68,26 @@ func (l *PaymentCallbackLogic) Process(req *types.AdminPaymentCallbackRequest) (
 		return nil, repository.ErrNotFound
 	}
 	if strings.EqualFold(existingPayment.Status, status) {
+		provisionedOrder := order
+		if status == repository.OrderPaymentStatusSucceeded && strings.EqualFold(order.Status, repository.OrderStatusPaid) {
+			if err := l.svcCtx.Repositories.Transaction(l.ctx, func(txRepos *repository.Repositories) error {
+				result, err := subscriptionutil.EnsureOrderSubscription(l.ctx, txRepos, order, items)
+				if err != nil {
+					return err
+				}
+				provisionedOrder = result.Order
+				return nil
+			}); err != nil {
+				return nil, err
+			}
+		}
+
 		refundsMap, err := l.svcCtx.Repositories.Order.ListRefunds(l.ctx, []uint64{order.ID})
 		if err != nil {
 			return nil, err
 		}
-		detail := orderutil.ToOrderDetail(order, items, refundsMap[order.ID], paymentsMap[order.ID])
-		u, err := l.svcCtx.Repositories.User.Get(l.ctx, order.UserID)
+		detail := orderutil.ToOrderDetail(provisionedOrder, items, refundsMap[order.ID], paymentsMap[order.ID])
+		u, err := l.svcCtx.Repositories.User.Get(l.ctx, provisionedOrder.UserID)
 		if err != nil {
 			return nil, err
 		}
@@ -153,6 +168,18 @@ func (l *PaymentCallbackLogic) Process(req *types.AdminPaymentCallbackRequest) (
 			return err
 		}
 		updatedOrder = updated
+
+		if status == repository.OrderPaymentStatusSucceeded {
+			txRepos, err := repository.NewRepositories(tx)
+			if err != nil {
+				return err
+			}
+			provisioned, err := subscriptionutil.EnsureOrderSubscription(l.ctx, txRepos, updatedOrder, items)
+			if err != nil {
+				return err
+			}
+			updatedOrder = provisioned.Order
+		}
 		return nil
 	})
 	if err != nil {

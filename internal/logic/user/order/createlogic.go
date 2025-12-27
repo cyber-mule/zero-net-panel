@@ -11,6 +11,8 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/zero-net-panel/zero-net-panel/internal/logic/orderutil"
+	"github.com/zero-net-panel/zero-net-panel/internal/logic/paymentutil"
+	"github.com/zero-net-panel/zero-net-panel/internal/logic/subscriptionutil"
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 	"github.com/zero-net-panel/zero-net-panel/internal/security"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
@@ -107,10 +109,24 @@ func (l *CreateLogic) Create(req *types.UserCreateOrderRequest) (resp *types.Use
 
 	channel := strings.TrimSpace(strings.ToLower(req.PaymentChannel))
 	returnURL := strings.TrimSpace(req.PaymentReturnURL)
+	var paymentChannel repository.PaymentChannel
 
 	totalCents := plan.PriceCents * int64(quantity)
-	if method == repository.PaymentMethodExternal && totalCents > 0 && channel == "" {
-		return nil, repository.ErrInvalidArgument
+	if method == repository.PaymentMethodExternal && totalCents > 0 {
+		if channel == "" {
+			return nil, repository.ErrInvalidArgument
+		}
+		paymentChannel, err = l.svcCtx.Repositories.PaymentChannel.GetByCode(l.ctx, channel)
+		if err != nil {
+			if errors.Is(err, repository.ErrNotFound) {
+				return nil, repository.ErrInvalidArgument
+			}
+			return nil, err
+		}
+		if !paymentChannel.Enabled {
+			return nil, repository.ErrInvalidArgument
+		}
+		channel = paymentChannel.Code
 	}
 
 	orderNumber := repository.GenerateOrderNumber()
@@ -272,6 +288,19 @@ func (l *CreateLogic) Create(req *types.UserCreateOrderRequest) (resp *types.Use
 			createdPayments = append(createdPayments, payment)
 		}
 
+		if strings.EqualFold(createdOrder.Status, repository.OrderStatusPaid) &&
+			strings.EqualFold(createdOrder.PaymentStatus, repository.OrderPaymentStatusSucceeded) {
+			txRepos, err := repository.NewRepositories(tx)
+			if err != nil {
+				return err
+			}
+			provisioned, err := subscriptionutil.EnsureOrderSubscription(l.ctx, txRepos, createdOrder, createdItems)
+			if err != nil {
+				return err
+			}
+			createdOrder = provisioned.Order
+		}
+
 		return nil
 	})
 	if err != nil {
@@ -290,6 +319,36 @@ func (l *CreateLogic) Create(req *types.UserCreateOrderRequest) (resp *types.Use
 			}
 		}
 		return nil, err
+	}
+
+	if method == repository.PaymentMethodExternal && totalCents > 0 && len(createdPayments) > 0 {
+		initResult, err := paymentutil.Initiate(l.ctx, paymentutil.InitiateParams{
+			Channel:   paymentChannel,
+			Order:     createdOrder,
+			Payment:   createdPayments[0],
+			Quantity:  quantity,
+			PlanID:    plan.ID,
+			PlanName:  plan.Name,
+			ReturnURL: returnURL,
+		})
+		if err != nil {
+			return nil, err
+		}
+		if len(initResult.Metadata) > 0 || initResult.Reference != "" {
+			updateParams := repository.UpdateOrderPaymentParams{
+				Status:        repository.OrderPaymentStatusPending,
+				MetadataPatch: initResult.Metadata,
+			}
+			if initResult.Reference != "" {
+				ref := initResult.Reference
+				updateParams.Reference = &ref
+			}
+			updatedPayment, err := l.svcCtx.Repositories.Order.UpdatePaymentRecord(l.ctx, createdPayments[0].ID, updateParams)
+			if err != nil {
+				return nil, err
+			}
+			createdPayments[0] = updatedPayment
+		}
 	}
 
 	detail := orderutil.ToOrderDetail(createdOrder, createdItems, nil, createdPayments)

@@ -1,0 +1,58 @@
+syntax = "v1"
+
+import "shared/types.api"
+
+@server (
+    name: znp
+    prefix: /api/v1
+    group: user/nodes
+)
+service znp {
+    @doc "List node runtime status (sanitized)"
+    @handler UserListNodes
+    get /user/nodes(UserNodeStatusListRequest) returns (UserNodeStatusListResponse)
+}
+
+type UserNodeStatusListRequest {
+    page int(optional)
+    per_page int(optional)
+    status string(optional)
+    protocol string(optional)
+}
+
+type UserNodeKernelStatusSummary {
+    protocol string
+    status string
+    last_synced_at int64
+}
+
+type UserNodeProtocolStatusSummary {
+    binding_id uint64
+    protocol string
+    role string
+    status string
+    health_status string
+    last_heartbeat_at int64
+}
+
+type UserNodeStatusSummary {
+    id uint64
+    name string
+    region string
+    country string
+    isp string
+    status string
+    tags []string
+    protocols []string
+    capacity_mbps int
+    description string
+    last_synced_at int64
+    updated_at int64
+    kernel_statuses []UserNodeKernelStatusSummary
+    protocol_statuses []UserNodeProtocolStatusSummary
+}
+
+type UserNodeStatusListResponse {
+    nodes []UserNodeStatusSummary
+    pagination PaginationMeta
+}

@@ -71,3 +71,23 @@ func UserUpdateSubscriptionTemplateHandler(svcCtx *svc.ServiceContext) http.Hand
 		httpx.OkJsonCtx(r.Context(), w, resp)
 	}
 }
+
+// UserSubscriptionTrafficHandler returns traffic usage details.
+func UserSubscriptionTrafficHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req types.UserSubscriptionTrafficRequest
+		if err := httpx.Parse(r, &req); err != nil {
+			handlercommon.RespondError(w, r, repository.ErrInvalidArgument)
+			return
+		}
+
+		logic := usersub.NewTrafficLogic(r.Context(), svcCtx)
+		resp, err := logic.Traffic(&req)
+		if err != nil {
+			handlercommon.RespondError(w, r, err)
+			return
+		}
+
+		httpx.OkJsonCtx(r.Context(), w, resp)
+	}
+}

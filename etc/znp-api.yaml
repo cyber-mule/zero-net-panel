@@ -27,6 +27,7 @@ Cache:
 
 Kernel:
   DefaultProtocol: http
+  StatusPollInterval: 30s
   HTTP:
     BaseURL: http://kernel.local
     Token: ""
@@ -41,6 +42,45 @@ Auth:
   AccessExpire: 24h
   RefreshSecret: change-me-too
   RefreshExpire: 720h
+  Registration:
+    Enabled: true
+    InviteOnly: false
+    InviteCodes: []
+    DefaultRoles:
+      - user
+    RequireEmailVerification: true
+  Verification:
+    CodeLength: 6
+    CodeTTL: 15m
+    SendCooldown: 1m
+    SendLimitPerHour: 5
+  PasswordReset:
+    CodeLength: 6
+    CodeTTL: 15m
+    SendCooldown: 1m
+    SendLimitPerHour: 5
+  PasswordPolicy:
+    MinLength: 8
+    MaxLength: 0
+    RequireUpper: false
+    RequireLower: false
+    RequireDigit: false
+    RequireSpecial: false
+  Lockout:
+    MaxAttempts: 5
+    LockDuration: 15m
+  Email:
+    Provider: log
+    From: no-reply@localhost
+    SMTP:
+      Host: ""
+      Port: 587
+      Username: ""
+      Password: ""
+      UseTLS: false
+
+Credentials:
+  MasterKey: change-me-credentials
 
 Metrics:
   Enable: true

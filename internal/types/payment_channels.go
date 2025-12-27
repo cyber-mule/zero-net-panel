@@ -21,13 +21,13 @@ type AdminPaymentChannelListResponse struct {
 
 // AdminListPaymentChannelsRequest 管理端支付通道列表请求。
 type AdminListPaymentChannelsRequest struct {
-	Page      int    `form:"page"`
-	PerPage   int    `form:"per_page"`
-	Query     string `form:"q"`
-	Provider  string `form:"provider"`
-	Enabled   *bool  `form:"enabled"`
-	Sort      string `form:"sort"`
-	Direction string `form:"direction"`
+	Page      int    `form:"page,optional" json:"page,optional"`
+	PerPage   int    `form:"per_page,optional" json:"per_page,optional"`
+	Query     string `form:"q,optional" json:"q,optional"`
+	Provider  string `form:"provider,optional" json:"provider,optional"`
+	Enabled   *bool  `form:"enabled,optional" json:"enabled,optional"`
+	Sort      string `form:"sort,optional" json:"sort,optional"`
+	Direction string `form:"direction,optional" json:"direction,optional"`
 }
 
 // AdminGetPaymentChannelRequest 管理端查询支付通道请求。
@@ -54,4 +54,24 @@ type AdminUpdatePaymentChannelRequest struct {
 	Enabled   *bool          `json:"enabled"`
 	SortOrder *int           `json:"sort_order"`
 	Config    map[string]any `json:"config"`
+}
+
+// UserPaymentChannelListRequest 用户侧支付通道列表请求。
+type UserPaymentChannelListRequest struct {
+	Provider string `form:"provider,optional" json:"provider,optional"`
+}
+
+// UserPaymentChannelSummary 用户侧支付通道摘要。
+type UserPaymentChannelSummary struct {
+	ID        uint64         `json:"id"`
+	Name      string         `json:"name"`
+	Code      string         `json:"code"`
+	Provider  string         `json:"provider"`
+	SortOrder int            `json:"sort_order"`
+	Config    map[string]any `json:"config"`
+}
+
+// UserPaymentChannelListResponse 用户侧支付通道列表响应。
+type UserPaymentChannelListResponse struct {
+	Channels []UserPaymentChannelSummary `json:"channels"`
 }

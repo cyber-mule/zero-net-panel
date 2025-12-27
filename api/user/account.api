@@ -11,6 +11,30 @@ service znp {
     @doc "Get user balance"
     @handler UserBalance
     get /user/account/balance(UserBalanceRequest) returns (UserBalanceResponse)
+
+    @doc "Get user profile"
+    @handler UserProfile
+    get /user/account/profile(UserProfileRequest) returns (UserProfileResponse)
+
+    @doc "Update user profile"
+    @handler UserUpdateProfile
+    patch /user/account/profile(UserUpdateProfileRequest) returns (UserProfileResponse)
+
+    @doc "Change password"
+    @handler UserChangePassword
+    post /user/account/password(UserChangePasswordRequest) returns (UserChangePasswordResponse)
+
+    @doc "Rotate credential"
+    @handler UserRotateCredential
+    post /user/account/credentials/rotate(UserRotateCredentialRequest) returns (UserRotateCredentialResponse)
+
+    @doc "Send email change code"
+    @handler UserEmailChangeCode
+    post /user/account/email/code(UserEmailChangeCodeRequest) returns (UserEmailChangeCodeResponse)
+
+    @doc "Change email"
+    @handler UserChangeEmail
+    post /user/account/email(UserChangeEmailRequest) returns (UserChangeEmailResponse)
 }
 
 type UserBalanceRequest {
@@ -26,4 +50,57 @@ type UserBalanceResponse {
     updated_at int64
     transactions []BalanceTransactionSummary
     pagination PaginationMeta
+}
+
+type UserProfileRequest {}
+
+type UserProfile {
+    id uint64
+    email string
+    display_name string
+    status string
+    email_verified_at *int64
+    created_at int64
+    updated_at int64
+}
+
+type UserProfileResponse {
+    profile UserProfile
+}
+
+type UserUpdateProfileRequest {
+    display_name string(optional)
+}
+
+type UserChangePasswordRequest {
+    current_password string
+    new_password string
+}
+
+type UserChangePasswordResponse {
+    message string
+}
+
+type UserRotateCredentialRequest {}
+
+type UserRotateCredentialResponse {
+    credential CredentialSummary
+}
+
+type UserEmailChangeCodeRequest {
+    email string
+}
+
+type UserEmailChangeCodeResponse {
+    message string
+}
+
+type UserChangeEmailRequest {
+    email string
+    code string
+    password string
+}
+
+type UserChangeEmailResponse {
+    profile UserProfile
 }

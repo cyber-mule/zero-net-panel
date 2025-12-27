@@ -52,8 +52,18 @@ async function request(url, options = {}) {
 
 - 登录接口：`POST /api/v1/auth/login`
 - 刷新接口：`POST /api/v1/auth/refresh`
+- 注册接口：`POST /api/v1/auth/register`
+- 验证接口：`POST /api/v1/auth/verify`
+- 找回密码：`POST /api/v1/auth/forgot`、`POST /api/v1/auth/reset`
 
-> 当前版本未提供注册/找回/重置接口，账号需通过安装向导或 `--seed-demo` 生成；后台用户管理能力仍待补齐。
+注册与验证流程由配置开关控制：
+
+- `Auth.Registration.Enabled`：是否开放注册。
+- `Auth.Registration.InviteOnly/InviteCodes`：邀请制与邀请码白名单。
+- `Auth.Registration.DefaultRoles`：注册成功后的默认角色。
+- `Auth.Registration.RequireEmailVerification`：是否要求邮箱验证。
+
+> 启用邀请制时，前端注册表单需提供 `invite_code` 字段。
 
 建议流程：
 
@@ -63,23 +73,42 @@ async function request(url, options = {}) {
 
 > 建议 `access_token` 存于内存（减少 XSS 风险），`refresh_token` 放在更安全的存储（如 HttpOnly Cookie 或受控存储）。
 
+账号生命周期提示：
+
+- 注册后若 `RequireEmailVerification=true`，返回 `requires_verification=true`，账号处于 `pending` 状态，需调用 `POST /auth/verify` 激活。
+- 账号被禁用或锁定时会返回 `403`，需提示联系管理员或稍后重试。
+- 账号被重置密码或强制下线时会返回 `401`，前端需清理令牌并引导重新登录。
+
+验证码与前端对接提示：
+
+- 注册后需展示邮箱验证码输入框并调用 `POST /auth/verify` 完成激活。
+- 找回密码流程为 `POST /auth/forgot` 获取验证码，再用 `POST /auth/reset` 设置新密码。
+- 验证码发送受冷却与频控限制（`Auth.Verification`/`Auth.PasswordReset`），建议前端增加倒计时提示。
+
 ## 5. 页面与接口映射
 
 ### 管理端
 
 - 仪表盘：`GET /api/v1/{adminPrefix}/dashboard`
-- 节点列表/同步：`GET /nodes`、`POST /nodes/{id}/kernels/sync`
+- 用户管理：`GET/POST/PATCH /users`、`POST /users/{id}/reset-password`、`POST /users/{id}/force-logout`
+- 节点管理：`GET/POST/PATCH /nodes`、`POST /nodes/{id}/disable`、`GET /nodes/{id}/kernels`、`POST /nodes/{id}/kernels/sync`
 - 订阅模板：`GET/POST/PATCH /subscription-templates`、`POST /subscription-templates/{id}/publish`
+- 订阅管理：`GET/POST/PATCH /subscriptions`、`POST /subscriptions/{id}/disable`、`POST /subscriptions/{id}/extend`
 - 套餐管理：`GET/POST/PATCH /plans`
 - 公告管理：`GET/POST /announcements`、`POST /announcements/{id}/publish`
 - 安全配置：`GET/PATCH /security-settings`
+- 审计日志：`GET /audit-logs`、`GET /audit-logs/export`
 - 订单管理：`GET /orders`、`GET /orders/{id}`、`POST /orders/{id}/pay|cancel|refund`
 
 ### 用户端
 
 - 订阅列表/预览/切换模板：`GET /subscriptions`、`GET /subscriptions/{id}/preview`、`POST /subscriptions/{id}/template`
 - 套餐列表：`GET /plans`
+- 节点状态：`GET /nodes`
 - 公告列表：`GET /announcements`
+- 账户资料：`GET/PATCH /account/profile`
+- 自助改密：`POST /account/password`
+- 自助改邮箱：`POST /account/email/code`、`POST /account/email`
 - 余额与流水：`GET /account/balance`
 - 订单：`POST /orders`、`GET /orders`、`GET /orders/{id}`、`GET /orders/{id}/payment-status`、`POST /orders/{id}/cancel`
 
@@ -98,7 +127,7 @@ async function request(url, options = {}) {
 ## 7. 订单与支付流程提示
 
 - `POST /user/orders` 支持 `payment_method=balance|external|manual`（manual 表示线下/人工支付）。
-- `payment_method=external` 且金额大于 0 时，需要传 `payment_channel`，响应会带 `payment_intent_id` 与 `payments`。
+- `payment_method=external` 且金额大于 0 时，需要传 `payment_channel`，响应会带 `payment_intent_id` 与 `payments`，其中 `payments[].metadata.pay_url`/`qr_code` 用于跳转或展示二维码。
 - `payment_method=manual` 会创建待支付订单，需管理员通过 `/api/v1/{adminPrefix}/orders/{id}/pay` 标记已支付。
 - 推荐前端传 `idempotency_key`（如点击下单时生成 UUID），避免重复下单。
 

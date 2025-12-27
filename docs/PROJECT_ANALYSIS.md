@@ -95,7 +95,7 @@ zero-net-panel/
 
 **文件位置 / Location**: 
 - `pkg/kernel/`: 内核注册与发现
-- `internal/logic/admin/node/`: 节点管理逻辑
+- `internal/logic/admin/nodes/`: 节点管理逻辑
 
 **功能特点 / Features**:
 - HTTP 与 gRPC Provider 注册表
@@ -108,7 +108,28 @@ GET  /api/v1/admin/nodes              # 获取节点列表
 POST /api/v1/admin/nodes/{id}/kernels/sync  # 触发节点同步
 ```
 
-### 2. 订阅模板管理 / Subscription Template Management
+### 2. 协议配置与绑定 / Protocol Configuration & Binding
+
+**文件位置 / Location**: 
+- `internal/logic/admin/protocolconfigs/`
+- `internal/logic/admin/protocolbindings/`
+- `internal/logic/kernel/`
+- `internal/handler/kernel/`
+
+**功能特点 / Features**:
+- 协议配置 profile 管理与状态控制
+- 节点协议绑定、手动下发与同步状态跟踪
+- 回调/轮询更新协议健康状态与流量记录
+
+**API 端点 / API Endpoints**:
+```
+GET  /api/v1/admin/protocol-configs
+POST /api/v1/admin/protocol-bindings/{id}/sync
+POST /api/v1/kernel/events
+POST /api/v1/kernel/traffic
+```
+
+### 3. 订阅模板管理 / Subscription Template Management
 
 **文件位置 / Location**: 
 - `internal/logic/admin/template/`
@@ -126,7 +147,7 @@ GET   /api/v1/admin/subscription-templates           # 查看模板列表
 POST  /api/v1/admin/subscription-templates/{id}/publish  # 发布模板
 ```
 
-### 3. 用户订阅能力 / User Subscription Capabilities
+### 4. 用户订阅能力 / User Subscription Capabilities
 
 **文件位置 / Location**: 
 - `internal/logic/user/subscription/`
@@ -459,8 +480,16 @@ Admin:
   RoutePrefix: admin  # 可自定义管理端路由前缀
 
 Kernel:
-  HTTPProviders: []   # HTTP 内核提供者
-  GRPCProviders: []   # gRPC 内核提供者
+  DefaultProtocol: http
+  StatusPollInterval: 30s
+  HTTP:
+    BaseURL: "http://kernel.local"
+    Token: ""
+    Timeout: 5s
+  GRPC:
+    Endpoint: ""
+    TLSCert: ""
+    Timeout: 5s
 
 Metrics:
   Enable: true

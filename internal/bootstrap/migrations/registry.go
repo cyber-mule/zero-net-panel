@@ -252,6 +252,95 @@ var migrationRegistry = []Migration{
 			return nil
 		},
 	},
+	{
+		Version: 2025040101,
+		Name:    "user-auth-audit",
+		Up: func(ctx context.Context, db *gorm.DB) error {
+			return db.WithContext(ctx).AutoMigrate(
+				&repository.User{},
+				&repository.AuditLog{},
+			)
+		},
+		Down: func(ctx context.Context, db *gorm.DB) error {
+			migrator := db.WithContext(ctx).Migrator()
+			if migrator.HasTable(&repository.AuditLog{}) {
+				if err := migrator.DropTable(&repository.AuditLog{}); err != nil {
+					return err
+				}
+			}
+
+			columns := []string{
+				"email_verified_at",
+				"failed_login_attempts",
+				"locked_until",
+				"token_invalid_before",
+				"password_updated_at",
+				"password_reset_at",
+			}
+			for _, column := range columns {
+				if migrator.HasColumn(&repository.User{}, column) {
+					if err := migrator.DropColumn(&repository.User{}, column); err != nil {
+						return err
+					}
+				}
+			}
+			return nil
+		},
+	},
+	{
+		Version: 2025041701,
+		Name:    "protocol-management",
+		Up: func(ctx context.Context, db *gorm.DB) error {
+			return db.WithContext(ctx).AutoMigrate(
+				&repository.Plan{},
+				&repository.ProtocolConfig{},
+				&repository.ProtocolBinding{},
+				&repository.TrafficUsageRecord{},
+			)
+		},
+		Down: func(ctx context.Context, db *gorm.DB) error {
+			migrator := db.WithContext(ctx).Migrator()
+			if migrator.HasTable(&repository.TrafficUsageRecord{}) {
+				if err := migrator.DropTable(&repository.TrafficUsageRecord{}); err != nil {
+					return err
+				}
+			}
+			if migrator.HasTable(&repository.ProtocolBinding{}) {
+				if err := migrator.DropTable(&repository.ProtocolBinding{}); err != nil {
+					return err
+				}
+			}
+			if migrator.HasTable(&repository.ProtocolConfig{}) {
+				if err := migrator.DropTable(&repository.ProtocolConfig{}); err != nil {
+					return err
+				}
+			}
+			if migrator.HasColumn(&repository.Plan{}, "traffic_multipliers") {
+				if err := migrator.DropColumn(&repository.Plan{}, "traffic_multipliers"); err != nil {
+					return err
+				}
+			}
+			return nil
+		},
+	},
+	{
+		Version: 2025041801,
+		Name:    "user-credentials",
+		Up: func(ctx context.Context, db *gorm.DB) error {
+			return db.WithContext(ctx).AutoMigrate(
+				&repository.UserCredential{},
+			)
+		},
+		Down: func(ctx context.Context, db *gorm.DB) error {
+			migrator := db.WithContext(ctx).Migrator()
+			if migrator.HasTable(&repository.UserCredential{}) {
+				if err := migrator.DropTable(&repository.UserCredential{}); err != nil {
+					return err
+				}
+			}
+			return nil
+		},
+	},
 }
 
 func init() {

@@ -46,11 +46,23 @@ func (l *LoginLogic) Login(req *types.AuthLoginRequest) (*types.AuthLoginRespons
 		return nil, err
 	}
 
+	now := time.Now().UTC()
 	if !strings.EqualFold(user.Status, "active") {
+		return nil, repository.ErrForbidden
+	}
+	if !user.LockedUntil.IsZero() && user.LockedUntil.After(now) {
 		return nil, repository.ErrForbidden
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
+		lockCfg := l.svcCtx.Config.Auth.Lockout
+		updated, updateErr := l.svcCtx.Repositories.User.RecordLoginFailure(l.ctx, user.ID, lockCfg.MaxAttempts, lockCfg.LockDuration)
+		if updateErr != nil {
+			return nil, updateErr
+		}
+		if !updated.LockedUntil.IsZero() && updated.LockedUntil.After(now) {
+			return nil, repository.ErrForbidden
+		}
 		return nil, repository.ErrUnauthorized
 	}
 
@@ -65,7 +77,6 @@ func (l *LoginLogic) Login(req *types.AuthLoginRequest) (*types.AuthLoginRespons
 		return nil, err
 	}
 
-	now := time.Now().UTC()
 	_ = l.svcCtx.Repositories.User.UpdateLastLogin(l.ctx, user.ID, now)
 
 	resp := &types.AuthLoginResponse{

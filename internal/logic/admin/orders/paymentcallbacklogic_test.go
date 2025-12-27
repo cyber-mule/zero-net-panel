@@ -2,6 +2,7 @@ package orders
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -42,6 +43,36 @@ func setupPaymentCallbackTest(t *testing.T) (*svc.ServiceContext, func()) {
 	return svcCtx, cleanup
 }
 
+func seedDefaultTemplate(t *testing.T, db *gorm.DB) repository.SubscriptionTemplate {
+	t.Helper()
+
+	now := time.Now().UTC()
+	tpl := repository.SubscriptionTemplate{
+		Name:        "Default Template",
+		Description: "Test template",
+		ClientType:  "clash",
+		Format:      "go_template",
+		Content:     "test",
+		IsDefault:   true,
+		Version:     1,
+		CreatedAt:   now,
+		UpdatedAt:   now,
+		PublishedAt: &now,
+	}
+
+	var existing repository.SubscriptionTemplate
+	err := db.Where("name = ? AND client_type = ?", tpl.Name, tpl.ClientType).First(&existing).Error
+	if err == nil {
+		return existing
+	}
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		require.NoError(t, err)
+	}
+
+	require.NoError(t, db.Create(&tpl).Error)
+	return tpl
+}
+
 func TestPaymentCallbackLogic_Success(t *testing.T) {
 	svcCtx, cleanup := setupPaymentCallbackTest(t)
 	defer cleanup()
@@ -74,6 +105,7 @@ func TestPaymentCallbackLogic_Success(t *testing.T) {
 		UpdatedAt:         now,
 	}
 	require.NoError(t, svcCtx.DB.Create(&plan).Error)
+	seedDefaultTemplate(t, svcCtx.DB)
 
 	orderRepo := svcCtx.Repositories.Order
 
@@ -85,6 +117,12 @@ func TestPaymentCallbackLogic_Success(t *testing.T) {
 		PaymentStatus: repository.OrderPaymentStatusPending,
 		TotalCents:    plan.PriceCents,
 		Currency:      plan.Currency,
+		PlanSnapshot: map[string]any{
+			"name":                plan.Name,
+			"duration_days":       plan.DurationDays,
+			"traffic_limit_bytes": plan.TrafficLimitBytes,
+			"devices_limit":       plan.DevicesLimit,
+		},
 	}, []repository.OrderItem{{
 		ItemType:       "plan",
 		ItemID:         plan.ID,
@@ -93,6 +131,11 @@ func TestPaymentCallbackLogic_Success(t *testing.T) {
 		UnitPriceCents: plan.PriceCents,
 		Currency:       plan.Currency,
 		SubtotalCents:  plan.PriceCents,
+		Metadata: map[string]any{
+			"duration_days":       plan.DurationDays,
+			"traffic_limit_bytes": plan.TrafficLimitBytes,
+			"devices_limit":       plan.DevicesLimit,
+		},
 		CreatedAt:      now,
 	}})
 	require.NoError(t, err)
@@ -131,6 +174,11 @@ func TestPaymentCallbackLogic_Success(t *testing.T) {
 	require.Equal(t, repository.OrderStatusPaid, storedOrder.Status)
 	require.Equal(t, repository.OrderPaymentStatusSucceeded, storedOrder.PaymentStatus)
 	require.Equal(t, "gateway-ref", storedOrder.PaymentReference)
+
+	subs, _, err := svcCtx.Repositories.Subscription.ListByUser(ctx, customer.ID, repository.ListSubscriptionsOptions{})
+	require.NoError(t, err)
+	require.Len(t, subs, 1)
+	require.Equal(t, plan.Name, subs[0].PlanName)
 
 	paymentsMap, err := orderRepo.ListPayments(ctx, []uint64{order.ID})
 	require.NoError(t, err)
@@ -225,16 +273,53 @@ func TestPaymentCallbackLogic_Idempotent(t *testing.T) {
 	}
 	require.NoError(t, svcCtx.DB.Create(&customer).Error)
 
+	plan := repository.Plan{
+		Name:              "Basic",
+		Slug:              "basic",
+		Description:       "Basic plan",
+		PriceCents:        1000,
+		Currency:          "CNY",
+		DurationDays:      30,
+		TrafficLimitBytes: 1024,
+		DevicesLimit:      2,
+		Status:            "active",
+		Visible:           true,
+		CreatedAt:         now,
+		UpdatedAt:         now,
+	}
+	require.NoError(t, svcCtx.DB.Create(&plan).Error)
+	seedDefaultTemplate(t, svcCtx.DB)
+
 	orderRepo := svcCtx.Repositories.Order
 
 	order, _, err := orderRepo.Create(ctx, repository.Order{
 		UserID:        customer.ID,
+		PlanID:        &plan.ID,
 		Status:        repository.OrderStatusPendingPayment,
 		PaymentMethod: repository.PaymentMethodExternal,
 		PaymentStatus: repository.OrderPaymentStatusPending,
-		TotalCents:    1000,
-		Currency:      "CNY",
-	}, []repository.OrderItem{})
+		TotalCents:    plan.PriceCents,
+		Currency:      plan.Currency,
+		PlanSnapshot: map[string]any{
+			"name":                plan.Name,
+			"duration_days":       plan.DurationDays,
+			"traffic_limit_bytes": plan.TrafficLimitBytes,
+			"devices_limit":       plan.DevicesLimit,
+		},
+	}, []repository.OrderItem{{
+		ItemType:       "plan",
+		ItemID:         plan.ID,
+		Name:           plan.Name,
+		Quantity:       1,
+		UnitPriceCents: plan.PriceCents,
+		Currency:       plan.Currency,
+		SubtotalCents:  plan.PriceCents,
+		Metadata: map[string]any{
+			"duration_days":       plan.DurationDays,
+			"traffic_limit_bytes": plan.TrafficLimitBytes,
+			"devices_limit":       plan.DevicesLimit,
+		},
+	}})
 	require.NoError(t, err)
 
 	payment, err := orderRepo.CreatePayment(ctx, repository.OrderPayment{
@@ -242,8 +327,8 @@ func TestPaymentCallbackLogic_Idempotent(t *testing.T) {
 		Provider:    "alipay",
 		Method:      repository.PaymentMethodExternal,
 		Status:      repository.OrderPaymentStatusPending,
-		AmountCents: 1000,
-		Currency:    "CNY",
+		AmountCents: plan.PriceCents,
+		Currency:    plan.Currency,
 	})
 	require.NoError(t, err)
 

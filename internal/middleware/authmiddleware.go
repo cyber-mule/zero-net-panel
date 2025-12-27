@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/zeromicro/go-zero/rest/httpx"
 
@@ -53,6 +54,16 @@ func (m *AuthMiddleware) RequireRoles(roles ...string) func(http.HandlerFunc) ht
 
 			if !strings.EqualFold(user.Status, "active") {
 				writeAuthError(w, r, http.StatusForbidden, "user is disabled")
+				return
+			}
+
+			now := time.Now().UTC()
+			if !user.LockedUntil.IsZero() && user.LockedUntil.After(now) {
+				writeAuthError(w, r, http.StatusForbidden, "user is locked")
+				return
+			}
+			if !user.TokenInvalidBefore.IsZero() && claims.IssuedAt != nil && claims.IssuedAt.Time.Before(user.TokenInvalidBefore) {
+				writeAuthError(w, r, http.StatusUnauthorized, "token revoked")
 				return
 			}
 

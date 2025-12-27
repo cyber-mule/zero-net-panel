@@ -1,12 +1,16 @@
 package orders
 
 import (
+	"bytes"
+	"context"
+	"io"
 	"net/http"
 
 	"github.com/zeromicro/go-zero/rest/httpx"
 
 	handlercommon "github.com/zero-net-panel/zero-net-panel/internal/handler/common"
 	adminorders "github.com/zero-net-panel/zero-net-panel/internal/logic/admin/orders"
+	"github.com/zero-net-panel/zero-net-panel/internal/logic/paymentutil"
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
@@ -115,9 +119,20 @@ func AdminRefundOrderHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 // AdminPaymentCallbackHandler processes external payment callbacks and updates order states.
 func AdminPaymentCallbackHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			handlercommon.RespondError(w, r, repository.ErrInvalidArgument)
+			return
+		}
+		r.Body = io.NopCloser(bytes.NewReader(body))
 		var req types.AdminPaymentCallbackRequest
 		if err := httpx.Parse(r, &req); err != nil {
 			handlercommon.RespondError(w, r, repository.ErrInvalidArgument)
+			return
+		}
+
+		if err := verifyPaymentCallbackSignature(r.Context(), svcCtx, req.PaymentID, body, r.Header); err != nil {
+			handlercommon.RespondError(w, r, err)
 			return
 		}
 
@@ -130,4 +145,39 @@ func AdminPaymentCallbackHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 
 		httpx.OkJsonCtx(r.Context(), w, resp)
 	}
+}
+
+// AdminReconcilePaymentHandler requests gateway reconciliation for an order payment.
+func AdminReconcilePaymentHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req types.AdminReconcilePaymentRequest
+		if err := httpx.Parse(r, &req); err != nil {
+			handlercommon.RespondError(w, r, repository.ErrInvalidArgument)
+			return
+		}
+
+		logic := adminorders.NewReconcileLogic(r.Context(), svcCtx)
+		resp, err := logic.Reconcile(&req)
+		if err != nil {
+			handlercommon.RespondError(w, r, err)
+			return
+		}
+
+		httpx.OkJsonCtx(r.Context(), w, resp)
+	}
+}
+
+func verifyPaymentCallbackSignature(ctx context.Context, svcCtx *svc.ServiceContext, paymentID uint64, body []byte, headers http.Header) error {
+	if paymentID == 0 {
+		return repository.ErrInvalidArgument
+	}
+	payment, err := svcCtx.Repositories.Order.GetPayment(ctx, paymentID)
+	if err != nil {
+		return err
+	}
+	channel, err := svcCtx.Repositories.PaymentChannel.GetByCode(ctx, payment.Provider)
+	if err != nil {
+		return err
+	}
+	return paymentutil.VerifyWebhookSignature(channel, body, headers)
 }

@@ -50,6 +50,9 @@ func NewToolsCheckConfigCommand(opts *GlobalOptions) *cobra.Command {
 			if strings.TrimSpace(cfg.Auth.AccessSecret) == "" || strings.TrimSpace(cfg.Auth.RefreshSecret) == "" {
 				issues = append(issues, "auth secrets are required")
 			}
+			if strings.TrimSpace(cfg.Credentials.MasterKey) == "" {
+				issues = append(issues, "credentials master key is required")
+			}
 
 			if len(issues) > 0 {
 				return fmt.Errorf("configuration validation failed:\n- %s", strings.Join(issues, "\n- "))

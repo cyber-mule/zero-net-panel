@@ -4,10 +4,14 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"net"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
 
+	"github.com/zero-net-panel/zero-net-panel/internal/logic/credentialutil"
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 	"github.com/zero-net-panel/zero-net-panel/internal/security"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
@@ -61,13 +65,50 @@ func (l *PreviewLogic) Preview(req *types.UserSubscriptionPreviewRequest) (*type
 		return nil, err
 	}
 
-	nodes, _, err := l.svcCtx.Repositories.Node.List(l.ctx, repository.ListNodesOptions{PerPage: 5, Sort: "updated_at"})
+	bindings, err := l.svcCtx.Repositories.ProtocolBinding.ListAll(l.ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	now := time.Now().UTC()
+	isActive := strings.EqualFold(sub.Status, "active")
+	identityData := map[string]any{
+		"version":    0,
+		"status":     "",
+		"account_id": "",
+		"account":    "",
+		"password":   "",
+		"id":         "",
+		"uuid":       "",
+		"username":   "",
+		"secret":     "",
+	}
+	if isActive {
+		credential, err := credentialutil.EnsureActiveCredential(l.ctx, l.svcCtx.Repositories, l.svcCtx.Credentials, user.ID)
+		if err != nil {
+			return nil, err
+		}
+		identity, err := credentialutil.BuildIdentity(l.svcCtx.Credentials, user.ID, credential)
+		if err != nil {
+			return nil, err
+		}
+		identityData = map[string]any{
+			"version":    credential.Version,
+			"status":     credential.Status,
+			"account_id": identity.AccountID,
+			"account":    identity.AccountID,
+			"password":   identity.Password,
+			"id":         identity.ID,
+			"uuid":       identity.UUID,
+			"username":   identity.Username,
+			"secret":     identity.Secret,
+		}
+	}
 
+	bindingContext := normalizeBindingContext(bindings)
+	if !isActive {
+		bindingContext = []map[string]any{}
+	}
 	data := map[string]any{
 		"subscription": map[string]any{
 			"id":                      sub.ID,
@@ -82,7 +123,9 @@ func (l *PreviewLogic) Preview(req *types.UserSubscriptionPreviewRequest) (*type
 			"devices_limit":           sub.DevicesLimit,
 			"available_template_ids":  sub.AvailableTemplateIDs,
 		},
-		"nodes": normalizeNodeContext(nodes),
+		"nodes":             bindingContext,
+		"protocol_bindings": bindingContext,
+		"user_identity":     identityData,
 		"template": map[string]any{
 			"id":      tpl.ID,
 			"name":    tpl.Name,
@@ -116,17 +159,31 @@ func (l *PreviewLogic) Preview(req *types.UserSubscriptionPreviewRequest) (*type
 	}, nil
 }
 
-func normalizeNodeContext(nodes []repository.Node) []map[string]any {
-	result := make([]map[string]any, 0, len(nodes))
-	for _, node := range nodes {
+func normalizeBindingContext(bindings []repository.ProtocolBinding) []map[string]any {
+	result := make([]map[string]any, 0, len(bindings))
+	for _, binding := range bindings {
+		if strings.ToLower(binding.Status) != "active" {
+			continue
+		}
+		address := selectBindingAddress(binding)
+		host, port := splitHostPort(address)
 		result = append(result, map[string]any{
-			"id":         node.ID,
-			"name":       node.Name,
-			"region":     node.Region,
-			"country":    node.Country,
-			"protocols":  node.Protocols,
-			"status":     node.Status,
-			"updated_at": node.UpdatedAt.Format(time.RFC3339),
+			"id":            binding.ID,
+			"binding_id":    binding.ID,
+			"kernel_id":     binding.KernelID,
+			"protocol":      binding.ProtocolConfig.Protocol,
+			"role":          binding.Role,
+			"hostname":      host,
+			"port":          port,
+			"listen":        binding.Listen,
+			"connect":       binding.Connect,
+			"node_id":       binding.NodeID,
+			"node_name":     binding.Node.Name,
+			"region":        binding.Node.Region,
+			"country":       binding.Node.Country,
+			"status":        binding.Status,
+			"health_status": binding.HealthStatus,
+			"updated_at":    binding.UpdatedAt.Format(time.RFC3339),
 		})
 	}
 	return result
@@ -149,4 +206,27 @@ func maxInt64(a, b int64) int64 {
 		return a
 	}
 	return b
+}
+
+func selectBindingAddress(binding repository.ProtocolBinding) string {
+	if strings.ToLower(binding.Role) == "listener" && binding.Listen != "" {
+		return binding.Listen
+	}
+	if binding.Connect != "" {
+		return binding.Connect
+	}
+	return binding.Listen
+}
+
+func splitHostPort(address string) (string, int) {
+	address = strings.TrimSpace(address)
+	if address == "" {
+		return "", 0
+	}
+	host, port, err := net.SplitHostPort(address)
+	if err != nil {
+		return address, 0
+	}
+	value, _ := strconv.Atoi(port)
+	return host, value
 }

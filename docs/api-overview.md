@@ -7,34 +7,41 @@
 | 模块 | 路径 | 说明 |
 | ---- | ---- | ---- |
 | 仪表盘 | `/api/v1/{admin}/dashboard` | 展示模块导航、权限控制 |
-| 节点管理 | `/api/v1/{admin}/nodes` | 节点查询、协议内核同步 |
+| 用户管理 | `/api/v1/{admin}/users` | 用户列表、创建、禁用、角色调整、重置密码、强制下线 |
+| 节点管理 | `/api/v1/{admin}/nodes` | 节点查询、创建、更新、禁用、协议内核同步 |
 | 订阅模板 | `/api/v1/{admin}/subscription-templates` | 模板 CRUD、发布、历史追溯 |
+| 订阅管理 | `/api/v1/{admin}/subscriptions` | 订阅列表、创建、调整、禁用、延长有效期 |
 | 套餐管理 | `/api/v1/{admin}/plans` | 套餐列表、创建、更新，字段涵盖价格、时长、流量限制等 |
 | 公告中心 | `/api/v1/{admin}/announcements` | 公告列表、创建、发布，支持置顶与可见时间窗 |
 | 安全配置 | `/api/v1/{admin}/security-settings` | 读取与更新第三方签名/加密开关、凭据与时间窗口 |
+| 审计日志 | `/api/v1/{admin}/audit-logs` | 审计日志检索与导出 |
 | 订单管理 | `/api/v1/{admin}/orders` | 检索、查看订单，支持多支付方式、外部流水追踪、手动标记支付/取消与余额退款 |
 
 > `{admin}` 为可配置的后台前缀，默认为 `admin`，可通过 `Admin.RoutePrefix` 自定义。
 
 ## 用户端模块
 
-> 目前 auth 仅提供登录/刷新接口，注册/找回/重置与后台用户管理 API 尚未开放，账号需通过安装向导或种子数据维护。
+> 注册/找回/验证接口已开放，需在配置中开启注册开关并配置邮件发送与验证码策略。
 
 - `/api/v1/user/subscriptions`：用户订阅列表、预览、模板切换。
 - `/api/v1/user/plans`：面向终端的套餐列表，返回价格、特性、流量限制等字段。
+- `/api/v1/user/nodes`：用户侧节点运行状态（脱敏展示）。
 - `/api/v1/user/announcements`：按受众过滤当前有效公告，支持置顶排序与限量返回。
 - `/api/v1/user/account/balance`：返回当前余额、币种以及流水历史。
+- `/api/v1/user/account/profile`：用户资料查询与更新。
+- `/api/v1/user/account/password`：用户自主改密。
+- `/api/v1/user/account/email`：用户自主改邮箱（验证码流程）。
 - `/api/v1/user/orders`：创建、查询订单并支持取消待支付或零元订单，返回计划快照、条目与余额快照。
 
 ### 订单操作补充说明
 
 - 用户端 `POST /api/v1/user/orders` 新增 `payment_method`、`payment_channel`、`payment_return_url` 字段：
   - 默认 `payment_method = balance`，系统直接扣减余额、记录 `balance_transactions`，订单状态立即变为 `paid`、`payment_status = succeeded`。
-  - 当 `payment_method = external` 且金额大于零时，会生成 `pending_payment` 订单，创建 `order_payments` 预订单记录，并返回 `payment_intent_id`、`payments` 列表供前端跳转支付；余额不会变动。
+  - 当 `payment_method = external` 且金额大于零时，会生成 `pending_payment` 订单，创建 `order_payments` 预订单记录，并按支付通道 `config` 发起支付；响应包含 `payment_intent_id` 与 `payments`，其中 `payments[].metadata.pay_url`/`qr_code` 可用于跳转或展示二维码，余额不会变动。
   - 当 `payment_method = manual` 时，会生成待支付订单；需管理员通过 `/api/v1/{admin}/orders/{id}/pay` 标记已支付。
 - 用户端 `POST /api/v1/user/orders/{id}/cancel` 仅允许取消待支付或零金额订单，不触发余额回滚。
 - 用户端 `GET /api/v1/user/orders/{id}/payment-status` 用于前端轮询确认支付结果。
-- 管理端提供 `POST /api/v1/{admin}/orders/{id}/pay`、`/cancel` 与 `/refund`，需管理员角色；退款仅适用于余额支付订单，成功后会写入退款流水并回滚余额。
+- 管理端提供 `POST /api/v1/{admin}/orders/{id}/pay`、`/cancel`、`/refund` 与 `/orders/payments/reconcile`，需管理员角色；外部支付退款会按通道 `config.refund` 发起并记录退款流水。
 - 所有用户端接口默认需要 JWT 鉴权，同时可选启用第三方加密认证中间件，对请求进行签名验证与 AES-GCM 解密。
 - 外部支付回调可按以下流程接入：
   1. 网关回调携带支付状态后，通过内部逻辑 `PaymentCallbackLogic`（或后续开放的专用接口）调用 `UpdatePaymentState`、`UpdatePaymentRecord`，将订单状态从 `pending_payment` 更新为 `paid`/`payment_failed`，并填充 `payment_reference`、`payment_failure_*` 字段。
@@ -61,6 +68,14 @@
 | 受保护接口（任意） | `401001` | 签名不一致 | 确保使用 `apiSecret` 计算 HMAC，检查换行与大小写是否匹配。 |
 | 受保护接口（任意） | `403001` | 时间戳超出窗口 | 对齐客户端时间，必要时缩短网络传输延迟或增大 `nonceTTLSeconds`。 |
 | 受保护接口（任意） | `403002` | Nonce 重复使用 | 确认客户端在重试时生成全新随机数。 |
+
+### 节点管理能力
+
+- `POST /api/v1/{admin}/nodes`：创建节点基础信息与可选协议能力。
+- `PATCH /api/v1/{admin}/nodes/{id}`：更新节点元数据、状态与标签。
+- `POST /api/v1/{admin}/nodes/{id}/disable`：下线/禁用节点（替代物理删除）。
+- `POST /api/v1/{admin}/nodes/{id}/kernels/sync`：触发节点协议配置同步。
+- `GET /api/v1/user/nodes`：用户侧查看节点运行状态，隐藏内核端点与配置等敏感信息。
 
 ### 节点同步流程
 

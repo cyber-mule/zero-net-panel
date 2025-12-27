@@ -1,0 +1,2199 @@
+openapi: 3.0.3
+info:
+  title: Zero Core HTTP API
+  version: "1.0.0"
+  description: >-
+    OpenAPI 描述文件，覆盖 `/v1/*` 控制面接口。可导入 Postman/Insomnia 直接测试；
+    流式接口（SSE/WebSocket）在此处仅做摘要说明。默认使用 Basic 鉴权；
+    若启用 `api.auth.allow_insecure=true`，则可不带 Authorization。
+servers:
+  - url: http://127.0.0.1:23860
+security:
+  - basicAuth: []
+paths:
+  /healthz:
+    get:
+      summary: 健康探针
+      security: []
+      responses:
+        '200':
+          description: API 服务可用
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: ok
+        default:
+          $ref: '#/components/responses/ApiError'
+  /v1/status:
+    get:
+      summary: 获取运行时快照
+      parameters:
+        - in: query
+          name: redact_users
+          schema:
+            type: boolean
+          description: 隐藏用户标识/标签
+        - in: query
+          name: rate_limit_summary
+          schema:
+            type: boolean
+          description: 输出速率限制覆盖摘要
+        - in: query
+          name: include
+          schema:
+            type: string
+          description: 字段裁剪（逗号分隔，如 nodes,metrics,users 或 all）
+        - in: query
+          name: fields
+          schema:
+            type: string
+          description: include 的别名
+      responses:
+        '200':
+          description: 状态快照
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+              examples:
+                minimal:
+                  value:
+                    snapshot:
+                      nodes: []
+        default:
+          $ref: '#/components/responses/ApiError'
+  /v1/traffic:
+    get:
+      summary: 获取流量汇总
+      parameters:
+        - in: query
+          name: node
+          schema:
+            type: array
+            items:
+              type: string
+          description: 仅保留指定节点
+        - in: query
+          name: protocol
+          schema:
+            type: array
+            items:
+              type: string
+          description: 仅保留指定协议
+      responses:
+        '200':
+          description: 流量统计摘要
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrafficSummaryResponse'
+              example:
+                generated_at_ms: 1734001002456
+                bytes_up: 123456
+                bytes_down: 654321
+                by_node_protocol:
+                  - node_id: edge-1
+                    protocol: http
+                    bytes_up: 1
+                    bytes_down: 2
+        default:
+          $ref: '#/components/responses/ApiError'
+  /v1/status/stream:
+    get:
+      summary: SSE 状态流
+      parameters:
+        - in: query
+          name: interval
+          schema:
+            type: integer
+          description: 推送周期（秒，1-60）
+        - in: query
+          name: mode
+          schema:
+            type: string
+            enum: [full, diff]
+          description: full 或 diff
+        - in: query
+          name: events
+          schema:
+            type: string
+          description: 事件过滤（runtime,node,service）
+        - in: query
+          name: include
+          schema:
+            type: string
+          description: 字段裁剪
+        - in: query
+          name: fields
+          schema:
+            type: string
+          description: include 的别名
+        - in: query
+          name: redact_users
+          schema:
+            type: boolean
+        - in: query
+          name: rate_limit_summary
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: text/event-stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
+              example: |-
+                event: status.full
+                data: {"type":"full","snapshot":{"nodes":[]}}
+        default:
+          $ref: '#/components/responses/ApiError'
+  /v1/status/ws:
+    get:
+      summary: WebSocket 状态流
+      parameters:
+        - in: query
+          name: interval
+          schema:
+            type: integer
+        - in: query
+          name: mode
+          schema:
+            type: string
+            enum: [full, diff]
+        - in: query
+          name: events
+          schema:
+            type: string
+        - in: query
+          name: include
+          schema:
+            type: string
+        - in: query
+          name: fields
+          schema:
+            type: string
+        - in: query
+          name: redact_users
+          schema:
+            type: boolean
+        - in: query
+          name: rate_limit_summary
+          schema:
+            type: boolean
+      responses:
+        '101':
+          description: WebSocket upgrade
+        default:
+          $ref: '#/components/responses/ApiError'
+  /v1/events/stream:
+    get:
+      summary: SSE 事件流
+      parameters:
+        - in: query
+          name: events
+          schema:
+            type: string
+          description: 事件过滤（node,service,runtime）
+      responses:
+        '200':
+          description: text/event-stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
+              example: |-
+                event: node.degraded
+                data: {"event":"node.degraded","event_id":"019ab700-ca15-728b-b54f-17dc203acc2f","occurred_at_ms":1733965196123,"payload":{"event":"node_degraded","node_id":"edge-1","triggered_at":"2024-01-01T00:00:00Z"}}
+        default:
+          $ref: '#/components/responses/ApiError'
+  /v1/events/ws:
+    get:
+      summary: WebSocket 事件流
+      parameters:
+        - in: query
+          name: events
+          schema:
+            type: string
+      responses:
+        '101':
+          description: WebSocket upgrade
+        default:
+          $ref: '#/components/responses/ApiError'
+  /v1/interfaces:
+    get:
+      summary: 列出系统网卡
+      responses:
+        '200':
+          description: InterfaceListResponse（探测失败时返回空列表并记录 warning）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InterfaceListResponse'
+              example:
+                interfaces:
+                  - name: lo0
+                    mac: null
+                    mtu: 65536
+                    is_up: true
+                    is_loopback: true
+                    kind: virtual
+                    addresses:
+                      - family: ipv4
+                        address: 127.0.0.1
+                        prefix: 8
+        default:
+          $ref: '#/components/responses/ApiError'
+  /v1/rules/providers:
+    get:
+      summary: 列出 Provider 状态
+      responses:
+        '200':
+          description: ProviderStatus 数组
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProviderStatus'
+              example:
+                - name: demo-provider
+                  checksum: 1a2b3c
+                  last_success_unix_ms: 1734001002456
+                  last_attempt_unix_ms: 1734001002456
+                  etag: etag-1
+                  state: healthy
+                  last_error: null
+        default:
+          $ref: '#/components/responses/ApiError'
+  /v1/rules/providers/{name}/refresh:
+    post:
+      summary: 刷新指定 Provider
+      parameters:
+        - in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 最新 ProviderStatus
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderStatus'
+        default:
+          $ref: '#/components/responses/ApiError'
+  /v1/tls/nodes:
+    get:
+      summary: 列出 TLS 节点
+      responses:
+        '200':
+          description: TlsNodeSummary 数组
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TlsNodeSummary'
+              example:
+                - id: edge-tls
+                  role: listener
+                  tags: [edge]
+                  description: edge tls
+                  inner_protocol: http
+                  tls_mode: server
+                  has_reality: false
+        default:
+          $ref: '#/components/responses/ApiError'
+  /v1/tls/nodes/{id}:
+    get:
+      summary: 获取 TLS 节点详情
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: TlsNodeDetail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TlsNodeDetail'
+        default:
+          $ref: '#/components/responses/ApiError'
+    patch:
+      summary: 更新 TLS 节点配置
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TlsNodePatchRequest'
+            example:
+              tls:
+                mode: server
+                server:
+                  certificate: /etc/zero/tls/fullchain.pem
+                  private_key: /etc/zero/tls/privkey.pem
+              inner:
+                protocol: http
+                profile:
+                  server:
+                    allow_plain_http: false
+      responses:
+        '200':
+          description: TlsNodeDetail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TlsNodeDetail'
+        default:
+          $ref: '#/components/responses/ApiError'
+  /v1/audit:
+    get:
+      summary: 查询审计事件
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+        - in: query
+          name: since_ms
+          schema:
+            type: integer
+        - in: query
+          name: success
+          schema:
+            type: boolean
+        - in: query
+          name: action
+          schema:
+            type: string
+        - in: query
+          name: actor
+          schema:
+            type: string
+        - in: query
+          name: target
+          schema:
+            type: string
+      responses:
+        '200':
+          description: AuditRecord 数组
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AuditRecord'
+              example:
+                - id: 019ab700-ca15-728b-b54f-17dc203acc2f
+                  timestamp_ms: 1734001002456
+                  channel: http
+                  endpoint: /v1/users
+                  action: api.users.import
+                  actor: api-key:panel
+                  target: users
+                  success: true
+                  detail: null
+                  metadata:
+                    request_id: req-1
+        default:
+          $ref: '#/components/responses/ApiError'
+  /v1/audit/health:
+    get:
+      summary: 审计管道健康
+      responses:
+        '200':
+          description: AuditHealthSnapshot
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditHealthSnapshot'
+              example:
+                queued: 0
+                dropped: 0
+                sink_failures: 0
+                last_error: null
+                sinks:
+                  - name: file
+                    failures: 0
+        default:
+          $ref: '#/components/responses/ApiError'
+  /v1/security/rate-limits:
+    get:
+      summary: 查询限流覆盖表
+      responses:
+        '200':
+          description: RateLimitOverridesSnapshot
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RateLimitOverridesSnapshot'
+              example:
+                endpoints:
+                  "/v1/users": 30
+                identities:
+                  "ip:127.0.0.1": 300
+        default:
+          $ref: '#/components/responses/ApiError'
+    post:
+      summary: 设置限流覆盖
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RateLimitOverrideRequest'
+            example:
+              scope: endpoint
+              key: /v1/users
+              max_requests_per_minute: 30
+      responses:
+        '200':
+          description: RateLimitOverrideResponse
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RateLimitOverrideResponse'
+        default:
+          $ref: '#/components/responses/ApiError'
+    delete:
+      summary: 删除限流覆盖
+      parameters:
+        - in: query
+          name: scope
+          required: true
+          schema:
+            $ref: '#/components/schemas/RateLimitOverrideScope'
+        - in: query
+          name: key
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 删除成功
+        default:
+          $ref: '#/components/responses/ApiError'
+  /v1/events/registrations:
+    get:
+      summary: 列出事件回调注册
+      responses:
+        '200':
+          description: EventRegistrationRecord 数组
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventRegistrationRecord'
+              example:
+                - id: 019ab700-ca15-728b-b54f-17dc203acc2f
+                  event: node_degraded
+                  callback: https://ops.example.com/node-events
+                  created_at_ms: 1733965196123
+        default:
+          $ref: '#/components/responses/ApiError'
+    post:
+      summary: 注册事件回调
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventRegistrationRequest'
+            example:
+              event: node_degraded
+              callback: https://ops.example.com/node-events
+              secret: optional-shared-secret
+      responses:
+        '200':
+          description: EventRegistrationRecord
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventRegistrationRecord'
+        default:
+          $ref: '#/components/responses/ApiError'
+  /v1/events/registrations/{id}:
+    delete:
+      summary: 删除事件回调注册
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 删除成功
+        default:
+          $ref: '#/components/responses/ApiError'
+  /v1/service-events/registrations:
+    get:
+      summary: 列出 Service Event 注册
+      responses:
+        '200':
+          description: EventSubscriptionRecord 数组
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventSubscriptionRecord'
+              example:
+                - id: 019ab6ff-e5c0-7c93-874a-6224c4bf6fbe
+                  event: user_quota_changed
+                  callback: https://example.com/quota
+                  created_at_ms: 1734001002456
+        default:
+          $ref: '#/components/responses/ApiError'
+    post:
+      summary: 注册 Service Event 回调
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceEventRegistrationRequest'
+            example:
+              event: user_quota_changed
+              callback: https://example.com/quota
+              secret: optional
+      responses:
+        '200':
+          description: EventSubscriptionRecord
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventSubscriptionRecord'
+        default:
+          $ref: '#/components/responses/ApiError'
+  /v1/service-events/registrations/{id}:
+    delete:
+      summary: 删除 Service Event 注册
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 删除成功
+        default:
+          $ref: '#/components/responses/ApiError'
+  /v1/protocols:
+    get:
+      summary: 列出全部协议/节点
+      responses:
+        '200':
+          description: ProtocolSummary 数组
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProtocolSummary'
+              example:
+                - id: http-api
+                  role: listener
+                  protocol: http
+                  tags: [edge]
+                  description: demo
+                  listen: 0.0.0.0:35580
+                  connect: null
+                  user_count: 1
+        default:
+          $ref: '#/components/responses/ApiError'
+    post:
+      summary: Upsert 节点
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProtocolUpsertRequest'
+            example:
+              listen: 0.0.0.0:35580
+              profile:
+                id: http-api
+                role: listener
+                protocol: http
+                profile:
+                  server:
+                    allow_plain_http: false
+      responses:
+        '200':
+          description: ProtocolSummary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProtocolSummary'
+        default:
+          $ref: '#/components/responses/ApiError'
+  /v1/protocols/registrations:
+    post:
+      summary: 注册协议节点
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProtocolRegistrationRequest'
+            example:
+              id: edge-hk-1
+              role: listener
+              protocol: vless
+              tags: [edge, hk]
+              description: hk edge
+              listen: 0.0.0.0:443
+              ttl_seconds: 60
+      responses:
+        '200':
+          description: ProtocolRegistrationResponse
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProtocolRegistrationResponse'
+              example:
+                id: edge-hk-1
+                protocol: vless
+                registered_at_ms: 1734001002456
+                expires_at_ms: 1734001062456
+                heartbeat_interval_seconds: 30
+        default:
+          $ref: '#/components/responses/ApiError'
+  /v1/protocols/registrations/{id}:
+    delete:
+      summary: 注销协议节点注册
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 删除成功
+        default:
+          $ref: '#/components/responses/ApiError'
+  /v1/protocols/registrations/{id}/heartbeat:
+    post:
+      summary: 协议节点心跳
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProtocolHeartbeatRequest'
+            example:
+              status: Healthy
+              observed_at_ms: 1734001010000
+              message: ok
+      responses:
+        '200':
+          description: ProtocolHeartbeatResponse
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProtocolHeartbeatResponse'
+              example:
+                id: edge-hk-1
+                health:
+                  status: Healthy
+                  consecutive_failures: 0
+                  last_failure_elapsed_ms: null
+                received_at_ms: 1734001010000
+                expires_at_ms: 1734001070000
+        default:
+          $ref: '#/components/responses/ApiError'
+  /v1/protocols/{id}:
+    delete:
+      summary: 停止/移除节点
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 删除成功
+        default:
+          $ref: '#/components/responses/ApiError'
+  /v1/protocols/{id}/users:
+    get:
+      summary: 列出节点用户
+      parameters:
+        - in: query
+          name: all
+          schema:
+            type: boolean
+        - in: query
+          name: redact
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: UserView 数组
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserView'
+        default:
+          $ref: '#/components/responses/ApiError'
+  /v1/users:
+    get:
+      summary: 查看用户列表（默认去除密码）
+      parameters:
+        - in: query
+          name: redact
+          schema:
+            type: boolean
+          description: 隐藏用户名/标签/限额
+      responses:
+        '200':
+          description: 用户视图数组
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserView'
+              example:
+                - id: vip-001
+                  username: alice
+                  tags: [vip]
+                  metadata: {}
+                  traffic:
+                    allocated: 1073741824
+                    used: 0
+                  rate:
+                    up: 1048576
+                    down: null
+        default:
+          $ref: '#/components/responses/ApiError'
+    post:
+      summary: 创建用户
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreateRequest'
+            example:
+              id: vip-001
+              username: alice
+              password: secret
+              tags: [vip]
+              traffic:
+                allocated: 1073741824
+              rate:
+                up: 1048576
+                down: null
+      responses:
+        '200':
+          description: 新用户 ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserCreateResponse'
+              example:
+                id: vip-001
+        default:
+          $ref: '#/components/responses/ApiError'
+  /v1/users/import:
+    post:
+      summary: 替换全部用户快照
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/User'
+            example:
+              - id: user-1
+                username: alice
+                password: secret
+      responses:
+        '200':
+          description: 导入条数
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsersImportResponse'
+              example:
+                imported: 1
+        default:
+          $ref: '#/components/responses/ApiError'
+  /v1/users/{id}:
+    get:
+      summary: 查看单个用户
+      parameters:
+        - in: query
+          name: redact
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: 用户视图
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserView'
+        default:
+          $ref: '#/components/responses/ApiError'
+    put:
+      summary: 更新用户
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserPatchRequest'
+            example:
+              password: new-secret
+              traffic:
+                allocated: 2147483648
+      responses:
+        '200':
+          description: 更新完成
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPatchResponse'
+              example:
+                id: vip-001
+        default:
+          $ref: '#/components/responses/ApiError'
+    patch:
+      summary: 增量更新用户
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserPatchRequest'
+            example:
+              traffic:
+                used: 123
+      responses:
+        '200':
+          description: 更新完成
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPatchResponse'
+        default:
+          $ref: '#/components/responses/ApiError'
+    delete:
+      summary: 删除用户
+      responses:
+        '204':
+          description: 删除成功
+        default:
+          $ref: '#/components/responses/ApiError'
+  /v1/export:
+    post:
+      summary: 导出运行中配置
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExportRequest'
+            example:
+              path: /tmp/zero-snapshot.yaml
+              include_users: true
+              include_api: true
+              protocol_ids: [http-listener]
+              resolve_providers: true
+      responses:
+        '200':
+          description: 导出结果摘要
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExportResponse'
+              example:
+                path: /tmp/zero-snapshot.yaml
+                protocols: 1
+                version: v1
+                users: 5
+                api: true
+                pipeline:
+                  strategies: 2
+                  rules: 8
+                  resolved_rules: 12
+        default:
+          $ref: '#/components/responses/ApiError'
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+  responses:
+    ApiError:
+      description: 错误响应
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: BAD_REQUEST
+            message: bad request
+  schemas:
+    ErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+    StatusResponse:
+      type: object
+      required: [snapshot]
+      properties:
+        snapshot:
+          $ref: '#/components/schemas/RuntimeStatusSnapshot'
+        rate_limit_summary:
+          $ref: '#/components/schemas/UserRateLimitSummary'
+    RuntimeStatusSnapshot:
+      type: object
+      description: 运行时快照，字段结构详见 docs/observability_export.md
+      properties:
+        generated_at:
+          type: string
+        nodes:
+          type: array
+          items:
+            $ref: '#/components/schemas/NodeStatus'
+        pipeline:
+          $ref: '#/components/schemas/PipelineStatus'
+        providers:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProviderStatus'
+        http:
+          $ref: '#/components/schemas/HttpStatus'
+        socks:
+          $ref: '#/components/schemas/SocksStatus'
+        vless:
+          $ref: '#/components/schemas/VlessMetricsSnapshot'
+        ss:
+          $ref: '#/components/schemas/SsMetricsSnapshot'
+        ssr:
+          $ref: '#/components/schemas/SsrMetricsSnapshot'
+        tls:
+          $ref: '#/components/schemas/TlsStatus'
+        quic:
+          $ref: '#/components/schemas/QuicStatus'
+        http_metrics:
+          $ref: '#/components/schemas/HttpProxyMetricsSnapshot'
+        users:
+          $ref: '#/components/schemas/UserRegistryStatus'
+        system:
+          $ref: '#/components/schemas/SystemStatus'
+    NodeStatus:
+      type: object
+      properties:
+        id:
+          type: string
+        role:
+          $ref: '#/components/schemas/NodeRole'
+        protocol:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        description:
+          type: string
+          nullable: true
+        health:
+          $ref: '#/components/schemas/NodeHealthState'
+        interfaces:
+          $ref: '#/components/schemas/NodeInterfaceStatus'
+    NodeHealthState:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/HealthStatus'
+        consecutive_failures:
+          type: integer
+        last_failure_elapsed_ms:
+          type: integer
+          nullable: true
+    HealthStatus:
+      oneOf:
+        - type: string
+          enum: [Healthy]
+        - type: object
+          properties:
+            Degraded:
+              type: object
+              required: [consecutive_failures]
+              properties:
+                consecutive_failures:
+                  type: integer
+          additionalProperties: false
+        - type: object
+          properties:
+            Unhealthy:
+              type: object
+              required: [consecutive_failures]
+              properties:
+                consecutive_failures:
+                  type: integer
+          additionalProperties: false
+    NodeInterfaceStatus:
+      type: object
+      properties:
+        default_label:
+          type: string
+          nullable: true
+        bindings:
+          type: array
+          items:
+            $ref: '#/components/schemas/InterfaceBindingStatus'
+    InterfaceBindingStatus:
+      type: object
+      properties:
+        label:
+          type: string
+        device:
+          type: string
+        mac:
+          type: string
+          nullable: true
+        mtu:
+          type: integer
+          nullable: true
+        kind:
+          $ref: '#/components/schemas/InterfaceKindSummary'
+        addresses:
+          type: array
+          items:
+            $ref: '#/components/schemas/InterfaceAddressSummary'
+    PipelineStatus:
+      type: object
+      properties:
+        strategy_count:
+          type: integer
+        strategies:
+          type: array
+          items:
+            $ref: '#/components/schemas/StrategyStatus'
+        rule_count:
+          type: integer
+        rules:
+          type: array
+          items:
+            $ref: '#/components/schemas/RuleStatus'
+        default:
+          $ref: '#/components/schemas/DefaultRouteStatus'
+    StrategyStatus:
+      type: object
+      properties:
+        name:
+          type: string
+        kind:
+          $ref: '#/components/schemas/StrategyKindType'
+        candidates:
+          type: array
+          items:
+            type: string
+        attempts:
+          type: integer
+        successes:
+          type: integer
+        failures:
+          type: integer
+    StrategyKindType:
+      type: string
+      enum: [select, fallback, load_balance]
+    RuleStatus:
+      type: object
+      properties:
+        name:
+          type: string
+        action:
+          $ref: '#/components/schemas/ActionView'
+        priority:
+          type: integer
+        hits:
+          type: integer
+        last_hit_ms:
+          type: integer
+          nullable: true
+    DefaultRouteStatus:
+      type: object
+      properties:
+        rule_name:
+          type: string
+        action:
+          $ref: '#/components/schemas/ActionView'
+        hits:
+          type: integer
+        last_hit_ms:
+          type: integer
+          nullable: true
+    ActionView:
+      oneOf:
+        - type: object
+          required: [type, target]
+          properties:
+            type:
+              type: string
+              enum: [select_node]
+            target:
+              type: string
+            interface:
+              type: string
+              nullable: true
+        - type: object
+          required: [type, strategy]
+          properties:
+            type:
+              type: string
+              enum: [select_strategy]
+            strategy:
+              type: string
+            interface:
+              type: string
+              nullable: true
+        - type: object
+          required: [type]
+          properties:
+            type:
+              type: string
+              enum: [reject]
+    SystemStatus:
+      type: object
+      properties:
+        memory:
+          $ref: '#/components/schemas/MemoryStatus'
+        connections:
+          $ref: '#/components/schemas/ConnectionStatus'
+    MemoryStatus:
+      type: object
+      properties:
+        resident_bytes:
+          type: integer
+        virtual_bytes:
+          type: integer
+    ConnectionStatus:
+      type: object
+      properties:
+        active:
+          type: integer
+        opened_total:
+          type: integer
+        closed_total:
+          type: integer
+        by_node_protocol:
+          type: array
+          items:
+            $ref: '#/components/schemas/NodeConnectionStatus'
+    NodeConnectionStatus:
+      type: object
+      properties:
+        node_id:
+          type: string
+        protocol:
+          type: string
+        active:
+          type: integer
+        opened_total:
+          type: integer
+        closed_total:
+          type: integer
+    HttpStatus:
+      type: object
+      properties:
+        total_nodes:
+          type: integer
+        tcp_nodes:
+          type: integer
+        quic_nodes:
+          type: integer
+        webtransport_nodes:
+          type: integer
+    SocksStatus:
+      type: object
+      properties:
+        hop_metrics:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/HopMetricsSnapshot'
+    HopMetricsSnapshot:
+      type: object
+      properties:
+        attempts:
+          type: integer
+        successes:
+          type: integer
+        failures:
+          type: integer
+        retry_successes:
+          type: integer
+        prefix_fallbacks:
+          type: integer
+        direct_fallbacks:
+          type: integer
+    QuicStatus:
+      type: object
+      properties:
+        handshake_success:
+          type: integer
+        handshake_failure:
+          type: integer
+        zero_rtt_enabled:
+          type: integer
+        active_connections:
+          type: integer
+        completed_connections:
+          type: integer
+        alpn:
+          type: object
+          additionalProperties:
+            type: integer
+        reality_short_ids:
+          type: object
+          additionalProperties:
+            type: integer
+        reality_targets:
+          type: object
+          additionalProperties:
+            type: integer
+        session_errors:
+          type: integer
+        session_error_kinds:
+          type: object
+          additionalProperties:
+            type: integer
+    TlsStatus:
+      type: object
+      properties:
+        handshake_attempts:
+          type: integer
+        handshake_successes:
+          type: integer
+        handshake_failures:
+          type: integer
+        reality_short_ids:
+          type: array
+          items:
+            $ref: '#/components/schemas/RealityShortIdSnapshot'
+        reality_handshake_targets:
+          type: array
+          items:
+            $ref: '#/components/schemas/RealityHandshakeTargetSnapshot'
+    HttpProxyMetricsSnapshot:
+      type: object
+      properties:
+        requests_total:
+          type: integer
+        requests_connect:
+          type: integer
+        requests_plain:
+          type: integer
+        auth_required:
+          type: integer
+        auth_success:
+          type: integer
+        auth_failed:
+          type: integer
+        bad_method:
+          type: integer
+        bad_request:
+          type: integer
+    VlessMetricsSnapshot:
+      type: object
+      properties:
+        handshake_attempts:
+          type: integer
+        handshake_successes:
+          type: integer
+        handshake_failures:
+          type: integer
+        tcp_sessions:
+          type: integer
+        udp_sessions:
+          type: integer
+        failure_reasons:
+          type: array
+          items:
+            $ref: '#/components/schemas/FailureReasonSnapshot'
+        connector:
+          $ref: '#/components/schemas/VlessConnectorMetricsSnapshot'
+        udp_client_chunks:
+          type: integer
+        udp_client_failures:
+          type: integer
+        udp_remote_packets:
+          type: integer
+        udp_client_packets:
+          type: integer
+        udp_socket_errors:
+          type: integer
+        reality_short_ids:
+          type: array
+          items:
+            $ref: '#/components/schemas/RealityShortIdSnapshot'
+        reality_handshake_targets:
+          type: array
+          items:
+            $ref: '#/components/schemas/RealityHandshakeTargetSnapshot'
+        flow_totals:
+          type: array
+          items:
+            $ref: '#/components/schemas/FlowSnapshot'
+        reality_failure_total:
+          type: integer
+        reality_failure_reasons:
+          type: array
+          items:
+            $ref: '#/components/schemas/FailureReasonSnapshot'
+        reality_short_id_failures:
+          type: integer
+        reality_target_mismatch_failures:
+          type: integer
+        reality_zero_rtt_failures:
+          type: integer
+    VlessConnectorMetricsSnapshot:
+      type: object
+      properties:
+        attempts:
+          type: integer
+        successes:
+          type: integer
+        failures:
+          type: integer
+        endpoints:
+          type: array
+          items:
+            $ref: '#/components/schemas/EndpointStatsSnapshot'
+        failure_kinds:
+          type: array
+          items:
+            $ref: '#/components/schemas/FailureKindSnapshot'
+    SsMetricsSnapshot:
+      type: object
+      properties:
+        handshake_attempts:
+          type: integer
+        handshake_successes:
+          type: integer
+        handshake_failures:
+          type: integer
+        tcp_sessions:
+          type: integer
+        udp_sessions:
+          type: integer
+        failure_reasons:
+          type: array
+          items:
+            $ref: '#/components/schemas/FailureReasonSnapshot'
+        connector:
+          $ref: '#/components/schemas/SsConnectorMetricsSnapshot'
+    SsConnectorMetricsSnapshot:
+      type: object
+      properties:
+        attempts:
+          type: integer
+        successes:
+          type: integer
+        failures:
+          type: integer
+        endpoints:
+          type: array
+          items:
+            $ref: '#/components/schemas/EndpointStatsSnapshot'
+        failure_kinds:
+          type: array
+          items:
+            $ref: '#/components/schemas/FailureKindSnapshot'
+    SsrMetricsSnapshot:
+      type: object
+      properties:
+        handshake_attempts:
+          type: integer
+        handshake_successes:
+          type: integer
+        handshake_failures:
+          type: integer
+        tcp_sessions:
+          type: integer
+        udp_sessions:
+          type: integer
+        failure_reasons:
+          type: array
+          items:
+            $ref: '#/components/schemas/FailureReasonSnapshot'
+        connector:
+          $ref: '#/components/schemas/SsrConnectorMetricsSnapshot'
+    SsrConnectorMetricsSnapshot:
+      type: object
+      properties:
+        attempts:
+          type: integer
+        successes:
+          type: integer
+        failures:
+          type: integer
+        endpoints:
+          type: array
+          items:
+            $ref: '#/components/schemas/EndpointStatsSnapshot'
+        failure_kinds:
+          type: array
+          items:
+            $ref: '#/components/schemas/FailureKindSnapshot'
+    FailureReasonSnapshot:
+      type: object
+      properties:
+        reason:
+          type: string
+        total:
+          type: integer
+    FailureKindSnapshot:
+      type: object
+      properties:
+        kind:
+          type: string
+        total:
+          type: integer
+    EndpointStatsSnapshot:
+      type: object
+      properties:
+        endpoint:
+          type: string
+        attempts:
+          type: integer
+        successes:
+          type: integer
+        failures:
+          type: integer
+    RealityShortIdSnapshot:
+      type: object
+      properties:
+        short_id:
+          type: string
+        total:
+          type: integer
+    RealityHandshakeTargetSnapshot:
+      type: object
+      properties:
+        target:
+          type: string
+        total:
+          type: integer
+    FlowSnapshot:
+      type: object
+      properties:
+        flow:
+          type: string
+        total:
+          type: integer
+    UserRegistryStatus:
+      type: object
+      properties:
+        total:
+          type: integer
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserStatus'
+    UserStatus:
+      type: object
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+        traffic_allocated:
+          type: integer
+        traffic_used:
+          type: integer
+        traffic_remaining:
+          type: integer
+        rate_up:
+          type: integer
+          nullable: true
+        rate_down:
+          type: integer
+          nullable: true
+    UserRateLimitSummary:
+      type: object
+      properties:
+        total_users:
+          type: integer
+        unlimited_users:
+          type: integer
+        limited_users:
+          type: integer
+        limited_up_only:
+          type: integer
+        limited_down_only:
+          type: integer
+        limited_both:
+          type: integer
+    TrafficSummaryResponse:
+      type: object
+      properties:
+        generated_at_ms:
+          type: integer
+        bytes_up:
+          type: integer
+        bytes_down:
+          type: integer
+        by_node_protocol:
+          type: array
+          items:
+            $ref: '#/components/schemas/NodeProtocolTrafficSummary'
+    NodeProtocolTrafficSummary:
+      type: object
+      properties:
+        node_id:
+          type: string
+        protocol:
+          type: string
+        bytes_up:
+          type: integer
+        bytes_down:
+          type: integer
+    InterfaceListResponse:
+      type: object
+      properties:
+        interfaces:
+          type: array
+          items:
+            $ref: '#/components/schemas/InterfaceSummary'
+    InterfaceSummary:
+      type: object
+      properties:
+        name:
+          type: string
+        mac:
+          type: string
+          nullable: true
+        mtu:
+          type: integer
+          nullable: true
+        is_up:
+          type: boolean
+        is_loopback:
+          type: boolean
+        kind:
+          $ref: '#/components/schemas/InterfaceKindSummary'
+        addresses:
+          type: array
+          items:
+            $ref: '#/components/schemas/InterfaceAddressSummary'
+    InterfaceKindSummary:
+      type: string
+      enum: [physical, virtual]
+    InterfaceAddressSummary:
+      type: object
+      properties:
+        family:
+          type: string
+        address:
+          type: string
+        prefix:
+          type: integer
+    ProviderStatus:
+      type: object
+      properties:
+        name:
+          type: string
+        checksum:
+          type: string
+          nullable: true
+        last_success_unix_ms:
+          type: integer
+          nullable: true
+        last_attempt_unix_ms:
+          type: integer
+          nullable: true
+        etag:
+          type: string
+          nullable: true
+        state:
+          $ref: '#/components/schemas/ProviderState'
+        last_error:
+          type: string
+          nullable: true
+    ProviderState:
+      type: string
+      enum: [pending, healthy, error]
+    ProtocolUpsertRequest:
+      type: object
+      required: [profile]
+      properties:
+        listen:
+          type: string
+          nullable: true
+        connect:
+          type: string
+          nullable: true
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+        profile:
+          $ref: '#/components/schemas/NodeProfile'
+    ProtocolRegistrationRequest:
+      type: object
+      required: [id, role, protocol]
+      properties:
+        id:
+          type: string
+        role:
+          $ref: '#/components/schemas/NodeRole'
+        protocol:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        description:
+          type: string
+          nullable: true
+        listen:
+          type: string
+          nullable: true
+        connect:
+          type: string
+          nullable: true
+        profile:
+          type: object
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+        ttl_seconds:
+          type: integer
+          nullable: true
+    ProtocolRegistrationResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        protocol:
+          type: string
+        registered_at_ms:
+          type: integer
+        expires_at_ms:
+          type: integer
+          nullable: true
+        heartbeat_interval_seconds:
+          type: integer
+          nullable: true
+    ProtocolHeartbeatRequest:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/HealthStatus'
+        observed_at_ms:
+          type: integer
+        message:
+          type: string
+          nullable: true
+    ProtocolHeartbeatResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        health:
+          $ref: '#/components/schemas/NodeHealthState'
+        received_at_ms:
+          type: integer
+        expires_at_ms:
+          type: integer
+          nullable: true
+    NodeRole:
+      type: string
+      enum: [listener, connector]
+    ProtocolSummary:
+      type: object
+      properties:
+        id:
+          type: string
+        role:
+          $ref: '#/components/schemas/NodeRole'
+        protocol:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        description:
+          type: string
+          nullable: true
+        listen:
+          type: string
+          nullable: true
+        connect:
+          type: string
+          nullable: true
+        user_count:
+          type: integer
+    NodeProfile:
+      type: object
+      description: 节点配置，协议 profile 详见 docs/config_schema.md
+      required: [id, role, protocol, profile]
+      properties:
+        id:
+          type: string
+        role:
+          $ref: '#/components/schemas/NodeRole'
+        tags:
+          type: array
+          items:
+            type: string
+        description:
+          type: string
+          nullable: true
+        protocol:
+          type: string
+          enum: [http, socks, ss, ssr, vless, direct, mixed, any_tls]
+        profile:
+          type: object
+        stack:
+          type: object
+          nullable: true
+        interface_policy:
+          type: object
+          nullable: true
+        upstream:
+          type: array
+          items:
+            $ref: '#/components/schemas/UpstreamProfile'
+    UpstreamProfile:
+      type: object
+      properties:
+        id:
+          type: string
+          nullable: true
+        tags:
+          type: array
+          items:
+            type: string
+        description:
+          type: string
+          nullable: true
+        protocol:
+          type: string
+          enum: [http, socks, ss, ssr, vless, direct, mixed, any_tls]
+        profile:
+          type: object
+        upstream:
+          type: array
+          items:
+            $ref: '#/components/schemas/UpstreamProfile'
+    User:
+      type: object
+      required: [id, username, password]
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        password:
+          type: string
+        traffic:
+          $ref: '#/components/schemas/Traffic'
+        rate:
+          $ref: '#/components/schemas/Rate'
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+        tags:
+          type: array
+          items:
+            type: string
+    UserView:
+      type: object
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+        traffic:
+          $ref: '#/components/schemas/Traffic'
+        rate:
+          $ref: '#/components/schemas/Rate'
+    UserCreateRequest:
+      type: object
+      required: [id, username, password]
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        password:
+          type: string
+        traffic:
+          $ref: '#/components/schemas/TrafficPatch'
+        rate:
+          $ref: '#/components/schemas/RatePatch'
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+        tags:
+          type: array
+          items:
+            type: string
+    UserPatchRequest:
+      type: object
+      properties:
+        password:
+          type: string
+        traffic:
+          $ref: '#/components/schemas/TrafficPatch'
+        rate:
+          $ref: '#/components/schemas/RatePatch'
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+        tags:
+          type: array
+          items:
+            type: string
+    UserCreateResponse:
+      type: object
+      properties:
+        id:
+          type: string
+    UserPatchResponse:
+      type: object
+      properties:
+        id:
+          type: string
+    UsersImportResponse:
+      type: object
+      properties:
+        imported:
+          type: integer
+    Traffic:
+      type: object
+      properties:
+        allocated:
+          type: integer
+        used:
+          type: integer
+    Rate:
+      type: object
+      properties:
+        up:
+          type: integer
+          nullable: true
+        down:
+          type: integer
+          nullable: true
+    TrafficPatch:
+      type: object
+      properties:
+        allocated:
+          type: integer
+        used:
+          type: integer
+    RatePatch:
+      type: object
+      properties:
+        up:
+          type: integer
+          nullable: true
+        down:
+          type: integer
+          nullable: true
+    RateLimitOverrideRequest:
+      type: object
+      required: [scope, key, max_requests_per_minute]
+      properties:
+        scope:
+          $ref: '#/components/schemas/RateLimitOverrideScope'
+        key:
+          type: string
+        max_requests_per_minute:
+          type: integer
+    RateLimitOverrideResponse:
+      type: object
+      properties:
+        scope:
+          $ref: '#/components/schemas/RateLimitOverrideScope'
+        key:
+          type: string
+        max_requests_per_minute:
+          type: integer
+    RateLimitOverridesSnapshot:
+      type: object
+      properties:
+        endpoints:
+          type: object
+          additionalProperties:
+            type: integer
+        identities:
+          type: object
+          additionalProperties:
+            type: integer
+    RateLimitOverrideScope:
+      type: string
+      enum: [endpoint, identity]
+    TlsMode:
+      type: string
+      enum: [disabled, server, client, dual]
+    TlsNodeSummary:
+      type: object
+      properties:
+        id:
+          type: string
+        role:
+          $ref: '#/components/schemas/NodeRole'
+        tags:
+          type: array
+          items:
+            type: string
+        description:
+          type: string
+          nullable: true
+        inner_protocol:
+          type: string
+        tls_mode:
+          $ref: '#/components/schemas/TlsMode'
+        has_reality:
+          type: boolean
+    TlsNodeDetail:
+      type: object
+      properties:
+        id:
+          type: string
+        role:
+          $ref: '#/components/schemas/NodeRole'
+        tags:
+          type: array
+          items:
+            type: string
+        description:
+          type: string
+          nullable: true
+        listen:
+          type: string
+          nullable: true
+        connect:
+          type: string
+          nullable: true
+        profile:
+          type: object
+          description: AnyTLS profile，详见 docs/config_schema.md
+    TlsNodePatchRequest:
+      type: object
+      properties:
+        tls:
+          type: object
+        inner:
+          type: object
+    AuditRecord:
+      type: object
+      properties:
+        id:
+          type: string
+        timestamp_ms:
+          type: integer
+        channel:
+          type: string
+        endpoint:
+          type: string
+        action:
+          type: string
+        actor:
+          type: string
+          nullable: true
+        target:
+          type: string
+          nullable: true
+        success:
+          type: boolean
+        detail:
+          type: string
+          nullable: true
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+    AuditHealthSnapshot:
+      type: object
+      properties:
+        queued:
+          type: integer
+        dropped:
+          type: integer
+        sink_failures:
+          type: integer
+        last_error:
+          type: string
+          nullable: true
+        sinks:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditSinkHealth'
+    AuditSinkHealth:
+      type: object
+      properties:
+        name:
+          type: string
+        failures:
+          type: integer
+    ExportRequest:
+      type: object
+      required: [path]
+      properties:
+        path:
+          type: string
+        format:
+          type: string
+          enum: [json, yaml]
+        redact_users:
+          type: boolean
+        include_users:
+          type: boolean
+        include_api:
+          type: boolean
+        include_pipeline:
+          type: boolean
+        resolve_providers:
+          type: boolean
+        protocol_ids:
+          type: array
+          items:
+            type: string
+        allow_overwrite:
+          type: boolean
+        version_label:
+          type: string
+    ExportResponse:
+      type: object
+      properties:
+        path:
+          type: string
+        protocols:
+          type: integer
+        version:
+          type: string
+        users:
+          type: integer
+          nullable: true
+        api:
+          type: boolean
+          nullable: true
+        pipeline:
+          $ref: '#/components/schemas/PipelineExportMeta'
+        filters:
+          $ref: '#/components/schemas/ExportFilters'
+    ExportFilters:
+      type: object
+      properties:
+        protocols:
+          type: array
+          items:
+            type: string
+    PipelineExportMeta:
+      type: object
+      properties:
+        strategies:
+          type: integer
+        rules:
+          type: integer
+        resolved_rules:
+          type: integer
+          nullable: true
+    EventRegistrationRequest:
+      type: object
+      required: [event, callback]
+      properties:
+        event:
+          type: string
+          enum: [node_added, node_removed, node_healthy, node_degraded, node_unhealthy]
+        callback:
+          type: string
+        secret:
+          type: string
+          nullable: true
+    EventRegistrationRecord:
+      type: object
+      properties:
+        id:
+          type: string
+        event:
+          type: string
+        callback:
+          type: string
+        created_at_ms:
+          type: integer
+    ServiceEventRegistrationRequest:
+      type: object
+      required: [event, callback]
+      properties:
+        event:
+          type: string
+          enum: [user_quota_changed]
+        callback:
+          type: string
+        secret:
+          type: string
+          nullable: true
+    EventSubscriptionRecord:
+      type: object
+      properties:
+        id:
+          type: string
+        event:
+          type: string
+        callback:
+          type: string
+        created_at_ms:
+          type: integer

@@ -31,6 +31,8 @@ func RespondError(w http.ResponseWriter, r *http.Request, err error) {
 		status = http.StatusForbidden
 	case errors.Is(err, repository.ErrUnauthorized):
 		status = http.StatusUnauthorized
+	case errors.Is(err, repository.ErrTooManyRequests):
+		status = http.StatusTooManyRequests
 	case errors.Is(err, kernel.ErrProviderNotFound):
 		status = http.StatusBadRequest
 	case errors.Is(err, kernel.ErrNotImplemented):

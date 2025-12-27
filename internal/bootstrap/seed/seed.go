@@ -25,6 +25,12 @@ func Run(ctx context.Context, db *gorm.DB) error {
 		if err := seedNodes(tx); err != nil {
 			return err
 		}
+		if err := seedProtocolConfigs(tx); err != nil {
+			return err
+		}
+		if err := seedProtocolBindings(tx); err != nil {
+			return err
+		}
 		if err := seedTemplates(tx); err != nil {
 			return err
 		}
@@ -62,24 +68,28 @@ func seedUsers(tx *gorm.DB) error {
 	now := time.Now().UTC()
 	users := []repository.User{
 		{
-			Email:        "admin@example.com",
-			DisplayName:  "运营管理员",
-			PasswordHash: "$2a$10$OmiVLT.Awz75.D1g1Rvm7.TPPaB399VUCpQCJiBCnWGEN2L4IyJTe",
-			Roles:        []string{"admin", "user"},
-			Status:       "active",
-			LastLoginAt:  now.Add(-48 * time.Hour),
-			CreatedAt:    now.Add(-72 * time.Hour),
-			UpdatedAt:    now.Add(-24 * time.Hour),
+			Email:             "admin@example.com",
+			DisplayName:       "运营管理员",
+			PasswordHash:      "$2a$10$OmiVLT.Awz75.D1g1Rvm7.TPPaB399VUCpQCJiBCnWGEN2L4IyJTe",
+			Roles:             []string{"admin", "user"},
+			Status:            "active",
+			EmailVerifiedAt:   now.Add(-72 * time.Hour),
+			PasswordUpdatedAt: now.Add(-72 * time.Hour),
+			LastLoginAt:       now.Add(-48 * time.Hour),
+			CreatedAt:         now.Add(-72 * time.Hour),
+			UpdatedAt:         now.Add(-24 * time.Hour),
 		},
 		{
-			Email:        "user@example.com",
-			DisplayName:  "高级会员",
-			PasswordHash: "$2a$10$OmiVLT.Awz75.D1g1Rvm7.TPPaB399VUCpQCJiBCnWGEN2L4IyJTe",
-			Roles:        []string{"user"},
-			Status:       "active",
-			LastLoginAt:  now.Add(-6 * time.Hour),
-			CreatedAt:    now.Add(-48 * time.Hour),
-			UpdatedAt:    now.Add(-12 * time.Hour),
+			Email:             "user@example.com",
+			DisplayName:       "高级会员",
+			PasswordHash:      "$2a$10$OmiVLT.Awz75.D1g1Rvm7.TPPaB399VUCpQCJiBCnWGEN2L4IyJTe",
+			Roles:             []string{"user"},
+			Status:            "active",
+			EmailVerifiedAt:   now.Add(-48 * time.Hour),
+			PasswordUpdatedAt: now.Add(-48 * time.Hour),
+			LastLoginAt:       now.Add(-6 * time.Hour),
+			CreatedAt:         now.Add(-48 * time.Hour),
+			UpdatedAt:         now.Add(-12 * time.Hour),
 		},
 	}
 
@@ -120,6 +130,16 @@ func seedAdminModules(tx *gorm.DB) error {
 			UpdatedAt:   now,
 		},
 		{
+			Key:         "users",
+			Name:        "用户管理",
+			Description: "管理用户账号、角色与登录状态",
+			Icon:        "team",
+			Route:       adminroutes.Normalize("/users", ""),
+			Permissions: []string{"admin"},
+			CreatedAt:   now,
+			UpdatedAt:   now,
+		},
+		{
 			Key:         "nodes",
 			Name:        "节点管理",
 			Description: "维护边缘节点与内核运行状态",
@@ -136,6 +156,16 @@ func seedAdminModules(tx *gorm.DB) error {
 			Icon:        "layout",
 			Route:       adminroutes.Normalize("/subscription-templates", ""),
 			Permissions: []string{"admin", "product"},
+			CreatedAt:   now,
+			UpdatedAt:   now,
+		},
+		{
+			Key:         "user-subscriptions",
+			Name:        "订阅管理",
+			Description: "管理用户订阅、状态与有效期",
+			Icon:        "solution",
+			Route:       adminroutes.Normalize("/subscriptions", ""),
+			Permissions: []string{"admin", "ops"},
 			CreatedAt:   now,
 			UpdatedAt:   now,
 		},
@@ -243,6 +273,131 @@ func seedNodes(tx *gorm.DB) error {
 	return tx.Create(&laKernel).Error
 }
 
+func seedProtocolConfigs(tx *gorm.DB) error {
+	var count int64
+	if err := tx.Model(&repository.ProtocolConfig{}).Count(&count).Error; err != nil {
+		return err
+	}
+	if count > 0 {
+		return nil
+	}
+
+	now := time.Now().UTC()
+	configs := []repository.ProtocolConfig{
+		{
+			Name:        "vless-basic",
+			Protocol:    "vless",
+			Status:      "active",
+			Tags:        []string{"edge"},
+			Description: "VLESS 基础配置示例",
+			Profile:     map[string]any{"security": "none"},
+			CreatedAt:   now.Add(-24 * time.Hour),
+			UpdatedAt:   now.Add(-12 * time.Hour),
+		},
+		{
+			Name:        "ss-basic",
+			Protocol:    "ss",
+			Status:      "active",
+			Tags:        []string{"standard"},
+			Description: "Shadowsocks 基础配置示例",
+			Profile:     map[string]any{"cipher": "aes-128-gcm"},
+			CreatedAt:   now.Add(-24 * time.Hour),
+			UpdatedAt:   now.Add(-12 * time.Hour),
+		},
+	}
+
+	return tx.Create(&configs).Error
+}
+
+func seedProtocolBindings(tx *gorm.DB) error {
+	var count int64
+	if err := tx.Model(&repository.ProtocolBinding{}).Count(&count).Error; err != nil {
+		return err
+	}
+	if count > 0 {
+		return nil
+	}
+
+	var configs []repository.ProtocolConfig
+	if err := tx.Find(&configs).Error; err != nil {
+		return err
+	}
+
+	var nodes []repository.Node
+	if err := tx.Find(&nodes).Error; err != nil {
+		return err
+	}
+
+	cfgMap := map[string]repository.ProtocolConfig{}
+	for _, cfg := range configs {
+		cfgMap[cfg.Protocol] = cfg
+	}
+
+	nodeMap := map[string]repository.Node{}
+	for _, node := range nodes {
+		nodeMap[node.Name] = node
+	}
+
+	now := time.Now().UTC()
+
+	hkNode, ok := nodeMap["edge-hk-1"]
+	if !ok {
+		return errors.New("seed: missing node edge-hk-1")
+	}
+	laNode, ok := nodeMap["edge-la-1"]
+	if !ok {
+		return errors.New("seed: missing node edge-la-1")
+	}
+
+	vlessCfg, ok := cfgMap["vless"]
+	if !ok {
+		return errors.New("seed: missing vless protocol config")
+	}
+	ssCfg, ok := cfgMap["ss"]
+	if !ok {
+		return errors.New("seed: missing ss protocol config")
+	}
+
+	bindings := []repository.ProtocolBinding{
+		{
+			Name:             "hk-vless",
+			NodeID:           hkNode.ID,
+			ProtocolConfigID: vlessCfg.ID,
+			Role:             "listener",
+			Listen:           "hk.example.com:443",
+			Status:           "active",
+			KernelID:         "edge-hk-1-vless",
+			SyncStatus:       "synced",
+			HealthStatus:     "healthy",
+			Tags:             []string{"edge", "hk"},
+			Description:      "香港入口示例",
+			CreatedAt:        now.Add(-12 * time.Hour),
+			UpdatedAt:        now.Add(-30 * time.Minute),
+			LastSyncedAt:     now.Add(-30 * time.Minute),
+			LastHeartbeatAt:  now.Add(-5 * time.Minute),
+		},
+		{
+			Name:             "la-ss",
+			NodeID:           laNode.ID,
+			ProtocolConfigID: ssCfg.ID,
+			Role:             "listener",
+			Listen:           "la.example.com:443",
+			Status:           "active",
+			KernelID:         "edge-la-1-ss",
+			SyncStatus:       "synced",
+			HealthStatus:     "degraded",
+			Tags:             []string{"edge", "us"},
+			Description:      "洛杉矶入口示例",
+			CreatedAt:        now.Add(-18 * time.Hour),
+			UpdatedAt:        now.Add(-2 * time.Hour),
+			LastSyncedAt:     now.Add(-2 * time.Hour),
+			LastHeartbeatAt:  now.Add(-15 * time.Minute),
+		},
+	}
+
+	return tx.Create(&bindings).Error
+}
+
 func seedTemplates(tx *gorm.DB) error {
 	var count int64
 	if err := tx.Model(&repository.SubscriptionTemplate{}).Count(&count).Error; err != nil {
@@ -260,10 +415,10 @@ func seedTemplates(tx *gorm.DB) error {
 		Description: "提供 Clash Premium YAML 订阅示例",
 		ClientType:  "clash",
 		Format:      "go_template",
-		Content:     `# Clash Premium subscription\nproxies:\n  - name: {{ .subscription.name }}\n    type: trojan\n    server: {{ index .nodes 0 "hostname" }}\n    port: {{ index .nodes 0 "port" }}\n    password: {{ .subscription.token }}\n`,
+		Content:     `# Clash Premium subscription\nproxies:\n  - name: {{ .subscription.name }}\n    type: trojan\n    server: {{ index .nodes 0 "hostname" }}\n    port: {{ index .nodes 0 "port" }}\n    password: {{ .user_identity.password }}\n`,
 		Variables: map[string]repository.TemplateVariable{
-			"subscription.name":  {ValueType: "string", Description: "订阅展示名称"},
-			"subscription.token": {ValueType: "string", Description: "鉴权密钥", Required: true},
+			"subscription.name":      {ValueType: "string", Description: "订阅展示名称"},
+			"user_identity.password": {ValueType: "string", Description: "用户鉴权密码", Required: true},
 		},
 		IsDefault:       true,
 		Version:         1,
@@ -404,12 +559,16 @@ func seedPlans(tx *gorm.DB) error {
 			Currency:          "CNY",
 			DurationDays:      30,
 			TrafficLimitBytes: 200 << 30,
-			DevicesLimit:      3,
-			SortOrder:         10,
-			Status:            "active",
-			Visible:           true,
-			CreatedAt:         now.Add(-72 * time.Hour),
-			UpdatedAt:         now.Add(-24 * time.Hour),
+			TrafficMultipliers: map[string]float64{
+				"ss":    1,
+				"vless": 1,
+			},
+			DevicesLimit: 3,
+			SortOrder:    10,
+			Status:       "active",
+			Visible:      true,
+			CreatedAt:    now.Add(-72 * time.Hour),
+			UpdatedAt:    now.Add(-24 * time.Hour),
 		},
 		{
 			Name:              "旗舰套餐",
@@ -421,12 +580,16 @@ func seedPlans(tx *gorm.DB) error {
 			Currency:          "CNY",
 			DurationDays:      30,
 			TrafficLimitBytes: 1 << 40,
-			DevicesLimit:      10,
-			SortOrder:         20,
-			Status:            "active",
-			Visible:           true,
-			CreatedAt:         now.Add(-96 * time.Hour),
-			UpdatedAt:         now.Add(-12 * time.Hour),
+			TrafficMultipliers: map[string]float64{
+				"ss":    1.2,
+				"vless": 1,
+			},
+			DevicesLimit: 10,
+			SortOrder:    20,
+			Status:       "active",
+			Visible:      true,
+			CreatedAt:    now.Add(-96 * time.Hour),
+			UpdatedAt:    now.Add(-12 * time.Hour),
 		},
 	}
 

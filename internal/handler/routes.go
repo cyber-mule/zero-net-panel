@@ -6,19 +6,27 @@ import (
 	"github.com/zeromicro/go-zero/rest"
 
 	adminAnnouncements "github.com/zero-net-panel/zero-net-panel/internal/handler/admin/announcements"
+	adminAuditLogs "github.com/zero-net-panel/zero-net-panel/internal/handler/admin/auditlogs"
 	adminDashboard "github.com/zero-net-panel/zero-net-panel/internal/handler/admin/dashboard"
 	adminNodes "github.com/zero-net-panel/zero-net-panel/internal/handler/admin/nodes"
 	adminOrders "github.com/zero-net-panel/zero-net-panel/internal/handler/admin/orders"
 	adminPaymentChannels "github.com/zero-net-panel/zero-net-panel/internal/handler/admin/paymentchannels"
 	adminPlans "github.com/zero-net-panel/zero-net-panel/internal/handler/admin/plans"
+	adminProtocolBindings "github.com/zero-net-panel/zero-net-panel/internal/handler/admin/protocolbindings"
+	adminProtocolConfigs "github.com/zero-net-panel/zero-net-panel/internal/handler/admin/protocolconfigs"
 	adminSecurity "github.com/zero-net-panel/zero-net-panel/internal/handler/admin/security"
 	adminSite "github.com/zero-net-panel/zero-net-panel/internal/handler/admin/site"
+	adminSubscriptions "github.com/zero-net-panel/zero-net-panel/internal/handler/admin/subscriptions"
 	adminTemplates "github.com/zero-net-panel/zero-net-panel/internal/handler/admin/templates"
+	adminUsers "github.com/zero-net-panel/zero-net-panel/internal/handler/admin/users"
 	authhandlers "github.com/zero-net-panel/zero-net-panel/internal/handler/auth"
+	kernelhandlers "github.com/zero-net-panel/zero-net-panel/internal/handler/kernel"
 	sharedhandlers "github.com/zero-net-panel/zero-net-panel/internal/handler/shared"
 	userAccount "github.com/zero-net-panel/zero-net-panel/internal/handler/user/account"
 	userAnnouncements "github.com/zero-net-panel/zero-net-panel/internal/handler/user/announcements"
+	userNodes "github.com/zero-net-panel/zero-net-panel/internal/handler/user/nodes"
 	userOrders "github.com/zero-net-panel/zero-net-panel/internal/handler/user/orders"
+	userPaymentChannels "github.com/zero-net-panel/zero-net-panel/internal/handler/user/paymentchannels"
 	userPlans "github.com/zero-net-panel/zero-net-panel/internal/handler/user/plans"
 	userSubscriptions "github.com/zero-net-panel/zero-net-panel/internal/handler/user/subscriptions"
 	"github.com/zero-net-panel/zero-net-panel/internal/middleware"
@@ -56,6 +64,26 @@ func RegisterHandlers(server *rest.Server, svcCtx *svc.ServiceContext) {
 				Path:    "/refresh",
 				Handler: authhandlers.AuthRefreshHandler(svcCtx),
 			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/register",
+				Handler: authhandlers.AuthRegisterHandler(svcCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/verify",
+				Handler: authhandlers.AuthVerifyHandler(svcCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/forgot",
+				Handler: authhandlers.AuthForgotPasswordHandler(svcCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/reset",
+				Handler: authhandlers.AuthResetPasswordHandler(svcCtx),
+			},
 		},
 		rest.WithPrefix("/api/v1/auth"),
 	)
@@ -68,8 +96,58 @@ func RegisterHandlers(server *rest.Server, svcCtx *svc.ServiceContext) {
 		},
 		{
 			Method:  http.MethodGet,
+			Path:    "/users",
+			Handler: adminUsers.AdminListUsersHandler(svcCtx),
+		},
+		{
+			Method:  http.MethodPost,
+			Path:    "/users",
+			Handler: adminUsers.AdminCreateUserHandler(svcCtx),
+		},
+		{
+			Method:  http.MethodPatch,
+			Path:    "/users/:id/status",
+			Handler: adminUsers.AdminUpdateUserStatusHandler(svcCtx),
+		},
+		{
+			Method:  http.MethodPatch,
+			Path:    "/users/:id/roles",
+			Handler: adminUsers.AdminUpdateUserRolesHandler(svcCtx),
+		},
+		{
+			Method:  http.MethodPost,
+			Path:    "/users/:id/reset-password",
+			Handler: adminUsers.AdminResetUserPasswordHandler(svcCtx),
+		},
+		{
+			Method:  http.MethodPost,
+			Path:    "/users/:id/force-logout",
+			Handler: adminUsers.AdminForceLogoutHandler(svcCtx),
+		},
+		{
+			Method:  http.MethodPost,
+			Path:    "/users/:id/credentials/rotate",
+			Handler: adminUsers.AdminRotateUserCredentialHandler(svcCtx),
+		},
+		{
+			Method:  http.MethodGet,
 			Path:    "/nodes",
 			Handler: adminNodes.AdminListNodesHandler(svcCtx),
+		},
+		{
+			Method:  http.MethodPost,
+			Path:    "/nodes",
+			Handler: adminNodes.AdminCreateNodeHandler(svcCtx),
+		},
+		{
+			Method:  http.MethodPatch,
+			Path:    "/nodes/:id",
+			Handler: adminNodes.AdminUpdateNodeHandler(svcCtx),
+		},
+		{
+			Method:  http.MethodPost,
+			Path:    "/nodes/:id/disable",
+			Handler: adminNodes.AdminDisableNodeHandler(svcCtx),
 		},
 		{
 			Method:  http.MethodGet,
@@ -78,8 +156,63 @@ func RegisterHandlers(server *rest.Server, svcCtx *svc.ServiceContext) {
 		},
 		{
 			Method:  http.MethodPost,
+			Path:    "/nodes/:id/kernels",
+			Handler: adminNodes.AdminUpsertNodeKernelHandler(svcCtx),
+		},
+		{
+			Method:  http.MethodPost,
 			Path:    "/nodes/:id/kernels/sync",
 			Handler: adminNodes.AdminSyncNodeKernelHandler(svcCtx),
+		},
+		{
+			Method:  http.MethodGet,
+			Path:    "/protocol-configs",
+			Handler: adminProtocolConfigs.AdminListProtocolConfigsHandler(svcCtx),
+		},
+		{
+			Method:  http.MethodPost,
+			Path:    "/protocol-configs",
+			Handler: adminProtocolConfigs.AdminCreateProtocolConfigHandler(svcCtx),
+		},
+		{
+			Method:  http.MethodPatch,
+			Path:    "/protocol-configs/:id",
+			Handler: adminProtocolConfigs.AdminUpdateProtocolConfigHandler(svcCtx),
+		},
+		{
+			Method:  http.MethodDelete,
+			Path:    "/protocol-configs/:id",
+			Handler: adminProtocolConfigs.AdminDeleteProtocolConfigHandler(svcCtx),
+		},
+		{
+			Method:  http.MethodGet,
+			Path:    "/protocol-bindings",
+			Handler: adminProtocolBindings.AdminListProtocolBindingsHandler(svcCtx),
+		},
+		{
+			Method:  http.MethodPost,
+			Path:    "/protocol-bindings",
+			Handler: adminProtocolBindings.AdminCreateProtocolBindingHandler(svcCtx),
+		},
+		{
+			Method:  http.MethodPatch,
+			Path:    "/protocol-bindings/:id",
+			Handler: adminProtocolBindings.AdminUpdateProtocolBindingHandler(svcCtx),
+		},
+		{
+			Method:  http.MethodDelete,
+			Path:    "/protocol-bindings/:id",
+			Handler: adminProtocolBindings.AdminDeleteProtocolBindingHandler(svcCtx),
+		},
+		{
+			Method:  http.MethodPost,
+			Path:    "/protocol-bindings/:id/sync",
+			Handler: adminProtocolBindings.AdminSyncProtocolBindingHandler(svcCtx),
+		},
+		{
+			Method:  http.MethodPost,
+			Path:    "/protocol-bindings/sync",
+			Handler: adminProtocolBindings.AdminSyncProtocolBindingsHandler(svcCtx),
 		},
 		{
 			Method:  http.MethodGet,
@@ -108,8 +241,48 @@ func RegisterHandlers(server *rest.Server, svcCtx *svc.ServiceContext) {
 		},
 		{
 			Method:  http.MethodGet,
+			Path:    "/subscriptions",
+			Handler: adminSubscriptions.AdminListSubscriptionsHandler(svcCtx),
+		},
+		{
+			Method:  http.MethodGet,
+			Path:    "/subscriptions/:id",
+			Handler: adminSubscriptions.AdminGetSubscriptionHandler(svcCtx),
+		},
+		{
+			Method:  http.MethodPost,
+			Path:    "/subscriptions",
+			Handler: adminSubscriptions.AdminCreateSubscriptionHandler(svcCtx),
+		},
+		{
+			Method:  http.MethodPatch,
+			Path:    "/subscriptions/:id",
+			Handler: adminSubscriptions.AdminUpdateSubscriptionHandler(svcCtx),
+		},
+		{
+			Method:  http.MethodPost,
+			Path:    "/subscriptions/:id/disable",
+			Handler: adminSubscriptions.AdminDisableSubscriptionHandler(svcCtx),
+		},
+		{
+			Method:  http.MethodPost,
+			Path:    "/subscriptions/:id/extend",
+			Handler: adminSubscriptions.AdminExtendSubscriptionHandler(svcCtx),
+		},
+		{
+			Method:  http.MethodGet,
 			Path:    "/plans",
 			Handler: adminPlans.AdminListPlansHandler(svcCtx),
+		},
+		{
+			Method:  http.MethodGet,
+			Path:    "/audit-logs",
+			Handler: adminAuditLogs.AdminAuditLogListHandler(svcCtx),
+		},
+		{
+			Method:  http.MethodGet,
+			Path:    "/audit-logs/export",
+			Handler: adminAuditLogs.AdminAuditLogExportHandler(svcCtx),
 		},
 		{
 			Method:  http.MethodGet,
@@ -201,6 +374,11 @@ func RegisterHandlers(server *rest.Server, svcCtx *svc.ServiceContext) {
 			Path:    "/orders/:id/refund",
 			Handler: adminOrders.AdminRefundOrderHandler(svcCtx),
 		},
+		{
+			Method:  http.MethodPost,
+			Path:    "/orders/payments/reconcile",
+			Handler: adminOrders.AdminReconcilePaymentHandler(svcCtx),
+		},
 	}
 	adminRoutes = rest.WithMiddlewares([]rest.Middleware{accessMiddleware.Handler, authMiddleware.RequireRoles("admin")}, adminRoutes...)
 	adminPrefix := svcCtx.Config.Admin.RoutePrefix
@@ -226,6 +404,16 @@ func RegisterHandlers(server *rest.Server, svcCtx *svc.ServiceContext) {
 			Path:    "/payments/callback",
 			Handler: adminOrders.AdminPaymentCallbackHandler(svcCtx),
 		},
+		{
+			Method:  http.MethodPost,
+			Path:    "/kernel/traffic",
+			Handler: kernelhandlers.KernelTrafficHandler(svcCtx),
+		},
+		{
+			Method:  http.MethodPost,
+			Path:    "/kernel/events",
+			Handler: kernelhandlers.KernelEventHandler(svcCtx),
+		},
 	}
 	publicWebhookRoutes = rest.WithMiddlewares([]rest.Middleware{webhookMiddleware.Handler}, publicWebhookRoutes...)
 	server.AddRoutes(publicWebhookRoutes, rest.WithPrefix("/api/v1"))
@@ -248,8 +436,23 @@ func RegisterHandlers(server *rest.Server, svcCtx *svc.ServiceContext) {
 		},
 		{
 			Method:  http.MethodGet,
+			Path:    "/subscriptions/:id/traffic",
+			Handler: userSubscriptions.UserSubscriptionTrafficHandler(svcCtx),
+		},
+		{
+			Method:  http.MethodGet,
 			Path:    "/plans",
 			Handler: userPlans.UserListPlansHandler(svcCtx),
+		},
+		{
+			Method:  http.MethodGet,
+			Path:    "/nodes",
+			Handler: userNodes.UserListNodesHandler(svcCtx),
+		},
+		{
+			Method:  http.MethodGet,
+			Path:    "/payment-channels",
+			Handler: userPaymentChannels.UserListPaymentChannelsHandler(svcCtx),
 		},
 		{
 			Method:  http.MethodGet,
@@ -260,6 +463,36 @@ func RegisterHandlers(server *rest.Server, svcCtx *svc.ServiceContext) {
 			Method:  http.MethodGet,
 			Path:    "/account/balance",
 			Handler: userAccount.UserBalanceHandler(svcCtx),
+		},
+		{
+			Method:  http.MethodGet,
+			Path:    "/account/profile",
+			Handler: userAccount.UserProfileHandler(svcCtx),
+		},
+		{
+			Method:  http.MethodPatch,
+			Path:    "/account/profile",
+			Handler: userAccount.UserUpdateProfileHandler(svcCtx),
+		},
+		{
+			Method:  http.MethodPost,
+			Path:    "/account/password",
+			Handler: userAccount.UserChangePasswordHandler(svcCtx),
+		},
+		{
+			Method:  http.MethodPost,
+			Path:    "/account/credentials/rotate",
+			Handler: userAccount.UserRotateCredentialHandler(svcCtx),
+		},
+		{
+			Method:  http.MethodPost,
+			Path:    "/account/email/code",
+			Handler: userAccount.UserEmailChangeCodeHandler(svcCtx),
+		},
+		{
+			Method:  http.MethodPost,
+			Path:    "/account/email",
+			Handler: userAccount.UserChangeEmailHandler(svcCtx),
 		},
 		{
 			Method:  http.MethodPost,
@@ -285,11 +518,6 @@ func RegisterHandlers(server *rest.Server, svcCtx *svc.ServiceContext) {
 			Method:  http.MethodGet,
 			Path:    "/orders/:id/payment-status",
 			Handler: userOrders.UserGetOrderPaymentStatusHandler(svcCtx),
-		},
-		{
-			Method:  http.MethodPost,
-			Path:    "/orders/:id/cancel",
-			Handler: userOrders.UserCancelOrderHandler(svcCtx),
 		},
 	}
 	userRoutes = rest.WithMiddlewares([]rest.Middleware{authMiddleware.RequireRoles("user"), thirdPartyMiddleware.Handler}, userRoutes...)

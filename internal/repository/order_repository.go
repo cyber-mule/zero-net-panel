@@ -136,6 +136,7 @@ type OrderRepository interface {
 	ListItems(ctx context.Context, orderIDs []uint64) (map[uint64][]OrderItem, error)
 	ListRefunds(ctx context.Context, orderIDs []uint64) (map[uint64][]OrderRefund, error)
 	ListPayments(ctx context.Context, orderIDs []uint64) (map[uint64][]OrderPayment, error)
+	GetPayment(ctx context.Context, id uint64) (OrderPayment, error)
 	UpdateStatus(ctx context.Context, id uint64, params UpdateOrderStatusParams) (Order, error)
 	AddRefund(ctx context.Context, id uint64, params AddRefundParams) (Order, error)
 	CreateRefund(ctx context.Context, refund OrderRefund) (OrderRefund, error)
@@ -403,6 +404,21 @@ func (r *orderRepository) ListPayments(ctx context.Context, orderIDs []uint64) (
 	}
 
 	return grouped, nil
+}
+
+func (r *orderRepository) GetPayment(ctx context.Context, id uint64) (OrderPayment, error) {
+	if err := ctx.Err(); err != nil {
+		return OrderPayment{}, err
+	}
+	if id == 0 {
+		return OrderPayment{}, ErrInvalidArgument
+	}
+
+	var payment OrderPayment
+	if err := r.db.WithContext(ctx).First(&payment, id).Error; err != nil {
+		return OrderPayment{}, translateError(err)
+	}
+	return payment, nil
 }
 
 func (r *orderRepository) CreateRefund(ctx context.Context, refund OrderRefund) (OrderRefund, error) {

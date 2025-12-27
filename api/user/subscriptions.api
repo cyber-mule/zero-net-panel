@@ -19,6 +19,10 @@ service znp {
     @doc "Update user subscription template"
     @handler UserUpdateSubscriptionTemplate
     post /user/subscriptions/:id/template(UserUpdateSubscriptionTemplateRequest) returns (UserUpdateSubscriptionTemplateResponse)
+
+    @doc "Subscription traffic usage"
+    @handler UserSubscriptionTraffic
+    get /user/subscriptions/:id/traffic(UserSubscriptionTrafficRequest) returns (UserSubscriptionTrafficResponse)
 }
 
 type UserListSubscriptionsRequest {
@@ -72,4 +76,39 @@ type UserUpdateSubscriptionTemplateResponse {
     subscription_id uint64
     template_id uint64
     updated_at int64
+}
+
+type UserSubscriptionTrafficRequest {
+    id uint64
+    page int(optional)
+    per_page int(optional)
+    protocol string(optional)
+    node_id uint64(optional)
+    binding_id uint64(optional)
+    from int64(optional)
+    to int64(optional)
+}
+
+type UserTrafficUsageRecord {
+    id uint64
+    protocol string
+    node_id uint64
+    binding_id uint64
+    bytes_up int64
+    bytes_down int64
+    raw_bytes int64
+    charged_bytes int64
+    multiplier float64
+    observed_at int64
+}
+
+type UserSubscriptionTrafficSummary {
+    raw_bytes int64
+    charged_bytes int64
+}
+
+type UserSubscriptionTrafficResponse {
+    summary UserSubscriptionTrafficSummary
+    records []UserTrafficUsageRecord
+    pagination PaginationMeta
 }

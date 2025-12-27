@@ -13,6 +13,22 @@ service znp {
 	@doc "Refresh access token"
 	@handler AuthRefresh
 	post /auth/refresh (AuthRefreshRequest) returns (AuthRefreshResponse)
+
+	@doc "Register new user account"
+	@handler AuthRegister
+	post /auth/register (AuthRegisterRequest) returns (AuthRegisterResponse)
+
+	@doc "Verify user email with code"
+	@handler AuthVerify
+	post /auth/verify (AuthVerifyRequest) returns (AuthVerifyResponse)
+
+	@doc "Request password reset code"
+	@handler AuthForgotPassword
+	post /auth/forgot (AuthForgotPasswordRequest) returns (AuthForgotPasswordResponse)
+
+	@doc "Reset password using verification code"
+	@handler AuthResetPassword
+	post /auth/reset (AuthResetPasswordRequest) returns (AuthResetPasswordResponse)
 }
 
 type AuthLoginRequest {
@@ -22,6 +38,28 @@ type AuthLoginRequest {
 
 type AuthRefreshRequest {
 	refresh_token string
+}
+
+type AuthRegisterRequest {
+	email        string
+	password     string
+	display_name string(optional)
+	invite_code  string(optional)
+}
+
+type AuthVerifyRequest {
+	email string
+	code  string
+}
+
+type AuthForgotPasswordRequest {
+	email string
+}
+
+type AuthResetPasswordRequest {
+	email    string
+	code     string
+	password string
 }
 
 type AuthenticatedUser {
@@ -51,3 +89,29 @@ type AuthRefreshResponse {
 	user               AuthenticatedUser
 }
 
+type AuthRegisterResponse {
+	requires_verification bool
+	access_token          string(optional)
+	refresh_token         string(optional)
+	token_type            string(optional)
+	expires_in            int64(optional)
+	refresh_expires_in    int64(optional)
+	user                  AuthenticatedUser
+}
+
+type AuthVerifyResponse {
+	access_token       string
+	refresh_token      string
+	token_type         string
+	expires_in         int64
+	refresh_expires_in int64
+	user               AuthenticatedUser
+}
+
+type AuthForgotPasswordResponse {
+	message string
+}
+
+type AuthResetPasswordResponse {
+	message string
+}

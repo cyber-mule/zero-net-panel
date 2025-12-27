@@ -2,6 +2,10 @@ package order
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -43,6 +47,54 @@ func setupCreateLogicTest(t *testing.T) (*svc.ServiceContext, func()) {
 	return svcCtx, cleanup
 }
 
+func seedDefaultTemplate(t *testing.T, db *gorm.DB) repository.SubscriptionTemplate {
+	t.Helper()
+
+	now := time.Now().UTC()
+	tpl := repository.SubscriptionTemplate{
+		Name:        "Default Template",
+		Description: "Test template",
+		ClientType:  "clash",
+		Format:      "go_template",
+		Content:     "test",
+		IsDefault:   true,
+		Version:     1,
+		CreatedAt:   now,
+		UpdatedAt:   now,
+		PublishedAt: &now,
+	}
+
+	var existing repository.SubscriptionTemplate
+	err := db.Where("name = ? AND client_type = ?", tpl.Name, tpl.ClientType).First(&existing).Error
+	if err == nil {
+		return existing
+	}
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		require.NoError(t, err)
+	}
+
+	require.NoError(t, db.Create(&tpl).Error)
+	return tpl
+}
+
+func seedPaymentChannel(t *testing.T, db *gorm.DB, code string, enabled bool, config map[string]any) repository.PaymentChannel {
+	t.Helper()
+
+	now := time.Now().UTC()
+	channel := repository.PaymentChannel{
+		Name:      code,
+		Code:      code,
+		Provider:  code,
+		Enabled:   enabled,
+		SortOrder: 1,
+		Config:    config,
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+	require.NoError(t, db.Create(&channel).Error)
+	return channel
+}
+
 func TestCreateOrderWithBalancePayment(t *testing.T) {
 	svcCtx, cleanup := setupCreateLogicTest(t)
 	defer cleanup()
@@ -75,6 +127,7 @@ func TestCreateOrderWithBalancePayment(t *testing.T) {
 		UpdatedAt:         now,
 	}
 	require.NoError(t, svcCtx.DB.Create(&plan).Error)
+	template := seedDefaultTemplate(t, svcCtx.DB)
 
 	balanceRepo := svcCtx.Repositories.Balance
 	_, _, err := balanceRepo.ApplyTransaction(ctx, user.ID, repository.BalanceTransaction{
@@ -111,6 +164,14 @@ func TestCreateOrderWithBalancePayment(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, repository.OrderStatusPaid, storedOrder.Status)
 	require.Equal(t, repository.OrderPaymentStatusSucceeded, storedOrder.PaymentStatus)
+
+	subs, _, err := svcCtx.Repositories.Subscription.ListByUser(ctx, user.ID, repository.ListSubscriptionsOptions{})
+	require.NoError(t, err)
+	require.Len(t, subs, 1)
+	require.Equal(t, plan.Name, subs[0].PlanName)
+	require.Equal(t, plan.DevicesLimit, subs[0].DevicesLimit)
+	require.Equal(t, plan.TrafficLimitBytes, subs[0].TrafficTotalBytes)
+	require.Equal(t, template.ID, subs[0].TemplateID)
 }
 
 func TestCreateOrderWithExternalPayment(t *testing.T) {
@@ -119,6 +180,18 @@ func TestCreateOrderWithExternalPayment(t *testing.T) {
 
 	ctx := context.Background()
 	now := time.Now().UTC()
+	gateway := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var payload map[string]any
+		require.NoError(t, json.NewDecoder(r.Body).Decode(&payload))
+		require.NotEmpty(t, payload["order_no"])
+		require.NotEmpty(t, payload["amount"])
+		require.NotEmpty(t, payload["notify_url"])
+		require.NotEmpty(t, payload["return_url"])
+		w.Header().Set("Content-Type", "application/json")
+		_, err := w.Write([]byte(`{"data":{"pay_url":"https://pay.test/redirect","reference":"ref-001"}}`))
+		require.NoError(t, err)
+	}))
+	defer gateway.Close()
 
 	user := repository.User{
 		Email:       "buyer2@test.dev",
@@ -145,6 +218,27 @@ func TestCreateOrderWithExternalPayment(t *testing.T) {
 		UpdatedAt:         now,
 	}
 	require.NoError(t, svcCtx.DB.Create(&plan).Error)
+	seedDefaultTemplate(t, svcCtx.DB)
+	seedPaymentChannel(t, svcCtx.DB, "stripe", true, map[string]any{
+		"mode":       "http",
+		"notify_url": "https://notify.test/callback?order_id={{order_id}}&payment_id={{payment_id}}",
+		"return_url": "https://return.test/orders/{{order_number}}",
+		"http": map[string]any{
+			"endpoint":  gateway.URL,
+			"method":    "POST",
+			"body_type": "json",
+			"payload": map[string]any{
+				"order_no":   "{{order_number}}",
+				"amount":     "{{amount}}",
+				"notify_url": "{{notify_url}}",
+				"return_url": "{{return_url}}",
+			},
+		},
+		"response": map[string]any{
+			"pay_url":   "data.pay_url",
+			"reference": "data.reference",
+		},
+	})
 
 	claims := security.UserClaims{ID: user.ID, Email: user.Email, Roles: []string{"user"}}
 	reqCtx := security.WithUser(ctx, claims)
@@ -171,6 +265,7 @@ func TestCreateOrderWithExternalPayment(t *testing.T) {
 	require.Equal(t, plan.PriceCents, payment.AmountCents)
 	require.Equal(t, plan.Currency, payment.Currency)
 	require.Equal(t, "stripe", payment.Provider)
+	require.Equal(t, "https://pay.test/redirect", payment.Metadata["pay_url"])
 
 	storedOrder, _, err := svcCtx.Repositories.Order.Get(ctx, resp.Order.ID)
 	require.NoError(t, err)
@@ -182,6 +277,78 @@ func TestCreateOrderWithExternalPayment(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, paymentsMap[storedOrder.ID], 1)
 	require.Equal(t, repository.OrderPaymentStatusPending, paymentsMap[storedOrder.ID][0].Status)
+}
+
+func TestCreateOrderWithExternalPaymentInvalidChannel(t *testing.T) {
+	cases := []struct {
+		name string
+		seed func(t *testing.T, db *gorm.DB)
+		code string
+	}{
+		{
+			name: "missing",
+			code: "stripe",
+		},
+		{
+			name: "disabled",
+			code: "stripe",
+			seed: func(t *testing.T, db *gorm.DB) {
+				seedPaymentChannel(t, db, "stripe", false, nil)
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			svcCtx, cleanup := setupCreateLogicTest(t)
+			defer cleanup()
+
+			ctx := context.Background()
+			now := time.Now().UTC()
+
+			user := repository.User{
+				Email:       "buyer-invalid@test.dev",
+				DisplayName: "Buyer Invalid",
+				Roles:       []string{"user"},
+				Status:      "active",
+				CreatedAt:   now,
+				UpdatedAt:   now,
+			}
+			require.NoError(t, svcCtx.DB.Create(&user).Error)
+
+			plan := repository.Plan{
+				Name:              "Invalid Plan",
+				Slug:              "invalid-plan",
+				Description:       "Plan",
+				PriceCents:        1200,
+				Currency:          "CNY",
+				DurationDays:      30,
+				TrafficLimitBytes: 1024,
+				DevicesLimit:      1,
+				Status:            "active",
+				Visible:           true,
+				CreatedAt:         now,
+				UpdatedAt:         now,
+			}
+			require.NoError(t, svcCtx.DB.Create(&plan).Error)
+			if tc.seed != nil {
+				tc.seed(t, svcCtx.DB)
+			}
+
+			claims := security.UserClaims{ID: user.ID, Email: user.Email, Roles: []string{"user"}}
+			reqCtx := security.WithUser(ctx, claims)
+
+			logic := NewCreateLogic(reqCtx, svcCtx)
+			resp, err := logic.Create(&types.UserCreateOrderRequest{
+				PlanID:         plan.ID,
+				PaymentMethod:  repository.PaymentMethodExternal,
+				PaymentChannel: tc.code,
+			})
+			require.Error(t, err)
+			require.ErrorIs(t, err, repository.ErrInvalidArgument)
+			require.Nil(t, resp)
+		})
+	}
 }
 
 func TestCreateOrderWithManualPayment(t *testing.T) {
@@ -273,6 +440,7 @@ func TestCreateOrderIdempotent(t *testing.T) {
 		UpdatedAt:         now,
 	}
 	require.NoError(t, svcCtx.DB.Create(&plan).Error)
+	seedDefaultTemplate(t, svcCtx.DB)
 
 	balanceRepo := svcCtx.Repositories.Balance
 	_, _, err := balanceRepo.ApplyTransaction(ctx, user.ID, repository.BalanceTransaction{

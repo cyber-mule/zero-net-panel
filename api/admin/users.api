@@ -1,0 +1,114 @@
+syntax = "v1"
+
+import "shared/types.api"
+
+@server (
+    name: znp
+    prefix: /api/v1
+    group: admin/users
+)
+service znp {
+    @doc "List users with filters"
+    @handler AdminListUsers
+    get /admin/users (AdminListUsersRequest) returns (AdminUserListResponse)
+
+    @doc "Create a new user"
+    @handler AdminCreateUser
+    post /admin/users (AdminCreateUserRequest) returns (AdminUserResponse)
+
+    @doc "Update user status (active/disabled)"
+    @handler AdminUpdateUserStatus
+    patch /admin/users/:id/status (AdminUpdateUserStatusRequest) returns (AdminUserResponse)
+
+    @doc "Update user roles"
+    @handler AdminUpdateUserRoles
+    patch /admin/users/:id/roles (AdminUpdateUserRolesRequest) returns (AdminUserResponse)
+
+    @doc "Reset user password"
+    @handler AdminResetUserPassword
+    post /admin/users/:id/reset-password (AdminResetUserPasswordRequest) returns (AdminResetUserPasswordResponse)
+
+    @doc "Force user logout"
+    @handler AdminForceLogout
+    post /admin/users/:id/force-logout (AdminForceLogoutRequest) returns (AdminForceLogoutResponse)
+
+    @doc "Rotate user credential"
+    @handler AdminRotateUserCredential
+    post /admin/users/:id/credentials/rotate (AdminRotateUserCredentialRequest) returns (AdminRotateUserCredentialResponse)
+}
+
+type AdminListUsersRequest {
+    page int(optional)
+    per_page int(optional)
+    q string(optional)
+    status string(optional)
+    role string(optional)
+}
+
+type AdminUserSummary {
+    id uint64
+    email string
+    display_name string
+    roles []string
+    status string
+    email_verified_at int64(optional)
+    failed_login_attempts int
+    locked_until int64(optional)
+    last_login_at int64(optional)
+    created_at int64
+    updated_at int64
+}
+
+type AdminUserListResponse {
+    users []AdminUserSummary
+    pagination PaginationMeta
+}
+
+type AdminUserResponse {
+    user AdminUserSummary
+}
+
+type AdminCreateUserRequest {
+    email string
+    password string
+    display_name string(optional)
+    roles []string(optional)
+    status string(optional)
+    email_verified bool(optional)
+}
+
+type AdminUpdateUserStatusRequest {
+    id uint64(path:"id")
+    status string
+}
+
+type AdminUpdateUserRolesRequest {
+    id uint64(path:"id")
+    roles []string
+}
+
+type AdminResetUserPasswordRequest {
+    id uint64(path:"id")
+    password string
+}
+
+type AdminForceLogoutRequest {
+    id uint64(path:"id")
+}
+
+type AdminResetUserPasswordResponse {
+    message string
+}
+
+type AdminForceLogoutResponse {
+    message string
+}
+
+type AdminRotateUserCredentialRequest {
+    id uint64(path:"id")
+}
+
+type AdminRotateUserCredentialResponse {
+    user_id uint64
+    credential CredentialSummary
+}

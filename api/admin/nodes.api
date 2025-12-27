@@ -12,9 +12,25 @@ service znp {
     @handler AdminListNodes
     get /admin/nodes(AdminListNodesRequest) returns (AdminNodeListResponse)
 
+    @doc "Create node"
+    @handler AdminCreateNode
+    post /admin/nodes(AdminCreateNodeRequest) returns (AdminNodeResponse)
+
+    @doc "Update node"
+    @handler AdminUpdateNode
+    patch /admin/nodes/:id(AdminUpdateNodeRequest) returns (AdminNodeResponse)
+
+    @doc "Disable node"
+    @handler AdminDisableNode
+    post /admin/nodes/:id/disable(AdminDisableNodeRequest) returns (AdminNodeResponse)
+
     @doc "Get node kernel endpoints"
     @handler AdminNodeKernels
     get /admin/nodes/:id/kernels(AdminNodeKernelPath) returns (AdminNodeKernelResponse)
+
+    @doc "Upsert node kernel endpoint"
+    @handler AdminUpsertNodeKernel
+    post /admin/nodes/:id/kernels(AdminUpsertNodeKernelRequest) returns (AdminNodeKernelUpsertResponse)
 
     @doc "Sync node kernel configuration"
     @handler AdminSyncNodeKernel
@@ -46,6 +62,39 @@ type NodeSummary {
     updated_at int64
 }
 
+type AdminNodeResponse {
+    node NodeSummary
+}
+
+type AdminCreateNodeRequest {
+    name string
+    region string(optional)
+    country string(optional)
+    isp string(optional)
+    status string(optional)
+    tags []string(optional)
+    protocols []string(optional)
+    capacity_mbps int(optional)
+    description string(optional)
+}
+
+type AdminUpdateNodeRequest {
+    id uint64
+    name string(optional)
+    region string(optional)
+    country string(optional)
+    isp string(optional)
+    status string(optional)
+    tags []string(optional)
+    protocols []string(optional)
+    capacity_mbps int(optional)
+    description string(optional)
+}
+
+type AdminDisableNodeRequest {
+    id uint64
+}
+
 type AdminNodeListResponse {
     nodes []NodeSummary
     pagination PaginationMeta
@@ -67,6 +116,21 @@ type NodeKernelSummary {
 type AdminNodeKernelResponse {
     node_id uint64
     kernels []NodeKernelSummary
+}
+
+type AdminUpsertNodeKernelRequest {
+    id uint64
+    protocol string
+    endpoint string
+    revision string(optional)
+    status string(optional)
+    config map[string]any(optional)
+    last_synced_at int64(optional)
+}
+
+type AdminNodeKernelUpsertResponse {
+    node_id uint64
+    kernel NodeKernelSummary
 }
 
 type AdminSyncNodeKernelRequest {

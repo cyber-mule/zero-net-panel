@@ -1,0 +1,29 @@
+syntax = "v1"
+
+@server (
+    name: znp
+    prefix: /api/v1
+    group: user/paymentchannels
+)
+service znp {
+    @doc "List payment channels"
+    @handler UserListPaymentChannels
+    get /user/payment-channels(UserPaymentChannelListRequest) returns (UserPaymentChannelListResponse)
+}
+
+type UserPaymentChannelListRequest {
+    provider string(optional)
+}
+
+type UserPaymentChannelSummary {
+    id uint64
+    name string
+    code string
+    provider string
+    sort_order int
+    config map[string]any
+}
+
+type UserPaymentChannelListResponse {
+    channels []UserPaymentChannelSummary
+}

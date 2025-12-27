@@ -218,7 +218,13 @@ func (w *InstallWizard) configureAuthStep() error {
 	w.cfg.Auth.RefreshSecret = refreshSecret
 	w.cfg.Auth.RefreshExpire = 720 * time.Hour
 
-	w.cmd.Println("✓ JWT secrets generated successfully")
+	credentialKey, err := generateSecret(32)
+	if err != nil {
+		return fmt.Errorf("failed to generate credential secret: %w", err)
+	}
+	w.cfg.Credentials.MasterKey = credentialKey
+
+	w.cmd.Println("✓ JWT and credential secrets generated successfully")
 	return nil
 }
 

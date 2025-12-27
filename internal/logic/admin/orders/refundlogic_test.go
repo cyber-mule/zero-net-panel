@@ -2,6 +2,9 @@ package orders
 
 import (
 	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -137,4 +140,116 @@ func TestAdminRefundOrder_FullRefundCancelsOrder(t *testing.T) {
 	require.Equal(t, "refund", transactions[0].Type)
 	require.Equal(t, int64(1500), transactions[0].AmountCents)
 	require.Contains(t, transactions[0].Metadata, "ticket")
+}
+
+func TestAdminRefundOrder_ExternalRefund(t *testing.T) {
+	svcCtx, cleanup := setupAdminOrderTestContext(t)
+	defer cleanup()
+
+	ctx := context.Background()
+	now := time.Now().UTC()
+
+	admin := repository.User{
+		Email:       "admin-external@test.local",
+		DisplayName: "Admin",
+		Roles:       []string{"admin"},
+		Status:      "active",
+		CreatedAt:   now,
+		UpdatedAt:   now,
+	}
+	require.NoError(t, svcCtx.DB.Create(&admin).Error)
+
+	customer := repository.User{
+		Email:       "buyer-external@test.local",
+		DisplayName: "Buyer",
+		Roles:       []string{"user"},
+		Status:      "active",
+		CreatedAt:   now,
+		UpdatedAt:   now,
+	}
+	require.NoError(t, svcCtx.DB.Create(&customer).Error)
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var payload map[string]any
+		require.NoError(t, json.NewDecoder(r.Body).Decode(&payload))
+		require.Equal(t, "15.00", payload["amount"])
+		w.Header().Set("Content-Type", "application/json")
+		_, err := w.Write([]byte(`{"data":{"reference":"refund-001","status":"success"}}`))
+		require.NoError(t, err)
+	}))
+	defer server.Close()
+
+	channel := repository.PaymentChannel{
+		Name:      "Stripe",
+		Code:      "stripe",
+		Provider:  "stripe",
+		Enabled:   true,
+		SortOrder: 1,
+		Config: map[string]any{
+			"refund": map[string]any{
+				"http": map[string]any{
+					"endpoint":  server.URL,
+					"method":    "POST",
+					"body_type": "json",
+					"payload": map[string]any{
+						"amount": "{{refund_amount}}",
+					},
+				},
+				"response": map[string]any{
+					"reference": "data.reference",
+					"status":    "data.status",
+				},
+				"status_map": map[string]any{
+					"success": "succeeded",
+				},
+			},
+		},
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+	require.NoError(t, svcCtx.DB.Create(&channel).Error)
+
+	orderModel := repository.Order{
+		Number:        repository.GenerateOrderNumber(),
+		UserID:        customer.ID,
+		Status:        repository.OrderStatusPaid,
+		PaymentMethod: repository.PaymentMethodExternal,
+		PaymentStatus: repository.OrderPaymentStatusSucceeded,
+		TotalCents:    1500,
+		Currency:      "CNY",
+		Metadata:      map[string]any{"seed": false},
+		CreatedAt:     now.Add(-2 * time.Hour),
+		UpdatedAt:     now.Add(-2 * time.Hour),
+	}
+	paidAt := now.Add(-90 * time.Minute)
+	orderModel.PaidAt = &paidAt
+	require.NoError(t, svcCtx.DB.Create(&orderModel).Error)
+
+	payment := repository.OrderPayment{
+		OrderID:     orderModel.ID,
+		Provider:    "stripe",
+		Method:      repository.PaymentMethodExternal,
+		Status:      repository.OrderPaymentStatusSucceeded,
+		AmountCents: 1500,
+		Currency:    "CNY",
+		CreatedAt:   now.Add(-2 * time.Hour),
+		UpdatedAt:   now.Add(-2 * time.Hour),
+	}
+	require.NoError(t, svcCtx.DB.Create(&payment).Error)
+
+	claims := security.UserClaims{ID: admin.ID, Email: admin.Email, Roles: []string{"admin"}}
+	ctx = security.WithUser(ctx, claims)
+
+	logic := NewRefundLogic(ctx, svcCtx)
+	req := types.AdminRefundOrderRequest{
+		OrderID:     orderModel.ID,
+		AmountCents: 1500,
+		Reason:      "external refund",
+	}
+	resp, err := logic.Refund(&req)
+	require.NoError(t, err)
+	require.Equal(t, repository.OrderStatusRefunded, resp.Order.Status)
+	require.Equal(t, int64(1500), resp.Order.RefundedCents)
+	require.Len(t, resp.Order.Refunds, 1)
+	require.Equal(t, "refund-001", resp.Order.Refunds[0].Reference)
 }

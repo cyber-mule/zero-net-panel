@@ -2,6 +2,7 @@ package order
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -45,6 +46,37 @@ func setupTestServiceContext(t *testing.T) (*svc.ServiceContext, context.Context
 	return svcCtx, ctx
 }
 
+func seedDefaultSubscriptionTemplate(t *testing.T, db *gorm.DB) repository.SubscriptionTemplate {
+	t.Helper()
+
+	now := time.Now().UTC()
+	tpl := repository.SubscriptionTemplate{
+		Name:        "Default Template",
+		Description: "Test template",
+		ClientType:  "clash",
+		Format:      "go_template",
+		Content:     "test",
+		IsDefault:   true,
+		Version:     1,
+		CreatedAt:   now,
+		UpdatedAt:   now,
+		PublishedAt: &now,
+	}
+
+	var existing repository.SubscriptionTemplate
+	err := db.Where("name = ? AND client_type = ?", tpl.Name, tpl.ClientType).First(&existing).Error
+	if err == nil {
+		return existing
+	}
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		t.Fatalf("find template: %v", err)
+	}
+	if err := db.Create(&tpl).Error; err != nil {
+		t.Fatalf("create template: %v", err)
+	}
+	return tpl
+}
+
 func TestOrderLifecycle(t *testing.T) {
 	svcCtx, ctx := setupTestServiceContext(t)
 
@@ -72,6 +104,26 @@ func TestOrderLifecycle(t *testing.T) {
 	}
 	if err := svcCtx.DB.Create(&admin).Error; err != nil {
 		t.Fatalf("create admin: %v", err)
+	}
+
+	seedDefaultSubscriptionTemplate(t, svcCtx.DB)
+
+	plan := repository.Plan{
+		Name:              "Plan B",
+		Slug:              "plan-b",
+		Description:       "Plan B",
+		PriceCents:        2000,
+		Currency:          "CNY",
+		DurationDays:      30,
+		TrafficLimitBytes: 1024,
+		DevicesLimit:      2,
+		Status:            "active",
+		Visible:           true,
+		CreatedAt:         now,
+		UpdatedAt:         now,
+	}
+	if err := svcCtx.DB.Create(&plan).Error; err != nil {
+		t.Fatalf("create plan: %v", err)
 	}
 
 	orderRepo := svcCtx.Repositories.Order
@@ -114,19 +166,31 @@ func TestOrderLifecycle(t *testing.T) {
 	// Prepare second order for manual payment and refunds.
 	payOrder, _, err := orderRepo.Create(ctx, repository.Order{
 		UserID:        customer.ID,
+		PlanID:        &plan.ID,
 		Status:        repository.OrderStatusPending,
 		PaymentMethod: repository.PaymentMethodBalance,
-		TotalCents:    2000,
-		Currency:      "CNY",
-		Metadata:      map[string]any{},
+		TotalCents:    plan.PriceCents,
+		Currency:      plan.Currency,
+		PlanSnapshot: map[string]any{
+			"name":                plan.Name,
+			"duration_days":       plan.DurationDays,
+			"traffic_limit_bytes": plan.TrafficLimitBytes,
+			"devices_limit":       plan.DevicesLimit,
+		},
+		Metadata: map[string]any{},
 	}, []repository.OrderItem{{
 		ItemType:       "plan",
-		ItemID:         2,
-		Name:           "Plan B",
+		ItemID:         plan.ID,
+		Name:           plan.Name,
 		Quantity:       1,
-		UnitPriceCents: 2000,
-		Currency:       "CNY",
-		SubtotalCents:  2000,
+		UnitPriceCents: plan.PriceCents,
+		Currency:       plan.Currency,
+		SubtotalCents:  plan.PriceCents,
+		Metadata: map[string]any{
+			"duration_days":       plan.DurationDays,
+			"traffic_limit_bytes": plan.TrafficLimitBytes,
+			"devices_limit":       plan.DevicesLimit,
+		},
 	}})
 	if err != nil {
 		t.Fatalf("create pay order: %v", err)
@@ -169,6 +233,17 @@ func TestOrderLifecycle(t *testing.T) {
 	}
 	if balanceAfterPay.BalanceCents != 3000 {
 		t.Fatalf("expected balance 3000 after charge, got %d", balanceAfterPay.BalanceCents)
+	}
+
+	subs, _, err := svcCtx.Repositories.Subscription.ListByUser(ctx, customer.ID, repository.ListSubscriptionsOptions{})
+	if err != nil {
+		t.Fatalf("list subscriptions: %v", err)
+	}
+	if len(subs) != 1 {
+		t.Fatalf("expected 1 subscription, got %d", len(subs))
+	}
+	if subs[0].PlanName != plan.Name {
+		t.Fatalf("expected plan name %s, got %s", plan.Name, subs[0].PlanName)
 	}
 
 	refundLogic := adminorders.NewRefundLogic(adminCtx, svcCtx)

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
 
@@ -56,6 +57,13 @@ func (l *RefreshLogic) Refresh(req *types.AuthRefreshRequest) (*types.AuthRefres
 
 	if !strings.EqualFold(user.Status, "active") {
 		return nil, repository.ErrForbidden
+	}
+	now := time.Now().UTC()
+	if !user.LockedUntil.IsZero() && user.LockedUntil.After(now) {
+		return nil, repository.ErrForbidden
+	}
+	if !user.TokenInvalidBefore.IsZero() && claims.IssuedAt != nil && claims.IssuedAt.Time.Before(user.TokenInvalidBefore) {
+		return nil, repository.ErrUnauthorized
 	}
 
 	audience := l.svcCtx.Config.Project.Name
