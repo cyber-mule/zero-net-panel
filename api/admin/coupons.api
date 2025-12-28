@@ -1,0 +1,92 @@
+syntax = "v1"
+
+import "shared/types.api"
+
+@server (
+    name: znp
+    prefix: /api/v1
+    group: admin/coupons
+)
+service znp {
+    @doc "List coupons"
+    @handler AdminListCoupons
+    get /admin/coupons(AdminListCouponsRequest) returns (AdminCouponListResponse)
+
+    @doc "Create coupon"
+    @handler AdminCreateCoupon
+    post /admin/coupons(AdminCreateCouponRequest) returns (CouponSummary)
+
+    @doc "Update coupon"
+    @handler AdminUpdateCoupon
+    patch /admin/coupons/:id(AdminUpdateCouponRequest) returns (CouponSummary)
+
+    @doc "Delete coupon"
+    @handler AdminDeleteCoupon
+    delete /admin/coupons/:id(AdminDeleteCouponRequest)
+}
+
+type AdminListCouponsRequest {
+    page int(optional)
+    per_page int(optional)
+    q string(optional)
+    status string(optional)
+    sort string(optional)
+    direction string(optional)
+}
+
+type CouponSummary {
+    id uint64
+    code string
+    name string
+    description string
+    status string
+    discount_type string
+    discount_value int64
+    currency string
+    max_redemptions int
+    max_redemptions_per_user int
+    min_order_cents int64
+    starts_at *int64
+    ends_at *int64
+    created_at int64
+    updated_at int64
+}
+
+type AdminCouponListResponse {
+    coupons []CouponSummary
+    pagination PaginationMeta
+}
+
+type AdminCreateCouponRequest {
+    code string
+    name string
+    description string(optional)
+    status string(optional)
+    discount_type string
+    discount_value int64
+    currency string(optional)
+    max_redemptions int(optional)
+    max_redemptions_per_user int(optional)
+    min_order_cents int64(optional)
+    starts_at int64(optional)
+    ends_at int64(optional)
+}
+
+type AdminUpdateCouponRequest {
+    id uint64(path:"id")
+    name string(optional)
+    description string(optional)
+    status string(optional)
+    discount_type string(optional)
+    discount_value int64(optional)
+    currency string(optional)
+    max_redemptions int(optional)
+    max_redemptions_per_user int(optional)
+    min_order_cents int64(optional)
+    starts_at int64(optional)
+    ends_at int64(optional)
+}
+
+type AdminDeleteCouponRequest {
+    id uint64(path:"id")
+}

@@ -105,9 +105,10 @@ curl -X POST http://127.0.0.1:8888/api/v1/user/orders \
   -H "Authorization: Bearer <ACCESS_TOKEN>" \
   -H "Content-Type: application/json" \
   -d '{
-    "planId": 10001,
-    "couponCode": "",
-    "autoRenew": true
+    "plan_id": 10001,
+    "quantity": 1,
+    "payment_method": "balance",
+    "coupon_code": ""
   }'
 ```
 
@@ -118,18 +119,29 @@ curl -X POST http://127.0.0.1:8888/api/v1/user/orders \
   "code": 0,
   "message": "OK",
   "data": {
-    "orderId": "ORD-20240630-001",
-    "status": "PAID",
-    "amount": 29.9,
-    "currency": "CNY",
-    "items": [
-      {
-        "name": "Pro-30",
-        "quantity": 1,
-        "unitPrice": 29.9,
-        "traffic": "300 GB"
-      }
-    ]
+    "order": {
+      "id": 120,
+      "number": "ORD-20240630-001",
+      "status": "paid",
+      "payment_status": "succeeded",
+      "total_cents": 2990,
+      "currency": "CNY",
+      "items": [
+        {
+          "item_type": "plan",
+          "name": "Pro-30",
+          "quantity": 1,
+          "unit_price_cents": 2990,
+          "subtotal_cents": 2990
+        }
+      ]
+    },
+    "balance": {
+      "user_id": 10001,
+      "balance_cents": 2000,
+      "currency": "CNY",
+      "updated_at": 1719766500
+    }
   }
 }
 ```
@@ -140,18 +152,23 @@ curl -X POST http://127.0.0.1:8888/api/v1/user/orders \
 curl -X POST http://127.0.0.1:8888/api/v1/admin/nodes/42/kernels/sync \
   -H "Authorization: Bearer <ADMIN_TOKEN>"
 ```
+如需指定协议：
+```bash
+curl -X POST http://127.0.0.1:8888/api/v1/admin/nodes/42/kernels/sync \
+  -H "Authorization: Bearer <ADMIN_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"protocol":"http"}'
+```
 
 示例响应：
 
 ```json
 {
-  "code": 0,
-  "message": "sync scheduled",
-  "data": {
-    "nodeId": 42,
-    "protocol": "grpc",
-    "triggeredAt": "2024-06-30T16:55:00Z"
-  }
+  "node_id": 42,
+  "protocol": "grpc",
+  "revision": "rev-20240630",
+  "synced_at": 1719766500,
+  "message": "同步完成"
 }
 ```
 

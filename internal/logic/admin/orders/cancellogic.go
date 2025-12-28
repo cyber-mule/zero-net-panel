@@ -69,6 +69,10 @@ func (l *CancelLogic) Cancel(req *types.AdminCancelOrderRequest) (*types.AdminOr
 		if err != nil {
 			return err
 		}
+		couponRepo, err := repository.NewCouponRepository(tx)
+		if err != nil {
+			return err
+		}
 
 		cancelledAt := time.Now().UTC()
 		if req.CancelledAt != nil && *req.CancelledAt > 0 {
@@ -94,6 +98,9 @@ func (l *CancelLogic) Cancel(req *types.AdminCancelOrderRequest) (*types.AdminOr
 			return err
 		}
 		updated = updatedOrder
+		if err := couponRepo.UpdateRedemptionStatusByOrder(l.ctx, updatedOrder.ID, repository.CouponRedemptionReleased); err != nil {
+			return err
+		}
 		return nil
 	})
 	if err != nil {

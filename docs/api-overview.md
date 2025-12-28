@@ -12,6 +12,7 @@
 | 订阅模板 | `/api/v1/{admin}/subscription-templates` | 模板 CRUD、发布、历史追溯 |
 | 订阅管理 | `/api/v1/{admin}/subscriptions` | 订阅列表、创建、调整、禁用、延长有效期 |
 | 套餐管理 | `/api/v1/{admin}/plans` | 套餐列表、创建、更新，字段涵盖价格、时长、流量限制等 |
+| 优惠券管理 | `/api/v1/{admin}/coupons` | 优惠券创建、启停、限额与有效期维护 |
 | 公告中心 | `/api/v1/{admin}/announcements` | 公告列表、创建、发布，支持置顶与可见时间窗 |
 | 安全配置 | `/api/v1/{admin}/security-settings` | 读取与更新第三方签名/加密开关、凭据与时间窗口 |
 | 审计日志 | `/api/v1/{admin}/audit-logs` | 审计日志检索与导出 |
@@ -35,10 +36,11 @@
 
 ### 订单操作补充说明
 
-- 用户端 `POST /api/v1/user/orders` 新增 `payment_method`、`payment_channel`、`payment_return_url` 字段：
+- 用户端 `POST /api/v1/user/orders` 新增 `payment_method`、`payment_channel`、`payment_return_url`、`coupon_code` 字段：
   - 默认 `payment_method = balance`，系统直接扣减余额、记录 `balance_transactions`，订单状态立即变为 `paid`、`payment_status = succeeded`。
   - 当 `payment_method = external` 且金额大于零时，会生成 `pending_payment` 订单，创建 `order_payments` 预订单记录，并按支付通道 `config` 发起支付；响应包含 `payment_intent_id` 与 `payments`，其中 `payments[].metadata.pay_url`/`qr_code` 可用于跳转或展示二维码，余额不会变动。
   - 当 `payment_method = manual` 时，会生成待支付订单；需管理员通过 `/api/v1/{admin}/orders/{id}/pay` 标记已支付。
+- 若命中优惠券，`order.items` 会追加 `item_type=discount` 条目并在 `order.metadata` 回填折扣信息。
 - 用户端 `POST /api/v1/user/orders/{id}/cancel` 仅允许取消待支付或零金额订单，不触发余额回滚。
 - 用户端 `GET /api/v1/user/orders/{id}/payment-status` 用于前端轮询确认支付结果。
 - 管理端提供 `POST /api/v1/{admin}/orders/{id}/pay`、`/cancel`、`/refund` 与 `/orders/payments/reconcile`，需管理员角色；外部支付退款会按通道 `config.refund` 发起并记录退款流水。
@@ -81,15 +83,27 @@
 
 1. 管理端列表接口 `GET /api/v1/{admin}/nodes` 返回节点详情与协议能力。
 2. 运维人员选择目标节点，调用 `POST /api/v1/{admin}/nodes/{id}/kernels/sync` 触发与内核的即时同步。
-3. 服务端异步排队同步任务，返回排队结果，并通过日志或指标追踪执行情况。
+3. 服务端同步拉取内核配置并更新记录，立即返回 `revision` 与 `synced_at` 等结果字段。
 4. 若开启 Prometheus，观察 `znp_node_sync_operations_total` 与 `znp_node_sync_duration_seconds` 判断成功率与耗时。
 
-| 接口 | 错误码 | 说明 | 排障建议 |
-| ---- | ------ | ---- | -------- |
-| `GET /api/v1/{admin}/nodes` | `400300` | 过滤条件非法 | 确认查询参数（如 `protocol`、`status`）是否在允许范围内。 |
-| `POST /api/v1/{admin}/nodes/{id}/kernels/sync` | `404004` | 节点不存在 | 检查节点是否被删除，确认 `Admin.RoutePrefix` 与 URL 中的 `{id}` 是否正确。 |
-| 同上 | `409101` | 同步任务正在进行 | 等待上一次任务完成或在 30 秒后重试。 |
-| 同上 | `500101` | 内核握手失败 | 检查内核服务地址、令牌是否正确，必要时查看 `Kernel` 配置或抓取 gRPC/HTTP 日志。 |
+| 接口 | HTTP 状态码 | 说明 | 排障建议 |
+| ---- | ----------- | ---- | -------- |
+| `GET /api/v1/{admin}/nodes` | `400` | 过滤条件非法 | 确认查询参数（如 `protocol`、`status`）是否在允许范围内。 |
+| `POST /api/v1/{admin}/nodes/{id}/kernels/sync` | `400` | 协议不支持 | 确认 `protocol` 参数与内核 Provider 配置一致。 |
+| 同上 | `404` | 节点不存在 | 检查节点是否被删除，确认 `Admin.RoutePrefix` 与 URL 中的 `{id}` 是否正确。 |
+| 同上 | `500` | 内核同步失败 | 检查内核服务地址、令牌是否正确，必要时查看 `Kernel` 配置或抓取 gRPC/HTTP 日志。 |
+
+### 协议绑定同步流程
+
+1. 管理端创建协议配置与绑定（`/protocol-configs`、`/protocol-bindings`）。
+2. 触发单条或批量下发：`POST /api/v1/{admin}/protocol-bindings/{id}/sync` 或 `/protocol-bindings/sync`。
+3. 同步结果直接返回，包含 `binding_id`、`status`、`message`、`synced_at`。
+4. 若未配置内核控制面，返回 `status=error` 且 `message` 提示配置缺失。
+
+批量下发示例：
+```json
+{"binding_ids":[3,4]}
+```
 
 ### 套餐发布流程
 

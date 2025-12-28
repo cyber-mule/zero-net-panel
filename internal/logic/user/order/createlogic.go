@@ -90,6 +90,8 @@ func (l *CreateLogic) Create(req *types.UserCreateOrderRequest) (resp *types.Use
 		return nil, repository.ErrInvalidArgument
 	}
 
+	couponCode := strings.TrimSpace(req.CouponCode)
+
 	plan, err := l.svcCtx.Repositories.Plan.Get(l.ctx, req.PlanID)
 	if err != nil {
 		return nil, err
@@ -136,6 +138,8 @@ func (l *CreateLogic) Create(req *types.UserCreateOrderRequest) (resp *types.Use
 	var createdPayments []repository.OrderPayment
 	var balance repository.UserBalance
 	var balanceTx repository.BalanceTransaction
+	var appliedCoupon *repository.Coupon
+	var discountCents int64
 
 	err = l.svcCtx.DB.WithContext(l.ctx).Transaction(func(tx *gorm.DB) error {
 		orderRepo, err := repository.NewOrderRepository(tx)
@@ -143,6 +147,10 @@ func (l *CreateLogic) Create(req *types.UserCreateOrderRequest) (resp *types.Use
 			return err
 		}
 		balanceRepo, err := repository.NewBalanceRepository(tx)
+		if err != nil {
+			return err
+		}
+		couponRepo, err := repository.NewCouponRepository(tx)
 		if err != nil {
 			return err
 		}
@@ -184,6 +192,67 @@ func (l *CreateLogic) Create(req *types.UserCreateOrderRequest) (resp *types.Use
 		}
 		if returnURL != "" {
 			metadata["payment_return_url"] = returnURL
+		}
+
+		baseTotalCents := plan.PriceCents * int64(quantity)
+		totalCents := baseTotalCents
+
+		if couponCode != "" {
+			coupon, err := couponRepo.GetByCodeForUpdate(l.ctx, couponCode)
+			if err != nil {
+				if errors.Is(err, repository.ErrNotFound) {
+					return repository.ErrInvalidArgument
+				}
+				return err
+			}
+			if !strings.EqualFold(coupon.Status, repository.CouponStatusActive) {
+				return repository.ErrInvalidArgument
+			}
+			if !coupon.StartsAt.IsZero() && now.Before(coupon.StartsAt) {
+				return repository.ErrInvalidArgument
+			}
+			if !coupon.EndsAt.IsZero() && now.After(coupon.EndsAt) {
+				return repository.ErrInvalidArgument
+			}
+			if coupon.MinOrderCents > 0 && baseTotalCents < coupon.MinOrderCents {
+				return repository.ErrInvalidArgument
+			}
+			if coupon.MaxRedemptions > 0 {
+				count, err := couponRepo.CountRedemptions(l.ctx, coupon.ID)
+				if err != nil {
+					return err
+				}
+				if count >= int64(coupon.MaxRedemptions) {
+					return repository.ErrInvalidArgument
+				}
+			}
+			if coupon.MaxRedemptionsPerUser > 0 {
+				count, err := couponRepo.CountRedemptionsByUser(l.ctx, coupon.ID, user.ID)
+				if err != nil {
+					return err
+				}
+				if count >= int64(coupon.MaxRedemptionsPerUser) {
+					return repository.ErrInvalidArgument
+				}
+			}
+
+			amount, err := calculateDiscount(coupon, baseTotalCents, currency)
+			if err != nil {
+				return err
+			}
+			if amount > totalCents {
+				amount = totalCents
+			}
+			if amount <= 0 {
+				return repository.ErrInvalidArgument
+			}
+
+			appliedCoupon = &coupon
+			discountCents = amount
+			totalCents -= amount
+			metadata["coupon_code"] = coupon.Code
+			metadata["coupon_id"] = coupon.ID
+			metadata["discount_cents"] = discountCents
 		}
 
 		orderModel := repository.Order{
@@ -247,7 +316,7 @@ func (l *CreateLogic) Create(req *types.UserCreateOrderRequest) (resp *types.Use
 			Quantity:       quantity,
 			UnitPriceCents: plan.PriceCents,
 			Currency:       currency,
-			SubtotalCents:  totalCents,
+			SubtotalCents:  baseTotalCents,
 			Metadata: map[string]any{
 				"duration_days":       plan.DurationDays,
 				"traffic_limit_bytes": plan.TrafficLimitBytes,
@@ -256,7 +325,27 @@ func (l *CreateLogic) Create(req *types.UserCreateOrderRequest) (resp *types.Use
 			CreatedAt: now,
 		}
 
-		created, items, err := orderRepo.Create(l.ctx, orderModel, []repository.OrderItem{item})
+		itemsToCreate := []repository.OrderItem{item}
+		if appliedCoupon != nil && discountCents > 0 {
+			itemsToCreate = append(itemsToCreate, repository.OrderItem{
+				ItemType:       "discount",
+				ItemID:         appliedCoupon.ID,
+				Name:           fmt.Sprintf("Coupon %s", appliedCoupon.Code),
+				Quantity:       1,
+				UnitPriceCents: -discountCents,
+				Currency:       currency,
+				SubtotalCents:  -discountCents,
+				Metadata: map[string]any{
+					"coupon_id":      appliedCoupon.ID,
+					"coupon_code":    appliedCoupon.Code,
+					"discount_type":  appliedCoupon.DiscountType,
+					"discount_value": appliedCoupon.DiscountValue,
+				},
+				CreatedAt: now,
+			})
+		}
+
+		created, items, err := orderRepo.Create(l.ctx, orderModel, itemsToCreate)
 		if err != nil {
 			return err
 		}
@@ -299,6 +388,24 @@ func (l *CreateLogic) Create(req *types.UserCreateOrderRequest) (resp *types.Use
 				return err
 			}
 			createdOrder = provisioned.Order
+		}
+
+		if appliedCoupon != nil && discountCents > 0 {
+			status := repository.CouponRedemptionReserved
+			if strings.EqualFold(createdOrder.Status, repository.OrderStatusPaid) {
+				status = repository.CouponRedemptionApplied
+			}
+			_, err := couponRepo.CreateRedemption(l.ctx, repository.CouponRedemption{
+				CouponID:    appliedCoupon.ID,
+				UserID:      user.ID,
+				OrderID:     createdOrder.ID,
+				Status:      status,
+				AmountCents: discountCents,
+				Currency:    currency,
+			})
+			if err != nil {
+				return err
+			}
 		}
 
 		return nil
@@ -367,4 +474,27 @@ func (l *CreateLogic) Create(req *types.UserCreateOrderRequest) (resp *types.Use
 	}
 
 	return resp, nil
+}
+
+func calculateDiscount(coupon repository.Coupon, baseTotalCents int64, currency string) (int64, error) {
+	if baseTotalCents <= 0 {
+		return 0, repository.ErrInvalidArgument
+	}
+	switch strings.ToLower(strings.TrimSpace(coupon.DiscountType)) {
+	case repository.CouponTypePercent:
+		if coupon.DiscountValue <= 0 || coupon.DiscountValue > 10000 {
+			return 0, repository.ErrInvalidArgument
+		}
+		return baseTotalCents * coupon.DiscountValue / 10000, nil
+	case repository.CouponTypeFixed:
+		if coupon.DiscountValue <= 0 {
+			return 0, repository.ErrInvalidArgument
+		}
+		if strings.TrimSpace(coupon.Currency) != "" && !strings.EqualFold(coupon.Currency, currency) {
+			return 0, repository.ErrInvalidArgument
+		}
+		return coupon.DiscountValue, nil
+	default:
+		return 0, repository.ErrInvalidArgument
+	}
 }

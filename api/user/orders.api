@@ -39,6 +39,8 @@ type UserCreateOrderRequest {
     payment_method string(optional)
     payment_channel string(optional)
     payment_return_url string(optional)
+    idempotency_key string(optional)
+    coupon_code string(optional)
 }
 
 type UserOrderListRequest {

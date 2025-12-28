@@ -12,6 +12,7 @@ import (
 	"admin/payment_channels.api"
 	"admin/plans.api"
 	"admin/announcements.api"
+	"admin/coupons.api"
 	"admin/site.api"
 	"admin/security.api"
 	"admin/audit_logs.api"

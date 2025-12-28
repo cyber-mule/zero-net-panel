@@ -68,6 +68,16 @@ func (l *PaymentCallbackLogic) Process(req *types.AdminPaymentCallbackRequest) (
 		return nil, repository.ErrNotFound
 	}
 	if strings.EqualFold(existingPayment.Status, status) {
+		if status == repository.OrderPaymentStatusSucceeded {
+			if err := l.svcCtx.Repositories.Coupon.UpdateRedemptionStatusByOrder(l.ctx, order.ID, repository.CouponRedemptionApplied); err != nil {
+				return nil, err
+			}
+		} else if status == repository.OrderPaymentStatusFailed {
+			if err := l.svcCtx.Repositories.Coupon.UpdateRedemptionStatusByOrder(l.ctx, order.ID, repository.CouponRedemptionReleased); err != nil {
+				return nil, err
+			}
+		}
+
 		provisionedOrder := order
 		if status == repository.OrderPaymentStatusSucceeded && strings.EqualFold(order.Status, repository.OrderStatusPaid) {
 			if err := l.svcCtx.Repositories.Transaction(l.ctx, func(txRepos *repository.Repositories) error {
@@ -112,6 +122,10 @@ func (l *PaymentCallbackLogic) Process(req *types.AdminPaymentCallbackRequest) (
 
 	err = l.svcCtx.DB.WithContext(l.ctx).Transaction(func(tx *gorm.DB) error {
 		repo, err := repository.NewOrderRepository(tx)
+		if err != nil {
+			return err
+		}
+		couponRepo, err := repository.NewCouponRepository(tx)
 		if err != nil {
 			return err
 		}
@@ -179,6 +193,13 @@ func (l *PaymentCallbackLogic) Process(req *types.AdminPaymentCallbackRequest) (
 				return err
 			}
 			updatedOrder = provisioned.Order
+			if err := couponRepo.UpdateRedemptionStatusByOrder(l.ctx, updatedOrder.ID, repository.CouponRedemptionApplied); err != nil {
+				return err
+			}
+		} else if status == repository.OrderPaymentStatusFailed {
+			if err := couponRepo.UpdateRedemptionStatusByOrder(l.ctx, updatedOrder.ID, repository.CouponRedemptionReleased); err != nil {
+				return err
+			}
 		}
 		return nil
 	})

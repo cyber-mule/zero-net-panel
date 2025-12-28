@@ -62,6 +62,7 @@ type UserCreateOrderRequest struct {
 	PaymentChannel   string `json:"payment_channel,omitempty,optional"`
 	PaymentReturnURL string `json:"payment_return_url,omitempty,optional"`
 	IdempotencyKey   string `json:"idempotency_key,omitempty,optional"`
+	CouponCode       string `json:"coupon_code,omitempty,optional"`
 }
 
 // UserOrderListRequest 用户订单列表查询参数。

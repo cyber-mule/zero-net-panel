@@ -11,7 +11,7 @@
 - 账户安全：多因子认证等安全强化。 (Refs: docs/missing-capabilities.md)
 - 支付与结算扩展：更多网关适配、支付结果通知渠道、对账/开票/发票管理。 (Refs: docs/missing-capabilities.md)
 - 通知体系：支付/退款等业务通知（邮件/短信/站内信）缺失。 (Refs: docs/missing-capabilities.md)
-- 计费后续能力：优惠券/折扣、分账/多币种支持。 (Refs: docs/ROADMAP.md)
+- 计费后续能力：分账/多币种支持。 (Refs: docs/ROADMAP.md)
 - 安装向导：非交互模式标记为“未来支持”。 (Refs: docs/installation-wizard.md)
 - 运维命令补齐：`znp cache purge` 标记为后续计划。 (Refs: docs/api-overview.md)
 
@@ -25,3 +25,4 @@
 - 外部支付网关发起支付仍为占位实现，补齐通用发起能力（仅发起支付 + 回调）并完善文档说明。 (Refs: internal/logic/paymentutil/gateway.go, internal/logic/user/order/createlogic.go, docs/api-reference.md)
 - 外部支付退款/对账/签名校验未覆盖（当前仅支持发起支付与回调）。 (Refs: internal/logic/paymentutil/gateway.go, internal/logic/admin/orders/refundlogic.go, internal/logic/admin/orders/reconcilelogic.go)
 - 补充外部支付联调示例与 mock 网关脚本。 (Refs: docs/payment-gateway-demo.md, scripts/mock-payment-gateway.go)
+- 计费后续能力：优惠券/折扣。 (Refs: api/admin/coupons.api, internal/logic/admin/coupons, internal/repository/coupon_repository.go)

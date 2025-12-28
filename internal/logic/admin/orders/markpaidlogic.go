@@ -54,6 +54,9 @@ func (l *MarkPaidLogic) MarkPaid(req *types.AdminMarkOrderPaidRequest) (*types.A
 	}
 
 	if strings.EqualFold(order.Status, repository.OrderStatusPaid) {
+		if err := l.svcCtx.Repositories.Coupon.UpdateRedemptionStatusByOrder(l.ctx, order.ID, repository.CouponRedemptionApplied); err != nil {
+			return nil, err
+		}
 		provisionedOrder := order
 		if err := l.svcCtx.Repositories.Transaction(l.ctx, func(txRepos *repository.Repositories) error {
 			result, err := subscriptionutil.EnsureOrderSubscription(l.ctx, txRepos, order, items)
@@ -78,6 +81,10 @@ func (l *MarkPaidLogic) MarkPaid(req *types.AdminMarkOrderPaidRequest) (*types.A
 			return err
 		}
 		balanceRepo, err := repository.NewBalanceRepository(tx)
+		if err != nil {
+			return err
+		}
+		couponRepo, err := repository.NewCouponRepository(tx)
 		if err != nil {
 			return err
 		}
@@ -161,6 +168,9 @@ func (l *MarkPaidLogic) MarkPaid(req *types.AdminMarkOrderPaidRequest) (*types.A
 			return err
 		}
 		updated = provisioned.Order
+		if err := couponRepo.UpdateRedemptionStatusByOrder(l.ctx, updated.ID, repository.CouponRedemptionApplied); err != nil {
+			return err
+		}
 		return nil
 	})
 	if err != nil {

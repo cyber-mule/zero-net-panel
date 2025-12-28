@@ -341,6 +341,30 @@ var migrationRegistry = []Migration{
 			return nil
 		},
 	},
+	{
+		Version: 2025041901,
+		Name:    "coupon-discounts",
+		Up: func(ctx context.Context, db *gorm.DB) error {
+			return db.WithContext(ctx).AutoMigrate(
+				&repository.Coupon{},
+				&repository.CouponRedemption{},
+			)
+		},
+		Down: func(ctx context.Context, db *gorm.DB) error {
+			migrator := db.WithContext(ctx).Migrator()
+			if migrator.HasTable(&repository.CouponRedemption{}) {
+				if err := migrator.DropTable(&repository.CouponRedemption{}); err != nil {
+					return err
+				}
+			}
+			if migrator.HasTable(&repository.Coupon{}) {
+				if err := migrator.DropTable(&repository.Coupon{}); err != nil {
+					return err
+				}
+			}
+			return nil
+		},
+	},
 }
 
 func init() {

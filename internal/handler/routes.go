@@ -7,6 +7,7 @@ import (
 
 	adminAnnouncements "github.com/zero-net-panel/zero-net-panel/internal/handler/admin/announcements"
 	adminAuditLogs "github.com/zero-net-panel/zero-net-panel/internal/handler/admin/auditlogs"
+	adminCoupons "github.com/zero-net-panel/zero-net-panel/internal/handler/admin/coupons"
 	adminDashboard "github.com/zero-net-panel/zero-net-panel/internal/handler/admin/dashboard"
 	adminNodes "github.com/zero-net-panel/zero-net-panel/internal/handler/admin/nodes"
 	adminOrders "github.com/zero-net-panel/zero-net-panel/internal/handler/admin/orders"
@@ -328,6 +329,26 @@ func RegisterHandlers(server *rest.Server, svcCtx *svc.ServiceContext) {
 			Method:  http.MethodPost,
 			Path:    "/announcements/:id/publish",
 			Handler: adminAnnouncements.AdminPublishAnnouncementHandler(svcCtx),
+		},
+		{
+			Method:  http.MethodGet,
+			Path:    "/coupons",
+			Handler: adminCoupons.AdminListCouponsHandler(svcCtx),
+		},
+		{
+			Method:  http.MethodPost,
+			Path:    "/coupons",
+			Handler: adminCoupons.AdminCreateCouponHandler(svcCtx),
+		},
+		{
+			Method:  http.MethodPatch,
+			Path:    "/coupons/:id",
+			Handler: adminCoupons.AdminUpdateCouponHandler(svcCtx),
+		},
+		{
+			Method:  http.MethodDelete,
+			Path:    "/coupons/:id",
+			Handler: adminCoupons.AdminDeleteCouponHandler(svcCtx),
 		},
 		{
 			Method:  http.MethodGet,

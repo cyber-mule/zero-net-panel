@@ -94,6 +94,10 @@ func (l *ReconcileLogic) Reconcile(req *types.AdminReconcilePaymentRequest) (*ty
 		if err != nil {
 			return err
 		}
+		couponRepo, err := repository.NewCouponRepository(tx)
+		if err != nil {
+			return err
+		}
 
 		paymentStatus := payment.Status
 		if result.Status != repository.OrderPaymentStatusPending {
@@ -166,6 +170,13 @@ func (l *ReconcileLogic) Reconcile(req *types.AdminReconcilePaymentRequest) (*ty
 				return err
 			}
 			updatedOrder = provisioned.Order
+			if err := couponRepo.UpdateRedemptionStatusByOrder(l.ctx, updatedOrder.ID, repository.CouponRedemptionApplied); err != nil {
+				return err
+			}
+		} else if paymentStatus == repository.OrderPaymentStatusFailed {
+			if err := couponRepo.UpdateRedemptionStatusByOrder(l.ctx, updatedOrder.ID, repository.CouponRedemptionReleased); err != nil {
+				return err
+			}
 		}
 
 		return nil

@@ -108,18 +108,36 @@ METHOD\nPATH\nRAW_QUERY\nTIMESTAMP\nNONCE\nBASE64(BODY)
 - `metadata` object
 - `created_at` int64
 
+### CouponSummary
+
+- `id` uint64
+- `code` string
+- `name` string
+- `description` string
+- `status` string（示例：`active`、`disabled`）
+- `discount_type` string（`percent` 或 `fixed`）
+- `discount_value` int64（percent 为 0~10000，fixed 为分单位）
+- `currency` string（fixed 折扣必填）
+- `max_redemptions` int
+- `max_redemptions_per_user` int
+- `min_order_cents` int64
+- `starts_at` int64（可选）
+- `ends_at` int64（可选）
+- `created_at` int64
+- `updated_at` int64
+
 ### OrderItem
 
 - `id` uint64
 - `order_id` uint64
-- `item_type` string
+- `item_type` string（示例：`plan`、`discount`）
 - `item_id` uint64
 - `name` string
 - `quantity` int
 - `unit_price_cents` int64
 - `currency` string
 - `subtotal_cents` int64
-- `metadata` object
+- `metadata` object（优惠券折扣条目包含 `coupon_id`、`coupon_code`、`discount_type`、`discount_value`）
 - `created_at` int64
 
 ### OrderRefund
@@ -752,6 +770,46 @@ PlanSummary 字段：
   - `sort_order`、`status`、`visible`
 - 响应：PlanSummary
 
+#### GET /api/v1/{adminPrefix}/coupons
+
+- 说明：优惠券列表
+- 查询参数：`page`、`per_page`、`q`、`status`、`sort`、`direction`
+- `sort` 可选：`code`、`status`、`created_at`、`updated_at`、`starts_at`、`ends_at`
+- 响应：
+  - `coupons` []CouponSummary
+  - `pagination` PaginationMeta
+
+#### POST /api/v1/{adminPrefix}/coupons
+
+- 说明：创建优惠券
+- 请求体：
+  - `code` string
+  - `name` string
+  - `description` string（可选）
+  - `status` string（可选，默认 active）
+  - `discount_type` string（percent 或 fixed）
+  - `discount_value` int64
+  - `currency` string（可选，fixed 折扣必填）
+  - `max_redemptions` int（可选）
+  - `max_redemptions_per_user` int（可选）
+  - `min_order_cents` int64（可选）
+  - `starts_at` int64（可选）
+  - `ends_at` int64（可选）
+- 响应：CouponSummary
+
+#### PATCH /api/v1/{adminPrefix}/coupons/{id}
+
+- 说明：更新优惠券
+- 路径参数：`id` uint64
+- 请求体（字段均可选）：同创建接口字段
+- 响应：CouponSummary
+
+#### DELETE /api/v1/{adminPrefix}/coupons/{id}
+
+- 说明：删除优惠券
+- 路径参数：`id` uint64
+- 响应：`{"message":"ok"}`
+
 #### GET /api/v1/{adminPrefix}/payment-channels
 
 - 说明：支付通道列表
@@ -1348,9 +1406,13 @@ UserPaymentChannelSummary 字段：
   - `payment_channel` string（可选，外部支付通道）
   - `payment_return_url` string（可选）
   - `idempotency_key` string（可选，幂等键）
+  - `coupon_code` string（可选）
 - 外部支付说明：
   - `payment_method=external` 且金额大于 0 时，需传启用的 `payment_channel` 且通道 `config` 已配置网关发起信息。
   - 响应 `order.payments[].metadata` 将包含 `pay_url` 或 `qr_code`，用于跳转支付页或展示二维码。
+- 优惠券说明：
+  - 校验失败会返回 `400`（未启用/过期/次数超限/不满足最低金额）。
+  - 命中优惠时，`order.metadata` 会附带 `coupon_code`、`coupon_id`、`discount_cents`，并追加 `item_type=discount` 的订单条目。
 - 响应：
   - `order` OrderDetail
   - `balance` BalanceSnapshot

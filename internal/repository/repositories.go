@@ -17,6 +17,7 @@ type Repositories struct {
 	Subscription         SubscriptionRepository
 	User                 UserRepository
 	UserCredential       UserCredentialRepository
+	Coupon               CouponRepository
 	Plan                 PlanRepository
 	Announcement         AnnouncementRepository
 	Balance              BalanceRepository
@@ -52,6 +53,11 @@ func NewRepositories(db *gorm.DB) (*Repositories, error) {
 	}
 
 	credentialRepo, err := NewUserCredentialRepository(db)
+	if err != nil {
+		return nil, err
+	}
+
+	couponRepo, err := NewCouponRepository(db)
 	if err != nil {
 		return nil, err
 	}
@@ -129,6 +135,7 @@ func NewRepositories(db *gorm.DB) (*Repositories, error) {
 		Subscription:         subscriptionRepo,
 		User:                 userRepo,
 		UserCredential:       credentialRepo,
+		Coupon:               couponRepo,
 		Plan:                 planRepo,
 		Announcement:         announcementRepo,
 		Balance:              balanceRepo,

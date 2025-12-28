@@ -95,6 +95,7 @@ async function request(url, options = {}) {
 - 订阅模板：`GET/POST/PATCH /subscription-templates`、`POST /subscription-templates/{id}/publish`
 - 订阅管理：`GET/POST/PATCH /subscriptions`、`POST /subscriptions/{id}/disable`、`POST /subscriptions/{id}/extend`
 - 套餐管理：`GET/POST/PATCH /plans`
+- 优惠券管理：`GET/POST/PATCH/DELETE /coupons`
 - 公告管理：`GET/POST /announcements`、`POST /announcements/{id}/publish`
 - 安全配置：`GET/PATCH /security-settings`
 - 审计日志：`GET /audit-logs`、`GET /audit-logs/export`
@@ -114,7 +115,111 @@ async function request(url, options = {}) {
 
 完整字段说明请参考 `docs/api-reference.md`，或使用 `./scripts/gen-api-docs.sh` 生成的 `docs/api-generated/`。
 
-## 6. 数据格式与展示建议
+## 6. 同步与订阅交互定义
+
+### 6.1 管理端节点同步
+
+**触发同步**
+
+- `POST /api/v1/{adminPrefix}/nodes/{id}/kernels/sync`
+- 请求体（可选）：
+  - `protocol` string（空表示默认协议）
+
+示例：
+
+```http
+POST /api/v1/admin/nodes/42/kernels/sync
+Content-Type: application/json
+
+{"protocol":"http"}
+```
+
+响应字段：
+
+- `node_id` uint64
+- `protocol` string
+- `revision` string
+- `synced_at` int64（Unix 秒）
+- `message` string
+
+**错误场景**
+
+- `400`：协议不支持或参数非法
+- `404`：节点不存在
+- `500`：内核同步失败（检查 Kernel 地址/令牌）
+
+### 6.2 管理端协议绑定下发
+
+**单条下发**
+
+- `POST /api/v1/{adminPrefix}/protocol-bindings/{id}/sync`
+
+响应：
+
+```json
+{"binding_id":3,"status":"synced","message":"ok","synced_at":1719766500}
+```
+
+**批量下发**
+
+- `POST /api/v1/{adminPrefix}/protocol-bindings/sync`
+- 请求体：
+  - `binding_ids` []uint64（可选）
+  - `node_ids` []uint64（可选）
+
+响应：
+
+```json
+{
+  "results": [
+    {"binding_id":3,"status":"synced","message":"ok","synced_at":1719766500},
+    {"binding_id":4,"status":"error","message":"kernel control not configured","synced_at":1719766500}
+  ]
+}
+```
+
+**状态约定**
+
+- `status=synced` 表示下发成功
+- `status=error` 表示失败（`message` 描述原因）
+
+### 6.3 用户侧节点状态
+
+- `GET /api/v1/user/nodes`
+- 查询参数：`page`、`per_page`、`status`、`protocol`
+
+关键字段说明：
+
+- `nodes[].status`：节点状态（`online`/`offline`/`maintenance`/`disabled`）
+- `kernel_statuses[]`：节点同步摘要（来自最近一次同步记录）
+- `protocol_statuses[]`：协议绑定健康状态
+  - `health_status`：`healthy`/`degraded`/`unhealthy`/`offline`/`unknown`
+
+提示：`kernel_statuses` 表示同步记录状态，不是实时心跳。
+
+### 6.4 订阅预览与鉴权字段
+
+- `GET /api/v1/user/subscriptions/{id}/preview`
+- 查询参数：`template_id`（可选）
+
+响应字段：
+
+- `content`：渲染后的订阅内容
+- `content_type`：`text/plain` 或 `application/json`
+- `etag`：内容哈希
+- `generated_at`：生成时间
+
+模板变量中的鉴权字段：
+
+- `user_identity.account_id` / `user_identity.password`
+- `user_identity.account` / `user_identity.id` / `user_identity.uuid`
+
+当订阅 `status != active` 时：
+
+- `nodes`/`protocol_bindings` 输出为空数组
+- `user_identity` 字段为空字符串
+
+## 7. 数据格式与展示建议
 
 - **金额**：`*_cents` 为分单位，展示时建议 `amount_cents / 100` 并配合 `currency`。
 - **流量**：`traffic_limit_bytes`、`traffic_used_bytes` 建议使用二进制单位（GB/TB）。
@@ -124,28 +229,38 @@ async function request(url, options = {}) {
   - `payment_status`：`pending`、`succeeded`、`failed`
 - **套餐状态**：`draft`、`active`（未激活套餐前端可隐藏）
 
-## 7. 订单与支付流程提示
+## 8. 订单与支付流程提示
 
 - `POST /user/orders` 支持 `payment_method=balance|external|manual`（manual 表示线下/人工支付）。
 - `payment_method=external` 且金额大于 0 时，需要传 `payment_channel`，响应会带 `payment_intent_id` 与 `payments`，其中 `payments[].metadata.pay_url`/`qr_code` 用于跳转或展示二维码。
 - `payment_method=manual` 会创建待支付订单，需管理员通过 `/api/v1/{adminPrefix}/orders/{id}/pay` 标记已支付。
 - 推荐前端传 `idempotency_key`（如点击下单时生成 UUID），避免重复下单。
+- 传入 `coupon_code` 命中优惠后，订单会追加 `item_type=discount` 条目并在 `order.metadata` 中返回折扣明细。
 
-## 8. 第三方签名开关
+### 8.1 优惠券交互提示
+
+- 用户在下单页输入优惠券码，前端透传 `coupon_code`（大小写不敏感，建议 trim）。
+- 服务端校验失败会返回 `400`，需要展示原因（未启用/过期/次数用尽/未达最低金额）。
+- 命中优惠后：
+  - `order.metadata` 包含 `coupon_code`、`coupon_id`、`discount_cents`。
+  - `order.items` 追加 `item_type=discount` 条目，`subtotal_cents` 为负值，可用于订单明细展示。
+- 优惠券不影响订阅身份体系，仅影响订单应付金额。
+
+## 9. 第三方签名开关
 
 用户端路由统一挂载第三方签名中间件：
 
 - 若 `security_settings.third_party_api_enabled=true` 且 `api_key/api_secret` 生效，前端必须附带签名头。
 - 浏览器端不适合存储 `api_secret`，建议在后台关闭该开关或通过 BFF 服务代签名。
 
-## 9. 管理端访问限制
+## 10. 管理端访问限制
 
 管理端可能开启 IP 白名单与速率限制（`Admin.Access`）：
 
 - 前端部署地址需在允许网段内。
 - 被限流时返回 `429`，可做提示与退避重试。
 
-## 10. 本地联调建议
+## 11. 本地联调建议
 
 1. 启动后端：
 
@@ -161,7 +276,7 @@ go run ./cmd/znp serve --config etc/znp-sqlite.yaml --migrate-to latest
 
 3. API Base：`http://localhost:8888/api/v1`
 
-## 11. 常见问题排查
+## 12. 常见问题排查
 
 - `401`：检查 token 过期、角色是否匹配。
 - `403`：检查角色、IP 白名单或第三方签名是否启用。

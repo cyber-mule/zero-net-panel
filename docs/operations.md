@@ -22,22 +22,60 @@
    curl -X POST http://127.0.0.1:8888/api/v1/admin/nodes/42/kernels/sync \
      -H "Authorization: Bearer <ADMIN_TOKEN>"
    ```
-3. 期待响应：
+   如需指定协议：
+   ```bash
+   curl -X POST http://127.0.0.1:8888/api/v1/admin/nodes/42/kernels/sync \
+     -H "Authorization: Bearer <ADMIN_TOKEN>" \
+     -H "Content-Type: application/json" \
+     -d '{"protocol":"http"}'
+   ```
+3. 期待响应（同步执行，直接返回最新同步结果）：
    ```json
    {
-     "code": 0,
-     "message": "sync scheduled",
-     "data": {
-       "nodeId": 42,
-       "protocol": "grpc",
-       "triggeredAt": "2024-06-30T16:55:00Z"
-     }
+     "node_id": 42,
+     "protocol": "grpc",
+     "revision": "rev-20240630",
+     "synced_at": 1719766500,
+     "message": "同步完成"
    }
    ```
-4. 若返回 `code=404004` 并提示 `node not found`，请检查节点是否被删除或路由前缀是否正确。
-5. 若长时间无同步结果，可通过 `goctl`/日志确认内核连接是否异常。
+4. 若返回 HTTP `404` 并提示节点不存在，请检查节点是否被删除或路由前缀是否正确。
+5. 若返回 `500` 或同步耗时异常，请检查内核地址、令牌与网络连通性。
 
-### 2. 套餐发布流程
+### 2. 协议绑定同步
+
+1. 管理端选择需要下发的协议绑定：
+   ```bash
+   curl -X POST http://127.0.0.1:8888/api/v1/admin/protocol-bindings/3/sync \
+     -H "Authorization: Bearer <ADMIN_TOKEN>"
+   ```
+2. 期待响应：
+   ```json
+   {
+     "binding_id": 3,
+     "status": "synced",
+     "message": "ok",
+     "synced_at": 1719766500
+   }
+   ```
+3. 批量同步可使用 `POST /api/v1/admin/protocol-bindings/sync` 并传入 `binding_ids` 或 `node_ids`。
+   ```bash
+   curl -X POST http://127.0.0.1:8888/api/v1/admin/protocol-bindings/sync \
+     -H "Authorization: Bearer <ADMIN_TOKEN>" \
+     -H "Content-Type: application/json" \
+     -d '{"binding_ids":[3,4]}'
+   ```
+   批量响应示例：
+   ```json
+   {
+     "results": [
+       {"binding_id": 3, "status": "synced", "message": "ok", "synced_at": 1719766500},
+       {"binding_id": 4, "status": "error", "message": "kernel control not configured", "synced_at": 1719766500}
+     ]
+   }
+   ```
+
+### 3. 套餐发布流程
 
 1. 查询现有套餐模板：
    ```bash
@@ -89,7 +127,7 @@
    ```
 6. 如遇 `code=409001`（版本冲突），说明模板存在未发布的草稿，请先重新发布模板再创建套餐。
 
-### 3. 开启第三方签名校验
+### 4. 开启第三方签名校验
 
 1. 管理员查询现有配置：
    ```bash

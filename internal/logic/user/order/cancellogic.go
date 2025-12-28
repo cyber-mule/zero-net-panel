@@ -76,6 +76,10 @@ func (l *CancelLogic) Cancel(req *types.UserCancelOrderRequest) (*types.UserOrde
 		if err != nil {
 			return err
 		}
+		couponRepo, err := repository.NewCouponRepository(tx)
+		if err != nil {
+			return err
+		}
 		now := time.Now().UTC()
 		metadata := map[string]any{
 			"cancelled_by": "user",
@@ -94,6 +98,9 @@ func (l *CancelLogic) Cancel(req *types.UserCancelOrderRequest) (*types.UserOrde
 			return err
 		}
 		updated = updatedOrder
+		if err := couponRepo.UpdateRedemptionStatusByOrder(l.ctx, updatedOrder.ID, repository.CouponRedemptionReleased); err != nil {
+			return err
+		}
 		return nil
 	})
 	if err != nil {
