@@ -11,4 +11,6 @@ var (
 	ErrInsufficientBalance = errors.New("repository: insufficient balance")
 	ErrInvalidState        = errors.New("repository: invalid state")
 	ErrTooManyRequests     = errors.New("repository: too many requests")
+	ErrInviteCodeRequired  = errors.New("repository: invite code required")
+	ErrInviteCodeInvalid   = errors.New("repository: invite code invalid")
 )

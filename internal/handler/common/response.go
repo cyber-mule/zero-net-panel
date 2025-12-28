@@ -25,9 +25,13 @@ func RespondError(w http.ResponseWriter, r *http.Request, err error) {
 		status = http.StatusNotFound
 	case errors.Is(err, repository.ErrInvalidArgument):
 		status = http.StatusBadRequest
+	case errors.Is(err, repository.ErrInviteCodeRequired):
+		status = http.StatusBadRequest
 	case errors.Is(err, repository.ErrConflict):
 		status = http.StatusConflict
 	case errors.Is(err, repository.ErrForbidden):
+		status = http.StatusForbidden
+	case errors.Is(err, repository.ErrInviteCodeInvalid):
 		status = http.StatusForbidden
 	case errors.Is(err, repository.ErrUnauthorized):
 		status = http.StatusUnauthorized

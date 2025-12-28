@@ -47,8 +47,12 @@ func (l *RegisterLogic) Register(req *types.AuthRegisterRequest) (*types.AuthReg
 	}
 
 	if authCfg.Registration.InviteOnly {
-		if !inviteAllowed(req.InviteCode, authCfg.Registration.InviteCodes) {
-			return nil, repository.ErrForbidden
+		inviteCode := normalizeInviteCode(req.InviteCode)
+		if inviteCode == "" {
+			return nil, repository.ErrInviteCodeRequired
+		}
+		if !inviteAllowed(inviteCode, authCfg.Registration.InviteCodes) {
+			return nil, repository.ErrInviteCodeInvalid
 		}
 	}
 
@@ -184,19 +188,22 @@ func (l *RegisterLogic) issueTokens(user repository.User) (*types.AuthRegisterRe
 	}, nil
 }
 
-func inviteAllowed(code *string, allowed []string) bool {
+func normalizeInviteCode(code *string) string {
+	if code == nil {
+		return ""
+	}
+	return strings.TrimSpace(*code)
+}
+
+func inviteAllowed(code string, allowed []string) bool {
 	if len(allowed) == 0 {
 		return false
 	}
-	if code == nil {
-		return false
-	}
-	target := strings.TrimSpace(*code)
-	if target == "" {
+	if code == "" {
 		return false
 	}
 	for _, item := range allowed {
-		if strings.EqualFold(strings.TrimSpace(item), target) {
+		if strings.EqualFold(strings.TrimSpace(item), code) {
 			return true
 		}
 	}

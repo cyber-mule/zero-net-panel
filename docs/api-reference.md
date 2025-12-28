@@ -240,7 +240,7 @@ METHOD\nPATH\nRAW_QUERY\nTIMESTAMP\nNONCE\nBASE64(BODY)
   - `password` string
   - `display_name` string（可选）
   - `invite_code` string（可选）
-- 备注：当 `Auth.Registration.InviteOnly=true` 时，必须提供 `invite_code`。
+- 备注：当 `Auth.Registration.InviteOnly=true` 时，必须提供 `invite_code`；缺失返回 `400`，未命中白名单返回 `403`。
 - 响应：
   - `requires_verification` bool
   - `access_token` string（可选）
