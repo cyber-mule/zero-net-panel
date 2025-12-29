@@ -1,95 +1,93 @@
 syntax = "v1"
 
-import "shared/types.api"
+import "../shared/types.api"
 
 @server (
-    name: znp
-    prefix: /api/v1
-    group: user/orders
+	name:   znp
+	prefix: /api/v1
+	group:  user/orders
 )
 service znp {
-    @doc "Create order from plan"
-    @handler UserCreateOrder
-    post /user/orders(UserCreateOrderRequest) returns (UserOrderResponse)
+	@doc "Create order from plan"
+	@handler UserCreateOrder
+	post /user/orders (UserCreateOrderRequest) returns (UserOrderResponse)
 
-    @doc "Cancel user order"
-    @handler UserCancelOrder
-    post /user/orders/:id/cancel(UserCancelOrderRequest) returns (UserOrderResponse)
+	@doc "Cancel user order"
+	@handler UserCancelOrder
+	post /user/orders/:id/cancel (UserCancelOrderRequest) returns (UserOrderResponse)
 
-    @doc "List user orders"
-    @handler UserListOrders
-    get /user/orders(UserOrderListRequest) returns (UserOrderListResponse)
+	@doc "List user orders"
+	@handler UserListOrders
+	get /user/orders (UserOrderListRequest) returns (UserOrderListResponse)
 
-    @doc "Get user order detail"
-    @handler UserGetOrder
-    get /user/orders/:id(UserGetOrderRequest) returns (UserOrderResponse)
+	@doc "Get user order detail"
+	@handler UserGetOrder
+	get /user/orders/:id (UserGetOrderRequest) returns (UserOrderResponse)
 
-    @doc "Get user order payment status"
-    @handler UserGetOrderPaymentStatus
-    get /user/orders/:id/payment-status(UserOrderPaymentStatusRequest) returns (UserOrderPaymentStatusResponse)
-
-    @doc "Cancel a pending user order"
-    @handler UserCancelOrder
-    post /user/orders/:id/cancel(UserCancelOrderRequest) returns (UserOrderResponse)
+	@doc "Get user order payment status"
+	@handler UserGetOrderPaymentStatus
+	get /user/orders/:id/payment-status (UserOrderPaymentStatusRequest) returns (UserOrderPaymentStatusResponse)
 }
 
 type UserCreateOrderRequest {
-    plan_id uint64
-    quantity int
-    payment_method string(optional)
-    payment_channel string(optional)
-    payment_return_url string(optional)
-    idempotency_key string(optional)
-    coupon_code string(optional)
+	plan_id            uint64
+	billing_option_id  uint64 `form:"billing_option_id,optional" json:"billing_option_id,optional"`
+	quantity           int
+	payment_method     string `form:"payment_method,optional" json:"payment_method,optional"`
+	payment_channel    string `form:"payment_channel,optional" json:"payment_channel,optional"`
+	payment_return_url string `form:"payment_return_url,optional" json:"payment_return_url,optional"`
+	idempotency_key    string `form:"idempotency_key,optional" json:"idempotency_key,optional"`
+	coupon_code        string `form:"coupon_code,optional" json:"coupon_code,optional"`
 }
 
 type UserOrderListRequest {
-    page int
-    per_page int
-    status string
-    payment_method string
-    payment_status string
-    number string
-    sort string
-    direction string
+	page           int
+	per_page       int
+	status         string
+	payment_method string
+	payment_status string
+	number         string
+	sort           string
+	direction      string
 }
 
 type UserOrderListResponse {
-    orders []OrderDetail
-    pagination PaginationMeta
+	orders     []OrderDetail
+	pagination PaginationMeta
 }
 
 type UserOrderResponse {
-    order OrderDetail
-    balance BalanceSnapshot
-    transaction *BalanceTransactionSummary
+	order       OrderDetail
+	balance     BalanceSnapshot
+	transaction *BalanceTransactionSummary
 }
 
 type UserGetOrderRequest {
-    id uint64
+	id uint64
 }
 
 type UserOrderPaymentStatusRequest {
-    id uint64
+	id uint64
 }
 
 type UserOrderPaymentStatusResponse {
-    order_id uint64
-    status string
-    payment_status string
-    payment_method string
-    payment_intent_id *string
-    payment_reference *string
-    payment_failure_code *string
-    payment_failure_message *string
-    paid_at *int64
-    cancelled_at *int64
-    refunded_cents int64
-    refunded_at *int64
-    updated_at int64
+	order_id                uint64
+	status                  string
+	payment_status          string
+	payment_method          string
+	payment_intent_id       *string
+	payment_reference       *string
+	payment_failure_code    *string
+	payment_failure_message *string
+	paid_at                 *int64
+	cancelled_at            *int64
+	refunded_cents          int64
+	refunded_at             *int64
+	updated_at              int64
 }
 
 type UserCancelOrderRequest {
-    id uint64
-    reason string
+	id     uint64
+	reason string
 }
+

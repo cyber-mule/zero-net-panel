@@ -16,7 +16,7 @@ type BalanceTransactionSummary {
 	balance_after_cents int64
 	reference           string
 	description         string
-	metadata            map[string]any
+	metadata            map[string]interface{}
 	created_at          int64
 }
 
@@ -37,7 +37,7 @@ type OrderItem {
 	unit_price_cents int64
 	currency         string
 	subtotal_cents   int64
-	metadata         map[string]any
+	metadata         map[string]interface{}
 	created_at       int64
 }
 
@@ -55,8 +55,8 @@ type OrderDetail {
 	currency                string
 	payment_method          string
 	plan_id                 *uint64
-	plan_snapshot           map[string]any
-	metadata                map[string]any
+	plan_snapshot           map[string]interface{}
+	metadata                map[string]interface{}
 	paid_at                 *int64
 	cancelled_at            *int64
 	refunded_cents          int64
@@ -74,7 +74,7 @@ type OrderRefund {
 	amount_cents int64
 	reason       string
 	reference    string
-	metadata     map[string]any
+	metadata     map[string]interface{}
 	created_at   int64
 }
 
@@ -90,16 +90,32 @@ type OrderPayment {
 	currency        string
 	failure_code    string
 	failure_message string
-	metadata        map[string]any
+	metadata        map[string]interface{}
 	created_at      int64
 	updated_at      int64
 }
 
-type CredentialSummary {
-	version int
-	status string
-	issued_at int64
-	deprecated_at *int64
-	revoked_at *int64
-	last_seen_at *int64
+type PlanBillingOptionSummary {
+	id             uint64
+	plan_id        uint64
+	name           string
+	duration_value int
+	duration_unit  string
+	price_cents    int64
+	currency       string
+	sort_order     int
+	status         string
+	visible        bool
+	created_at     int64
+	updated_at     int64
 }
+
+type CredentialSummary {
+	version       int
+	status        string
+	issued_at     int64
+	deprecated_at *int64
+	revoked_at    *int64
+	last_seen_at  *int64
+}
+

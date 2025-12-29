@@ -43,8 +43,8 @@ type AuthRefreshRequest {
 type AuthRegisterRequest {
 	email        string
 	password     string
-	display_name string(optional)
-	invite_code  string(optional)
+	display_name string `form:"display_name,optional" json:"display_name,optional"`
+	invite_code  string `form:"invite_code,optional" json:"invite_code,optional"`
 }
 
 type AuthVerifyRequest {
@@ -91,11 +91,11 @@ type AuthRefreshResponse {
 
 type AuthRegisterResponse {
 	requires_verification bool
-	access_token          string(optional)
-	refresh_token         string(optional)
-	token_type            string(optional)
-	expires_in            int64(optional)
-	refresh_expires_in    int64(optional)
+	access_token          string `form:"access_token,optional" json:"access_token,optional"`
+	refresh_token         string `form:"refresh_token,optional" json:"refresh_token,optional"`
+	token_type            string `form:"token_type,optional" json:"token_type,optional"`
+	expires_in            int64  `form:"expires_in,optional" json:"expires_in,optional"`
+	refresh_expires_in    int64  `form:"refresh_expires_in,optional" json:"refresh_expires_in,optional"`
 	user                  AuthenticatedUser
 }
 
@@ -115,3 +115,4 @@ type AuthForgotPasswordResponse {
 type AuthResetPasswordResponse {
 	message string
 }
+

@@ -681,23 +681,24 @@ type AdminUpdatePlanRequest struct {
 
 // PlanSummary 套餐概览。
 type PlanSummary struct {
-	ID                 uint64             `json:"id"`
-	Name               string             `json:"name"`
-	Slug               string             `json:"slug"`
-	Description        string             `json:"description"`
-	Tags               []string           `json:"tags"`
-	Features           []string           `json:"features"`
-	PriceCents         int64              `json:"price_cents"`
-	Currency           string             `json:"currency"`
-	DurationDays       int                `json:"duration_days"`
-	TrafficLimitBytes  int64              `json:"traffic_limit_bytes"`
-	TrafficMultipliers map[string]float64 `json:"traffic_multipliers"`
-	DevicesLimit       int                `json:"devices_limit"`
-	SortOrder          int                `json:"sort_order"`
-	Status             string             `json:"status"`
-	Visible            bool               `json:"visible"`
-	CreatedAt          int64              `json:"created_at"`
-	UpdatedAt          int64              `json:"updated_at"`
+	ID                 uint64                     `json:"id"`
+	Name               string                     `json:"name"`
+	Slug               string                     `json:"slug"`
+	Description        string                     `json:"description"`
+	Tags               []string                   `json:"tags"`
+	Features           []string                   `json:"features"`
+	BillingOptions     []PlanBillingOptionSummary `json:"billing_options"`
+	PriceCents         int64                      `json:"price_cents"`
+	Currency           string                     `json:"currency"`
+	DurationDays       int                        `json:"duration_days"`
+	TrafficLimitBytes  int64                      `json:"traffic_limit_bytes"`
+	TrafficMultipliers map[string]float64         `json:"traffic_multipliers"`
+	DevicesLimit       int                        `json:"devices_limit"`
+	SortOrder          int                        `json:"sort_order"`
+	Status             string                     `json:"status"`
+	Visible            bool                       `json:"visible"`
+	CreatedAt          int64                      `json:"created_at"`
+	UpdatedAt          int64                      `json:"updated_at"`
 }
 
 // AdminPlanListResponse 管理端套餐列表响应。
@@ -795,16 +796,17 @@ type UserPlanListRequest struct {
 
 // UserPlanSummary 用户侧套餐信息。
 type UserPlanSummary struct {
-	ID                uint64   `json:"id"`
-	Name              string   `json:"name"`
-	Description       string   `json:"description"`
-	Features          []string `json:"features"`
-	PriceCents        int64    `json:"price_cents"`
-	Currency          string   `json:"currency"`
-	DurationDays      int      `json:"duration_days"`
-	TrafficLimitBytes int64    `json:"traffic_limit_bytes"`
-	DevicesLimit      int      `json:"devices_limit"`
-	Tags              []string `json:"tags"`
+	ID                uint64                     `json:"id"`
+	Name              string                     `json:"name"`
+	Description       string                     `json:"description"`
+	Features          []string                   `json:"features"`
+	BillingOptions    []PlanBillingOptionSummary `json:"billing_options"`
+	PriceCents        int64                      `json:"price_cents"`
+	Currency          string                     `json:"currency"`
+	DurationDays      int                        `json:"duration_days"`
+	TrafficLimitBytes int64                      `json:"traffic_limit_bytes"`
+	DevicesLimit      int                        `json:"devices_limit"`
+	Tags              []string                   `json:"tags"`
 }
 
 // UserPlanListResponse 用户套餐列表。

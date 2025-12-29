@@ -1,76 +1,77 @@
 syntax = "v1"
 
-import "shared/types.api"
+import "../shared/types.api"
 
 @server (
-    name: znp
-    prefix: /api/v1
-    group: admin/paymentchannels
+	name:   znp
+	prefix: /api/v1
+	group:  admin/paymentchannels
 )
 service znp {
-    @doc "List payment channels"
-    @handler AdminListPaymentChannels
-    get /admin/payment-channels(AdminListPaymentChannelsRequest) returns (AdminPaymentChannelListResponse)
+	@doc "List payment channels"
+	@handler AdminListPaymentChannels
+	get /admin/payment-channels (AdminListPaymentChannelsRequest) returns (AdminPaymentChannelListResponse)
 
-    @doc "Get payment channel"
-    @handler AdminGetPaymentChannel
-    get /admin/payment-channels/:id(AdminGetPaymentChannelRequest) returns (PaymentChannelSummary)
+	@doc "Get payment channel"
+	@handler AdminGetPaymentChannel
+	get /admin/payment-channels/:id (AdminGetPaymentChannelRequest) returns (PaymentChannelSummary)
 
-    @doc "Create payment channel"
-    @handler AdminCreatePaymentChannel
-    post /admin/payment-channels(AdminCreatePaymentChannelRequest) returns (PaymentChannelSummary)
+	@doc "Create payment channel"
+	@handler AdminCreatePaymentChannel
+	post /admin/payment-channels (AdminCreatePaymentChannelRequest) returns (PaymentChannelSummary)
 
-    @doc "Update payment channel"
-    @handler AdminUpdatePaymentChannel
-    patch /admin/payment-channels/:id(AdminUpdatePaymentChannelRequest) returns (PaymentChannelSummary)
+	@doc "Update payment channel"
+	@handler AdminUpdatePaymentChannel
+	patch /admin/payment-channels/:id (AdminUpdatePaymentChannelRequest) returns (PaymentChannelSummary)
 }
 
 type PaymentChannelSummary {
-    id uint64
-    name string
-    code string
-    provider string
-    enabled bool
-    sort_order int
-    config map[string]any
-    created_at int64
-    updated_at int64
+	id         uint64
+	name       string
+	code       string
+	provider   string
+	enabled    bool
+	sort_order int
+	config     map[string]interface{}
+	created_at int64
+	updated_at int64
 }
 
 type AdminPaymentChannelListResponse {
-    channels []PaymentChannelSummary
-    pagination PaginationMeta
+	channels   []PaymentChannelSummary
+	pagination PaginationMeta
 }
 
 type AdminListPaymentChannelsRequest {
-    page int(optional)
-    per_page int(optional)
-    q string(optional)
-    provider string(optional)
-    enabled bool(optional)
-    sort string(optional)
-    direction string(optional)
+	page      int    `form:"page,optional" json:"page,optional"`
+	per_page  int    `form:"per_page,optional" json:"per_page,optional"`
+	q         string `form:"q,optional" json:"q,optional"`
+	provider  string `form:"provider,optional" json:"provider,optional"`
+	enabled   bool   `form:"enabled,optional" json:"enabled,optional"`
+	sort      string `form:"sort,optional" json:"sort,optional"`
+	direction string `form:"direction,optional" json:"direction,optional"`
 }
 
 type AdminGetPaymentChannelRequest {
-    id uint64
+	id uint64
 }
 
 type AdminCreatePaymentChannelRequest {
-    name string
-    code string
-    provider string(optional)
-    enabled bool(optional)
-    sort_order int(optional)
-    config map[string]any(optional)
+	name       string
+	code       string
+	provider   string                 `form:"provider,optional" json:"provider,optional"`
+	enabled    bool                   `form:"enabled,optional" json:"enabled,optional"`
+	sort_order int                    `form:"sort_order,optional" json:"sort_order,optional"`
+	config     map[string]interface{} `form:"config,optional" json:"config,optional"`
 }
 
 type AdminUpdatePaymentChannelRequest {
-    id uint64
-    name string(optional)
-    code string(optional)
-    provider string(optional)
-    enabled bool(optional)
-    sort_order int(optional)
-    config map[string]any(optional)
+	id         uint64
+	name       string                 `form:"name,optional" json:"name,optional"`
+	code       string                 `form:"code,optional" json:"code,optional"`
+	provider   string                 `form:"provider,optional" json:"provider,optional"`
+	enabled    bool                   `form:"enabled,optional" json:"enabled,optional"`
+	sort_order int                    `form:"sort_order,optional" json:"sort_order,optional"`
+	config     map[string]interface{} `form:"config,optional" json:"config,optional"`
 }
+

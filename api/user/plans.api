@@ -1,33 +1,37 @@
 syntax = "v1"
 
+import "../shared/types.api"
+
 @server (
-    name: znp
-    prefix: /api/v1
-    group: user/plans
+	name:   znp
+	prefix: /api/v1
+	group:  user/plans
 )
 service znp {
-    @doc "List available plans"
-    @handler UserListPlans
-    get /user/plans(UserPlanListRequest) returns (UserPlanListResponse)
+	@doc "List available plans"
+	@handler UserListPlans
+	get /user/plans (UserPlanListRequest) returns (UserPlanListResponse)
 }
 
 type UserPlanListRequest {
-    q string(optional)
+	q string `form:"q,optional" json:"q,optional"`
 }
 
 type UserPlanSummary {
-    id uint64
-    name string
-    description string
-    features []string
-    price_cents int64
-    currency string
-    duration_days int
-    traffic_limit_bytes int64
-    devices_limit int
-    tags []string
+	id                  uint64
+	name                string
+	description         string
+	features            []string
+	billing_options     []PlanBillingOptionSummary
+	price_cents         int64
+	currency            string
+	duration_days       int
+	traffic_limit_bytes int64
+	devices_limit       int
+	tags                []string
 }
 
 type UserPlanListResponse {
-    plans []UserPlanSummary
+	plans []UserPlanSummary
 }
+

@@ -19,3 +19,4 @@ type PingResponse {
 	logo_url  string
 	timestamp int64
 }
+

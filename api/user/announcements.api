@@ -1,34 +1,35 @@
 syntax = "v1"
 
 @server (
-    name: znp
-    prefix: /api/v1
-    group: user/announcements
+	name:   znp
+	prefix: /api/v1
+	group:  user/announcements
 )
 service znp {
-    @doc "List active announcements"
-    @handler UserListAnnouncements
-    get /user/announcements(UserAnnouncementListRequest) returns (UserAnnouncementListResponse)
+	@doc "List active announcements"
+	@handler UserListAnnouncements
+	get /user/announcements (UserAnnouncementListRequest) returns (UserAnnouncementListResponse)
 }
 
 type UserAnnouncementListRequest {
-    audience string(optional)
-    limit int(optional)
+	audience string `form:"audience,optional" json:"audience,optional"`
+	limit    int    `form:"limit,optional" json:"limit,optional"`
 }
 
 type UserAnnouncementSummary {
-    id uint64
-    title string
-    content string
-    category string
-    audience string
-    is_pinned bool
-    priority int
-    visible_from int64
-    visible_to int64(optional)
-    published_at int64(optional)
+	id           uint64
+	title        string
+	content      string
+	category     string
+	audience     string
+	is_pinned    bool
+	priority     int
+	visible_from int64
+	visible_to   int64 `form:"visible_to,optional" json:"visible_to,optional"`
+	published_at int64 `form:"published_at,optional" json:"published_at,optional"`
 }
 
 type UserAnnouncementListResponse {
-    announcements []UserAnnouncementSummary
+	announcements []UserAnnouncementSummary
 }
+

@@ -11,6 +11,7 @@ import (
 	"admin/templates.api"
 	"admin/payment_channels.api"
 	"admin/plans.api"
+	"admin/plan_billing_options.api"
 	"admin/announcements.api"
 	"admin/coupons.api"
 	"admin/site.api"
@@ -33,3 +34,4 @@ info (
 	desc:   "Backend API aligned with xboard capabilities and GitHub 风格 REST 设计。"
 	author: "ZNP Team"
 )
+

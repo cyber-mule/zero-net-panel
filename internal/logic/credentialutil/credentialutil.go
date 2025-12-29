@@ -26,7 +26,7 @@ func EnsureActiveCredential(ctx context.Context, repos *repository.Repositories,
 		return repository.UserCredential{}, err
 	}
 
-	credential, err := createCredential(manager, userID, nil)
+	credential, err = createCredential(manager, userID, nil)
 	if err != nil {
 		return repository.UserCredential{}, err
 	}

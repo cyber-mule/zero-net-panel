@@ -12,6 +12,7 @@ import (
 	adminNodes "github.com/zero-net-panel/zero-net-panel/internal/handler/admin/nodes"
 	adminOrders "github.com/zero-net-panel/zero-net-panel/internal/handler/admin/orders"
 	adminPaymentChannels "github.com/zero-net-panel/zero-net-panel/internal/handler/admin/paymentchannels"
+	adminPlanBillingOptions "github.com/zero-net-panel/zero-net-panel/internal/handler/admin/planbillingoptions"
 	adminPlans "github.com/zero-net-panel/zero-net-panel/internal/handler/admin/plans"
 	adminProtocolBindings "github.com/zero-net-panel/zero-net-panel/internal/handler/admin/protocolbindings"
 	adminProtocolConfigs "github.com/zero-net-panel/zero-net-panel/internal/handler/admin/protocolconfigs"
@@ -277,6 +278,21 @@ func RegisterHandlers(server *rest.Server, svcCtx *svc.ServiceContext) {
 		},
 		{
 			Method:  http.MethodGet,
+			Path:    "/plans/:plan_id/billing-options",
+			Handler: adminPlanBillingOptions.AdminListPlanBillingOptionsHandler(svcCtx),
+		},
+		{
+			Method:  http.MethodPost,
+			Path:    "/plans/:plan_id/billing-options",
+			Handler: adminPlanBillingOptions.AdminCreatePlanBillingOptionHandler(svcCtx),
+		},
+		{
+			Method:  http.MethodPatch,
+			Path:    "/plans/:plan_id/billing-options/:id",
+			Handler: adminPlanBillingOptions.AdminUpdatePlanBillingOptionHandler(svcCtx),
+		},
+		{
+			Method:  http.MethodGet,
 			Path:    "/audit-logs",
 			Handler: adminAuditLogs.AdminAuditLogListHandler(svcCtx),
 		},
@@ -423,7 +439,7 @@ func RegisterHandlers(server *rest.Server, svcCtx *svc.ServiceContext) {
 		{
 			Method:  http.MethodPost,
 			Path:    "/payments/callback",
-			Handler: adminOrders.AdminPaymentCallbackHandler(svcCtx),
+			Handler: adminOrders.AdminPaymentCallbackPublicHandler(svcCtx),
 		},
 		{
 			Method:  http.MethodPost,

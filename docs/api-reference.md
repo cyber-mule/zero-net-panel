@@ -656,7 +656,7 @@ TemplateVariable 字段：
 - `value_type` string
 - `required` bool
 - `description` string
-- `default_value` any
+- `default_value` interface{}
 
 SubscriptionTemplateSummary 字段：
 
@@ -734,8 +734,17 @@ SubscriptionTemplateHistoryEntry 字段：
 PlanSummary 字段：
 
 - `id`、`name`、`slug`、`description`、`tags`、`features`
+- `billing_options`
 - `price_cents`、`currency`、`duration_days`
 - `traffic_limit_bytes`、`traffic_multipliers`、`devices_limit`
+- `sort_order`、`status`、`visible`
+- `created_at`、`updated_at`
+
+PlanBillingOptionSummary 字段：
+
+- `id`、`plan_id`、`name`
+- `duration_value`、`duration_unit`
+- `price_cents`、`currency`
 - `sort_order`、`status`、`visible`
 - `created_at`、`updated_at`
 
@@ -769,6 +778,39 @@ PlanSummary 字段：
   - `traffic_limit_bytes`、`traffic_multipliers`、`devices_limit`
   - `sort_order`、`status`、`visible`
 - 响应：PlanSummary
+
+#### GET /api/v1/{adminPrefix}/plans/{plan_id}/billing-options
+
+- 说明：套餐计费选项列表
+- 路径参数：`plan_id` uint64
+- 查询参数：`status`（可选）、`visible`（可选）
+- 响应：
+  - `options` []PlanBillingOptionSummary
+
+#### POST /api/v1/{adminPrefix}/plans/{plan_id}/billing-options
+
+- 说明：创建套餐计费选项
+- 路径参数：`plan_id` uint64
+- 请求体：
+  - `name` string（可选）
+  - `duration_value` int
+  - `duration_unit` string（hour/day/month/year）
+  - `price_cents` int64
+  - `currency` string（可选）
+  - `sort_order` int（可选）
+  - `status` string（可选，默认 draft）
+  - `visible` bool（可选）
+- 响应：PlanBillingOptionSummary
+
+#### PATCH /api/v1/{adminPrefix}/plans/{plan_id}/billing-options/{id}
+
+- 说明：更新套餐计费选项
+- 路径参数：`plan_id` uint64、`id` uint64
+- 请求体（字段均可选）：
+  - `name`、`duration_value`、`duration_unit`
+  - `price_cents`、`currency`
+  - `sort_order`、`status`、`visible`
+- 响应：PlanBillingOptionSummary
 
 #### GET /api/v1/{adminPrefix}/coupons
 
@@ -1227,6 +1269,7 @@ UserTrafficUsageRecord 字段：
 UserPlanSummary 字段：
 
 - `id`、`name`、`description`、`features`
+- `billing_options`
 - `price_cents`、`currency`、`duration_days`
 - `traffic_limit_bytes`、`devices_limit`、`tags`
 
@@ -1401,6 +1444,7 @@ UserPaymentChannelSummary 字段：
 - 说明：下单
 - 请求体：
   - `plan_id` uint64
+  - `billing_option_id` uint64（可选）
   - `quantity` int
   - `payment_method` string（可选，默认 `balance`；线下可用 `manual`）
   - `payment_channel` string（可选，外部支付通道）

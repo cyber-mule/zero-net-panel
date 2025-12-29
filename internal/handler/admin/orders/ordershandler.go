@@ -147,6 +147,11 @@ func AdminPaymentCallbackHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	}
 }
 
+// AdminPaymentCallbackPublicHandler proxies the public callback to the admin handler.
+func AdminPaymentCallbackPublicHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+	return AdminPaymentCallbackHandler(svcCtx)
+}
+
 // AdminReconcilePaymentHandler requests gateway reconciliation for an order payment.
 func AdminReconcilePaymentHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

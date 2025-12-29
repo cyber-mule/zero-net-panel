@@ -101,6 +101,27 @@ func (l *CreateLogic) Create(req *types.UserCreateOrderRequest) (resp *types.Use
 		return nil, repository.ErrInvalidArgument
 	}
 
+	var billingOption repository.PlanBillingOption
+	hasBillingOption := false
+	billingOptionID := req.BillingOptionID
+	if billingOptionID > 0 {
+		option, err := l.svcCtx.Repositories.PlanBillingOption.Get(l.ctx, billingOptionID)
+		if err != nil {
+			if errors.Is(err, repository.ErrNotFound) {
+				return nil, repository.ErrInvalidArgument
+			}
+			return nil, err
+		}
+		if option.PlanID != plan.ID {
+			return nil, repository.ErrInvalidArgument
+		}
+		if !option.Visible || !strings.EqualFold(option.Status, "active") {
+			return nil, repository.ErrInvalidArgument
+		}
+		billingOption = option
+		hasBillingOption = true
+	}
+
 	quantity := req.Quantity
 	if quantity <= 0 {
 		quantity = 1
@@ -113,7 +134,26 @@ func (l *CreateLogic) Create(req *types.UserCreateOrderRequest) (resp *types.Use
 	returnURL := strings.TrimSpace(req.PaymentReturnURL)
 	var paymentChannel repository.PaymentChannel
 
-	totalCents := plan.PriceCents * int64(quantity)
+	unitPriceCents := plan.PriceCents
+	durationValue := plan.DurationDays
+	durationUnit := repository.DurationUnitDay
+	billingOptionName := ""
+	if hasBillingOption {
+		unitPriceCents = billingOption.PriceCents
+		durationValue = billingOption.DurationValue
+		durationUnit = strings.TrimSpace(strings.ToLower(billingOption.DurationUnit))
+		if durationUnit == "" {
+			durationUnit = repository.DurationUnitDay
+		}
+		switch durationUnit {
+		case repository.DurationUnitHour, repository.DurationUnitDay, repository.DurationUnitMonth, repository.DurationUnitYear:
+		default:
+			return nil, repository.ErrInvalidArgument
+		}
+		billingOptionName = strings.TrimSpace(billingOption.Name)
+	}
+
+	totalCents := unitPriceCents * int64(quantity)
 	if method == repository.PaymentMethodExternal && totalCents > 0 {
 		if channel == "" {
 			return nil, repository.ErrInvalidArgument
@@ -163,6 +203,11 @@ func (l *CreateLogic) Create(req *types.UserCreateOrderRequest) (resp *types.Use
 		balance = existingBalance
 
 		currency := strings.TrimSpace(plan.Currency)
+		if hasBillingOption {
+			if optionCurrency := strings.TrimSpace(billingOption.Currency); optionCurrency != "" {
+				currency = optionCurrency
+			}
+		}
 		if currency == "" {
 			currency = strings.TrimSpace(balance.Currency)
 			if currency == "" {
@@ -175,13 +220,23 @@ func (l *CreateLogic) Create(req *types.UserCreateOrderRequest) (resp *types.Use
 			"name":                plan.Name,
 			"slug":                plan.Slug,
 			"description":         plan.Description,
-			"price_cents":         plan.PriceCents,
+			"price_cents":         unitPriceCents,
 			"currency":            currency,
-			"duration_days":       plan.DurationDays,
+			"duration_unit":       durationUnit,
+			"duration_value":      durationValue,
 			"traffic_limit_bytes": plan.TrafficLimitBytes,
 			"devices_limit":       plan.DevicesLimit,
 			"features":            plan.Features,
 			"tags":                plan.Tags,
+		}
+		if durationUnit == repository.DurationUnitDay && durationValue > 0 {
+			snapshot["duration_days"] = durationValue
+		}
+		if hasBillingOption {
+			snapshot["billing_option_id"] = billingOption.ID
+			if billingOptionName != "" {
+				snapshot["billing_option_name"] = billingOptionName
+			}
 		}
 
 		metadata := map[string]any{
@@ -194,7 +249,7 @@ func (l *CreateLogic) Create(req *types.UserCreateOrderRequest) (resp *types.Use
 			metadata["payment_return_url"] = returnURL
 		}
 
-		baseTotalCents := plan.PriceCents * int64(quantity)
+		baseTotalCents := unitPriceCents * int64(quantity)
 		totalCents := baseTotalCents
 
 		if couponCode != "" {
@@ -285,6 +340,9 @@ func (l *CreateLogic) Create(req *types.UserCreateOrderRequest) (resp *types.Use
 						"order_number": orderNumber,
 					},
 				}
+				if hasBillingOption {
+					txRecord.Metadata["billing_option_id"] = billingOption.ID
+				}
 				createdTx, updatedBalance, err := balanceRepo.ApplyTransaction(l.ctx, user.ID, txRecord)
 				if err != nil {
 					return err
@@ -314,15 +372,25 @@ func (l *CreateLogic) Create(req *types.UserCreateOrderRequest) (resp *types.Use
 			ItemID:         plan.ID,
 			Name:           plan.Name,
 			Quantity:       quantity,
-			UnitPriceCents: plan.PriceCents,
+			UnitPriceCents: unitPriceCents,
 			Currency:       currency,
 			SubtotalCents:  baseTotalCents,
 			Metadata: map[string]any{
-				"duration_days":       plan.DurationDays,
+				"duration_unit":       durationUnit,
+				"duration_value":      durationValue,
 				"traffic_limit_bytes": plan.TrafficLimitBytes,
 				"devices_limit":       plan.DevicesLimit,
 			},
 			CreatedAt: now,
+		}
+		if durationUnit == repository.DurationUnitDay && durationValue > 0 {
+			item.Metadata["duration_days"] = durationValue
+		}
+		if hasBillingOption {
+			item.Metadata["billing_option_id"] = billingOption.ID
+			if billingOptionName != "" {
+				item.Metadata["billing_option_name"] = billingOptionName
+			}
 		}
 
 		itemsToCreate := []repository.OrderItem{item}

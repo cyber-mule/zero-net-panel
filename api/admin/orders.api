@@ -1,140 +1,141 @@
 syntax = "v1"
 
-import "shared/types.api"
+import "../shared/types.api"
 
 @server (
-    name: znp
-    prefix: /api/v1
-    group: admin/orders
+	name:   znp
+	prefix: /api/v1
+	group:  admin/orders
 )
 service znp {
-    @doc "List billing orders"
-    @handler AdminListOrders
-    get /admin/orders(AdminListOrdersRequest) returns (AdminOrderListResponse)
+	@doc "List billing orders"
+	@handler AdminListOrders
+	get /admin/orders (AdminListOrdersRequest) returns (AdminOrderListResponse)
 
-    @doc "Get order detail"
-    @handler AdminGetOrder
-    get /admin/orders/:id(AdminGetOrderRequest) returns (AdminOrderResponse)
+	@doc "Get order detail"
+	@handler AdminGetOrder
+	get /admin/orders/:id (AdminGetOrderRequest) returns (AdminOrderResponse)
 
-    @doc "Manually mark an order as paid"
-    @handler AdminMarkOrderPaid
-    post /admin/orders/:id/pay(AdminMarkOrderPaidRequest) returns (AdminOrderResponse)
+	@doc "Manually mark an order as paid"
+	@handler AdminMarkOrderPaid
+	post /admin/orders/:id/pay (AdminMarkOrderPaidRequest) returns (AdminOrderResponse)
 
-    @doc "Cancel an order"
-    @handler AdminCancelOrder
-    post /admin/orders/:id/cancel(AdminCancelOrderRequest) returns (AdminOrderResponse)
+	@doc "Cancel an order"
+	@handler AdminCancelOrder
+	post /admin/orders/:id/cancel (AdminCancelOrderRequest) returns (AdminOrderResponse)
 
-    @doc "Refund an order"
-    @handler AdminRefundOrder
-    post /admin/orders/:id/refund(AdminRefundOrderRequest) returns (AdminOrderResponse)
+	@doc "Refund an order"
+	@handler AdminRefundOrder
+	post /admin/orders/:id/refund (AdminRefundOrderRequest) returns (AdminOrderResponse)
 
-    @doc "Reconcile an external payment"
-    @handler AdminReconcilePayment
-    post /admin/orders/payments/reconcile(AdminReconcilePaymentRequest) returns (AdminOrderResponse)
+	@doc "Reconcile an external payment"
+	@handler AdminReconcilePayment
+	post /admin/orders/payments/reconcile (AdminReconcilePaymentRequest) returns (AdminOrderResponse)
 
-    @doc "Process external payment callback"
-    @handler AdminPaymentCallback
-    post /admin/orders/payments/callback(AdminPaymentCallbackRequest) returns (AdminOrderResponse)
+	@doc "Process external payment callback"
+	@handler AdminPaymentCallback
+	post /admin/orders/payments/callback (AdminPaymentCallbackRequest) returns (AdminOrderResponse)
 
-    @doc "Process external payment callback without admin prefix"
-    @handler AdminPaymentCallback
-    post /payments/callback(AdminPaymentCallbackRequest) returns (AdminOrderResponse)
+	@doc "Process external payment callback without admin prefix"
+	@handler AdminPaymentCallbackPublic
+	post /payments/callback (AdminPaymentCallbackRequest) returns (AdminOrderResponse)
 }
 
 type AdminListOrdersRequest {
-    page int
-    per_page int
-    status string
-    payment_method string
-    payment_status string
-    number string
-    sort string
-    direction string
-    user_id uint64
+	page           int
+	per_page       int
+	status         string
+	payment_method string
+	payment_status string
+	number         string
+	sort           string
+	direction      string
+	user_id        uint64
 }
 
 type OrderUserSummary {
-    id uint64
-    email string
-    display_name string
+	id           uint64
+	email        string
+	display_name string
 }
 
 type AdminOrderDetail {
-    id uint64
-    number string
-    user_id uint64
-    status string
-    payment_status string
-    payment_intent_id *string
-    payment_reference *string
-    payment_failure_code *string
-    payment_failure_message *string
-    total_cents int64
-    currency string
-    payment_method string
-    plan_id *uint64
-    plan_snapshot map[string]any
-    metadata map[string]any
-    paid_at *int64
-    cancelled_at *int64
-    refunded_cents int64
-    refunded_at *int64
-    created_at int64
-    updated_at int64
-    items []OrderItem
-    refunds []OrderRefund
-    payments []OrderPayment
-    user OrderUserSummary
+	id                      uint64
+	number                  string
+	user_id                 uint64
+	status                  string
+	payment_status          string
+	payment_intent_id       *string
+	payment_reference       *string
+	payment_failure_code    *string
+	payment_failure_message *string
+	total_cents             int64
+	currency                string
+	payment_method          string
+	plan_id                 *uint64
+	plan_snapshot           map[string]interface{}
+	metadata                map[string]interface{}
+	paid_at                 *int64
+	cancelled_at            *int64
+	refunded_cents          int64
+	refunded_at             *int64
+	created_at              int64
+	updated_at              int64
+	items                   []OrderItem
+	refunds                 []OrderRefund
+	payments                []OrderPayment
+	user                    OrderUserSummary
 }
 
 type AdminOrderListResponse {
-    orders []AdminOrderDetail
-    pagination PaginationMeta
+	orders     []AdminOrderDetail
+	pagination PaginationMeta
 }
 
 type AdminGetOrderRequest {
-    id uint64
+	id uint64
 }
 
 type AdminOrderResponse {
-    order AdminOrderDetail
+	order AdminOrderDetail
 }
 
 type AdminMarkOrderPaidRequest {
-    id uint64
-    payment_method string(optional)
-    paid_at int64(optional)
-    note string(optional)
-    reference string(optional)
-    charge_balance bool(optional)
+	id             uint64
+	payment_method string `form:"payment_method,optional" json:"payment_method,optional"`
+	paid_at        int64  `form:"paid_at,optional" json:"paid_at,optional"`
+	note           string `form:"note,optional" json:"note,optional"`
+	reference      string `form:"reference,optional" json:"reference,optional"`
+	charge_balance bool   `form:"charge_balance,optional" json:"charge_balance,optional"`
 }
 
 type AdminCancelOrderRequest {
-    id uint64
-    reason string(optional)
-    cancelled_at int64(optional)
+	id           uint64
+	reason       string `form:"reason,optional" json:"reason,optional"`
+	cancelled_at int64  `form:"cancelled_at,optional" json:"cancelled_at,optional"`
 }
 
 type AdminRefundOrderRequest {
-    id uint64
-    amount_cents int64
-    reason string(optional)
-    metadata map[string]any(optional)
-    refund_at int64(optional)
-    credit_balance bool(optional)
+	id             uint64
+	amount_cents   int64
+	reason         string                 `form:"reason,optional" json:"reason,optional"`
+	metadata       map[string]interface{} `form:"metadata,optional" json:"metadata,optional"`
+	refund_at      int64                  `form:"refund_at,optional" json:"refund_at,optional"`
+	credit_balance bool                   `form:"credit_balance,optional" json:"credit_balance,optional"`
 }
 
 type AdminReconcilePaymentRequest {
-    order_id uint64
-    payment_id uint64
+	order_id   uint64
+	payment_id uint64
 }
 
 type AdminPaymentCallbackRequest {
-    order_id uint64
-    payment_id uint64
-    status string
-    reference string(optional)
-    failure_code string(optional)
-    failure_message string(optional)
-    paid_at int64(optional)
+	order_id        uint64
+	payment_id      uint64
+	status          string
+	reference       string `form:"reference,optional" json:"reference,optional"`
+	failure_code    string `form:"failure_code,optional" json:"failure_code,optional"`
+	failure_message string `form:"failure_message,optional" json:"failure_message,optional"`
+	paid_at         int64  `form:"paid_at,optional" json:"paid_at,optional"`
 }
+

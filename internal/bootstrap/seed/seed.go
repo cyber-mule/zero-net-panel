@@ -593,7 +593,34 @@ func seedPlans(tx *gorm.DB) error {
 		},
 	}
 
-	return tx.Create(&plans).Error
+	if err := tx.Create(&plans).Error; err != nil {
+		return err
+	}
+
+	options := make([]repository.PlanBillingOption, 0, len(plans))
+	for _, plan := range plans {
+		if plan.DurationDays <= 0 {
+			continue
+		}
+		options = append(options, repository.PlanBillingOption{
+			PlanID:        plan.ID,
+			Name:          plan.Name,
+			DurationValue: plan.DurationDays,
+			DurationUnit:  repository.DurationUnitDay,
+			PriceCents:    plan.PriceCents,
+			Currency:      plan.Currency,
+			SortOrder:     plan.SortOrder,
+			Status:        plan.Status,
+			Visible:       plan.Visible,
+			CreatedAt:     plan.CreatedAt,
+			UpdatedAt:     plan.UpdatedAt,
+		})
+	}
+	if len(options) == 0 {
+		return nil
+	}
+
+	return tx.Create(&options).Error
 }
 
 func seedAnnouncements(tx *gorm.DB) error {

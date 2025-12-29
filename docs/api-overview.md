@@ -12,6 +12,7 @@
 | 订阅模板 | `/api/v1/{admin}/subscription-templates` | 模板 CRUD、发布、历史追溯 |
 | 订阅管理 | `/api/v1/{admin}/subscriptions` | 订阅列表、创建、调整、禁用、延长有效期 |
 | 套餐管理 | `/api/v1/{admin}/plans` | 套餐列表、创建、更新，字段涵盖价格、时长、流量限制等 |
+| 套餐计费选项 | `/api/v1/{admin}/plans/{plan_id}/billing-options` | 为套餐维护多周期/多价格选项（小时/天/月/年） |
 | 优惠券管理 | `/api/v1/{admin}/coupons` | 优惠券创建、启停、限额与有效期维护 |
 | 公告中心 | `/api/v1/{admin}/announcements` | 公告列表、创建、发布，支持置顶与可见时间窗 |
 | 安全配置 | `/api/v1/{admin}/security-settings` | 读取与更新第三方签名/加密开关、凭据与时间窗口 |
@@ -25,14 +26,14 @@
 > 注册/找回/验证接口已开放，需在配置中开启注册开关并配置邮件发送与验证码策略。
 
 - `/api/v1/user/subscriptions`：用户订阅列表、预览、模板切换。
-- `/api/v1/user/plans`：面向终端的套餐列表，返回价格、特性、流量限制等字段。
+- `/api/v1/user/plans`：面向终端的套餐列表，返回价格、特性、流量限制与 `billing_options`。
 - `/api/v1/user/nodes`：用户侧节点运行状态（脱敏展示）。
 - `/api/v1/user/announcements`：按受众过滤当前有效公告，支持置顶排序与限量返回。
 - `/api/v1/user/account/balance`：返回当前余额、币种以及流水历史。
 - `/api/v1/user/account/profile`：用户资料查询与更新。
 - `/api/v1/user/account/password`：用户自主改密。
 - `/api/v1/user/account/email`：用户自主改邮箱（验证码流程）。
-- `/api/v1/user/orders`：创建、查询订单并支持取消待支付或零元订单，返回计划快照、条目与余额快照。
+- `/api/v1/user/orders`：创建、查询订单并支持取消待支付或零元订单，返回计划快照、条目与余额快照（可选 `billing_option_id`）。
 
 ### 订单操作补充说明
 

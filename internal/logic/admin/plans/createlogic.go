@@ -60,6 +60,6 @@ func (l *CreateLogic) Create(req *types.AdminCreatePlanRequest) (*types.PlanSumm
 		return nil, err
 	}
 
-	summary := toPlanSummary(created)
+	summary := toPlanSummary(created, nil)
 	return &summary, nil
 }

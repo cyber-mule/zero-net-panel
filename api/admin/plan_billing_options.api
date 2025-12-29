@@ -1,0 +1,58 @@
+syntax = "v1"
+
+import "../shared/types.api"
+
+@server (
+	name:   znp
+	prefix: /api/v1
+	group:  admin/plan_billing_options
+)
+service znp {
+	@doc "List plan billing options"
+	@handler AdminListPlanBillingOptions
+	get /admin/plans/:plan_id/billing-options (AdminListPlanBillingOptionsRequest) returns (AdminPlanBillingOptionListResponse)
+
+	@doc "Create plan billing option"
+	@handler AdminCreatePlanBillingOption
+	post /admin/plans/:plan_id/billing-options (AdminCreatePlanBillingOptionRequest) returns (PlanBillingOptionSummary)
+
+	@doc "Update plan billing option"
+	@handler AdminUpdatePlanBillingOption
+	patch /admin/plans/:plan_id/billing-options/:id (AdminUpdatePlanBillingOptionRequest) returns (PlanBillingOptionSummary)
+}
+
+type AdminListPlanBillingOptionsRequest {
+	plan_id uint64 `path:"plan_id"`
+	status  string `form:"status,optional" json:"status,optional"`
+	visible bool   `form:"visible,optional" json:"visible,optional"`
+}
+
+type AdminCreatePlanBillingOptionRequest {
+	plan_id        uint64 `path:"plan_id"`
+	name           string `form:"name,optional" json:"name,optional"`
+	duration_value int
+	duration_unit  string
+	price_cents    int64
+	currency       string `form:"currency,optional" json:"currency,optional"`
+	sort_order     int    `form:"sort_order,optional" json:"sort_order,optional"`
+	status         string `form:"status,optional" json:"status,optional"`
+	visible        bool   `form:"visible,optional" json:"visible,optional"`
+}
+
+type AdminUpdatePlanBillingOptionRequest {
+	plan_id        uint64 `path:"plan_id"`
+	id             uint64 `path:"id"`
+	name           string `form:"name,optional" json:"name,optional"`
+	duration_value int    `form:"duration_value,optional" json:"duration_value,optional"`
+	duration_unit  string `form:"duration_unit,optional" json:"duration_unit,optional"`
+	price_cents    int64  `form:"price_cents,optional" json:"price_cents,optional"`
+	currency       string `form:"currency,optional" json:"currency,optional"`
+	sort_order     int    `form:"sort_order,optional" json:"sort_order,optional"`
+	status         string `form:"status,optional" json:"status,optional"`
+	visible        bool   `form:"visible,optional" json:"visible,optional"`
+}
+
+type AdminPlanBillingOptionListResponse {
+	options []PlanBillingOptionSummary
+}
+

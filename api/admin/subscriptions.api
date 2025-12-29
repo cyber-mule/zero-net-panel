@@ -1,121 +1,122 @@
 syntax = "v1"
 
-import "shared/types.api"
+import "../shared/types.api"
 
 @server (
-    name: znp
-    prefix: /api/v1
-    group: admin/subscriptions
+	name:   znp
+	prefix: /api/v1
+	group:  admin/subscriptions
 )
 service znp {
-    @doc "List subscriptions"
-    @handler AdminListSubscriptions
-    get /admin/subscriptions (AdminListSubscriptionsRequest) returns (AdminSubscriptionListResponse)
+	@doc "List subscriptions"
+	@handler AdminListSubscriptions
+	get /admin/subscriptions (AdminListSubscriptionsRequest) returns (AdminSubscriptionListResponse)
 
-    @doc "Get subscription detail"
-    @handler AdminGetSubscription
-    get /admin/subscriptions/:id (AdminGetSubscriptionRequest) returns (AdminSubscriptionResponse)
+	@doc "Get subscription detail"
+	@handler AdminGetSubscription
+	get /admin/subscriptions/:id (AdminGetSubscriptionRequest) returns (AdminSubscriptionResponse)
 
-    @doc "Create subscription"
-    @handler AdminCreateSubscription
-    post /admin/subscriptions (AdminCreateSubscriptionRequest) returns (AdminSubscriptionResponse)
+	@doc "Create subscription"
+	@handler AdminCreateSubscription
+	post /admin/subscriptions (AdminCreateSubscriptionRequest) returns (AdminSubscriptionResponse)
 
-    @doc "Update subscription"
-    @handler AdminUpdateSubscription
-    patch /admin/subscriptions/:id (AdminUpdateSubscriptionRequest) returns (AdminSubscriptionResponse)
+	@doc "Update subscription"
+	@handler AdminUpdateSubscription
+	patch /admin/subscriptions/:id (AdminUpdateSubscriptionRequest) returns (AdminSubscriptionResponse)
 
-    @doc "Disable subscription"
-    @handler AdminDisableSubscription
-    post /admin/subscriptions/:id/disable (AdminDisableSubscriptionRequest) returns (AdminSubscriptionResponse)
+	@doc "Disable subscription"
+	@handler AdminDisableSubscription
+	post /admin/subscriptions/:id/disable (AdminDisableSubscriptionRequest) returns (AdminSubscriptionResponse)
 
-    @doc "Extend subscription expiry"
-    @handler AdminExtendSubscription
-    post /admin/subscriptions/:id/extend (AdminExtendSubscriptionRequest) returns (AdminSubscriptionResponse)
+	@doc "Extend subscription expiry"
+	@handler AdminExtendSubscription
+	post /admin/subscriptions/:id/extend (AdminExtendSubscriptionRequest) returns (AdminSubscriptionResponse)
 }
 
 type AdminListSubscriptionsRequest {
-    page int(optional)
-    per_page int(optional)
-    q string(optional)
-    status string(optional)
-    user_id uint64(optional)
-    plan_name string(optional)
-    template_id uint64(optional)
+	page        int    `form:"page,optional" json:"page,optional"`
+	per_page    int    `form:"per_page,optional" json:"per_page,optional"`
+	q           string `form:"q,optional" json:"q,optional"`
+	status      string `form:"status,optional" json:"status,optional"`
+	user_id     uint64 `form:"user_id,optional" json:"user_id,optional"`
+	plan_name   string `form:"plan_name,optional" json:"plan_name,optional"`
+	template_id uint64 `form:"template_id,optional" json:"template_id,optional"`
 }
 
 type AdminSubscriptionUserSummary {
-    id uint64
-    email string
-    display_name string
+	id           uint64
+	email        string
+	display_name string
 }
 
 type AdminSubscriptionSummary {
-    id uint64
-    user AdminSubscriptionUserSummary
-    name string
-    plan_name string
-    status string
-    template_id uint64
-    available_template_ids []uint64
-    token string
-    expires_at int64
-    traffic_total_bytes int64
-    traffic_used_bytes int64
-    devices_limit int
-    last_refreshed_at int64
-    created_at int64
-    updated_at int64
+	id                     uint64
+	user                   AdminSubscriptionUserSummary
+	name                   string
+	plan_name              string
+	status                 string
+	template_id            uint64
+	available_template_ids []uint64
+	token                  string
+	expires_at             int64
+	traffic_total_bytes    int64
+	traffic_used_bytes     int64
+	devices_limit          int
+	last_refreshed_at      int64
+	created_at             int64
+	updated_at             int64
 }
 
 type AdminSubscriptionListResponse {
-    subscriptions []AdminSubscriptionSummary
-    pagination PaginationMeta
+	subscriptions []AdminSubscriptionSummary
+	pagination    PaginationMeta
 }
 
 type AdminGetSubscriptionRequest {
-    id uint64
+	id uint64
 }
 
 type AdminSubscriptionResponse {
-    subscription AdminSubscriptionSummary
+	subscription AdminSubscriptionSummary
 }
 
 type AdminCreateSubscriptionRequest {
-    user_id uint64
-    name string
-    plan_name string
-    status string(optional)
-    template_id uint64
-    available_template_ids []uint64(optional)
-    token string(optional)
-    expires_at int64
-    traffic_total_bytes int64
-    traffic_used_bytes int64(optional)
-    devices_limit int
+	user_id                uint64
+	name                   string
+	plan_name              string
+	status                 string `form:"status,optional" json:"status,optional"`
+	template_id            uint64
+	available_template_ids []uint64 `form:"available_template_ids,optional" json:"available_template_ids,optional"`
+	token                  string   `form:"token,optional" json:"token,optional"`
+	expires_at             int64
+	traffic_total_bytes    int64
+	traffic_used_bytes     int64 `form:"traffic_used_bytes,optional" json:"traffic_used_bytes,optional"`
+	devices_limit          int
 }
 
 type AdminUpdateSubscriptionRequest {
-    id uint64
-    name string(optional)
-    plan_name string(optional)
-    status string(optional)
-    template_id uint64(optional)
-    available_template_ids []uint64(optional)
-    token string(optional)
-    expires_at int64(optional)
-    traffic_total_bytes int64(optional)
-    traffic_used_bytes int64(optional)
-    devices_limit int(optional)
+	id                     uint64
+	name                   string   `form:"name,optional" json:"name,optional"`
+	plan_name              string   `form:"plan_name,optional" json:"plan_name,optional"`
+	status                 string   `form:"status,optional" json:"status,optional"`
+	template_id            uint64   `form:"template_id,optional" json:"template_id,optional"`
+	available_template_ids []uint64 `form:"available_template_ids,optional" json:"available_template_ids,optional"`
+	token                  string   `form:"token,optional" json:"token,optional"`
+	expires_at             int64    `form:"expires_at,optional" json:"expires_at,optional"`
+	traffic_total_bytes    int64    `form:"traffic_total_bytes,optional" json:"traffic_total_bytes,optional"`
+	traffic_used_bytes     int64    `form:"traffic_used_bytes,optional" json:"traffic_used_bytes,optional"`
+	devices_limit          int      `form:"devices_limit,optional" json:"devices_limit,optional"`
 }
 
 type AdminDisableSubscriptionRequest {
-    id uint64
-    reason string(optional)
+	id     uint64
+	reason string `form:"reason,optional" json:"reason,optional"`
 }
 
 type AdminExtendSubscriptionRequest {
-    id uint64
-    extend_days int(optional)
-    extend_hours int(optional)
-    expires_at int64(optional)
+	id           uint64
+	extend_days  int   `form:"extend_days,optional" json:"extend_days,optional"`
+	extend_hours int   `form:"extend_hours,optional" json:"extend_hours,optional"`
+	expires_at   int64 `form:"expires_at,optional" json:"expires_at,optional"`
 }
+

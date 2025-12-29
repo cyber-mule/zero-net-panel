@@ -57,6 +57,7 @@ type OrderDetail struct {
 // UserCreateOrderRequest 创建订单请求。
 type UserCreateOrderRequest struct {
 	PlanID           uint64 `json:"plan_id"`
+	BillingOptionID  uint64 `json:"billing_option_id,omitempty,optional"`
 	Quantity         int    `json:"quantity"`
 	PaymentMethod    string `json:"payment_method,omitempty,optional"`
 	PaymentChannel   string `json:"payment_channel,omitempty,optional"`

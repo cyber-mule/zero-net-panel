@@ -81,6 +81,6 @@ func (l *UpdateLogic) Update(req *types.AdminUpdatePlanRequest) (*types.PlanSumm
 		return nil, err
 	}
 
-	summary := toPlanSummary(updated)
+	summary := toPlanSummary(updated, nil)
 	return &summary, nil
 }

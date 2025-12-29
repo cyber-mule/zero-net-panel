@@ -42,9 +42,30 @@ func (l *ListLogic) List(req *types.UserPlanListRequest) (*types.UserPlanListRes
 		return nil, err
 	}
 
+	planIDs := make([]uint64, 0, len(plans))
+	for _, plan := range plans {
+		planIDs = append(planIDs, plan.ID)
+	}
+
+	optionMap := map[uint64][]repository.PlanBillingOption{}
+	if len(planIDs) > 0 {
+		visibleOnly := true
+		options, err := l.svcCtx.Repositories.PlanBillingOption.List(l.ctx, repository.ListPlanBillingOptionsOptions{
+			PlanIDs: planIDs,
+			Status:  "active",
+			Visible: &visibleOnly,
+		})
+		if err != nil {
+			return nil, err
+		}
+		for _, option := range options {
+			optionMap[option.PlanID] = append(optionMap[option.PlanID], option)
+		}
+	}
+
 	result := make([]types.UserPlanSummary, 0, len(plans))
 	for _, plan := range plans {
-		result = append(result, toUserPlanSummary(plan))
+		result = append(result, toUserPlanSummary(plan, optionMap[plan.ID]))
 	}
 
 	return &types.UserPlanListResponse{Plans: result}, nil

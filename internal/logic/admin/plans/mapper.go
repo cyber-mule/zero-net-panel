@@ -5,7 +5,7 @@ import (
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
 )
 
-func toPlanSummary(plan repository.Plan) types.PlanSummary {
+func toPlanSummary(plan repository.Plan, options []repository.PlanBillingOption) types.PlanSummary {
 	return types.PlanSummary{
 		ID:                 plan.ID,
 		Name:               plan.Name,
@@ -13,6 +13,7 @@ func toPlanSummary(plan repository.Plan) types.PlanSummary {
 		Description:        plan.Description,
 		Tags:               append([]string(nil), plan.Tags...),
 		Features:           append([]string(nil), plan.Features...),
+		BillingOptions:     toPlanBillingOptionSummaries(options),
 		PriceCents:         plan.PriceCents,
 		Currency:           plan.Currency,
 		DurationDays:       plan.DurationDays,
@@ -25,6 +26,30 @@ func toPlanSummary(plan repository.Plan) types.PlanSummary {
 		CreatedAt:          plan.CreatedAt.Unix(),
 		UpdatedAt:          plan.UpdatedAt.Unix(),
 	}
+}
+
+func toPlanBillingOptionSummaries(options []repository.PlanBillingOption) []types.PlanBillingOptionSummary {
+	if len(options) == 0 {
+		return []types.PlanBillingOptionSummary{}
+	}
+	result := make([]types.PlanBillingOptionSummary, 0, len(options))
+	for _, option := range options {
+		result = append(result, types.PlanBillingOptionSummary{
+			ID:            option.ID,
+			PlanID:        option.PlanID,
+			Name:          option.Name,
+			DurationValue: option.DurationValue,
+			DurationUnit:  option.DurationUnit,
+			PriceCents:    option.PriceCents,
+			Currency:      option.Currency,
+			SortOrder:     option.SortOrder,
+			Status:        option.Status,
+			Visible:       option.Visible,
+			CreatedAt:     option.CreatedAt.Unix(),
+			UpdatedAt:     option.UpdatedAt.Unix(),
+		})
+	}
+	return result
 }
 
 func cloneTrafficMultipliers(input map[string]float64) map[string]float64 {

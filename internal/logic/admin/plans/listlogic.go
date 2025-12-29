@@ -45,9 +45,27 @@ func (l *ListLogic) List(req *types.AdminListPlansRequest) (*types.AdminPlanList
 		return nil, err
 	}
 
+	planIDs := make([]uint64, 0, len(plans))
+	for _, plan := range plans {
+		planIDs = append(planIDs, plan.ID)
+	}
+
+	optionMap := map[uint64][]repository.PlanBillingOption{}
+	if len(planIDs) > 0 {
+		options, err := l.svcCtx.Repositories.PlanBillingOption.List(l.ctx, repository.ListPlanBillingOptionsOptions{
+			PlanIDs: planIDs,
+		})
+		if err != nil {
+			return nil, err
+		}
+		for _, option := range options {
+			optionMap[option.PlanID] = append(optionMap[option.PlanID], option)
+		}
+	}
+
 	list := make([]types.PlanSummary, 0, len(plans))
 	for _, plan := range plans {
-		list = append(list, toPlanSummary(plan))
+		list = append(list, toPlanSummary(plan, optionMap[plan.ID]))
 	}
 
 	page, perPage := normalizePage(req.Page, req.PerPage)

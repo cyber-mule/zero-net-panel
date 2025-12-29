@@ -1,92 +1,93 @@
 syntax = "v1"
 
-import "shared/types.api"
+import "../shared/types.api"
 
 @server (
-    name: znp
-    prefix: /api/v1
-    group: admin/coupons
+	name:   znp
+	prefix: /api/v1
+	group:  admin/coupons
 )
 service znp {
-    @doc "List coupons"
-    @handler AdminListCoupons
-    get /admin/coupons(AdminListCouponsRequest) returns (AdminCouponListResponse)
+	@doc "List coupons"
+	@handler AdminListCoupons
+	get /admin/coupons (AdminListCouponsRequest) returns (AdminCouponListResponse)
 
-    @doc "Create coupon"
-    @handler AdminCreateCoupon
-    post /admin/coupons(AdminCreateCouponRequest) returns (CouponSummary)
+	@doc "Create coupon"
+	@handler AdminCreateCoupon
+	post /admin/coupons (AdminCreateCouponRequest) returns (CouponSummary)
 
-    @doc "Update coupon"
-    @handler AdminUpdateCoupon
-    patch /admin/coupons/:id(AdminUpdateCouponRequest) returns (CouponSummary)
+	@doc "Update coupon"
+	@handler AdminUpdateCoupon
+	patch /admin/coupons/:id (AdminUpdateCouponRequest) returns (CouponSummary)
 
-    @doc "Delete coupon"
-    @handler AdminDeleteCoupon
-    delete /admin/coupons/:id(AdminDeleteCouponRequest)
+	@doc "Delete coupon"
+	@handler AdminDeleteCoupon
+	delete /admin/coupons/:id (AdminDeleteCouponRequest)
 }
 
 type AdminListCouponsRequest {
-    page int(optional)
-    per_page int(optional)
-    q string(optional)
-    status string(optional)
-    sort string(optional)
-    direction string(optional)
+	page      int    `form:"page,optional" json:"page,optional"`
+	per_page  int    `form:"per_page,optional" json:"per_page,optional"`
+	q         string `form:"q,optional" json:"q,optional"`
+	status    string `form:"status,optional" json:"status,optional"`
+	sort      string `form:"sort,optional" json:"sort,optional"`
+	direction string `form:"direction,optional" json:"direction,optional"`
 }
 
 type CouponSummary {
-    id uint64
-    code string
-    name string
-    description string
-    status string
-    discount_type string
-    discount_value int64
-    currency string
-    max_redemptions int
-    max_redemptions_per_user int
-    min_order_cents int64
-    starts_at *int64
-    ends_at *int64
-    created_at int64
-    updated_at int64
+	id                       uint64
+	code                     string
+	name                     string
+	description              string
+	status                   string
+	discount_type            string
+	discount_value           int64
+	currency                 string
+	max_redemptions          int
+	max_redemptions_per_user int
+	min_order_cents          int64
+	starts_at                *int64
+	ends_at                  *int64
+	created_at               int64
+	updated_at               int64
 }
 
 type AdminCouponListResponse {
-    coupons []CouponSummary
-    pagination PaginationMeta
+	coupons    []CouponSummary
+	pagination PaginationMeta
 }
 
 type AdminCreateCouponRequest {
-    code string
-    name string
-    description string(optional)
-    status string(optional)
-    discount_type string
-    discount_value int64
-    currency string(optional)
-    max_redemptions int(optional)
-    max_redemptions_per_user int(optional)
-    min_order_cents int64(optional)
-    starts_at int64(optional)
-    ends_at int64(optional)
+	code                     string
+	name                     string
+	description              string `form:"description,optional" json:"description,optional"`
+	status                   string `form:"status,optional" json:"status,optional"`
+	discount_type            string
+	discount_value           int64
+	currency                 string `form:"currency,optional" json:"currency,optional"`
+	max_redemptions          int    `form:"max_redemptions,optional" json:"max_redemptions,optional"`
+	max_redemptions_per_user int    `form:"max_redemptions_per_user,optional" json:"max_redemptions_per_user,optional"`
+	min_order_cents          int64  `form:"min_order_cents,optional" json:"min_order_cents,optional"`
+	starts_at                int64  `form:"starts_at,optional" json:"starts_at,optional"`
+	ends_at                  int64  `form:"ends_at,optional" json:"ends_at,optional"`
 }
 
 type AdminUpdateCouponRequest {
-    id uint64(path:"id")
-    name string(optional)
-    description string(optional)
-    status string(optional)
-    discount_type string(optional)
-    discount_value int64(optional)
-    currency string(optional)
-    max_redemptions int(optional)
-    max_redemptions_per_user int(optional)
-    min_order_cents int64(optional)
-    starts_at int64(optional)
-    ends_at int64(optional)
+	id                       uint64 `path:"id"`
+	name                     string `form:"name,optional" json:"name,optional"`
+	description              string `form:"description,optional" json:"description,optional"`
+	status                   string `form:"status,optional" json:"status,optional"`
+	discount_type            string `form:"discount_type,optional" json:"discount_type,optional"`
+	discount_value           int64  `form:"discount_value,optional" json:"discount_value,optional"`
+	currency                 string `form:"currency,optional" json:"currency,optional"`
+	max_redemptions          int    `form:"max_redemptions,optional" json:"max_redemptions,optional"`
+	max_redemptions_per_user int    `form:"max_redemptions_per_user,optional" json:"max_redemptions_per_user,optional"`
+	min_order_cents          int64  `form:"min_order_cents,optional" json:"min_order_cents,optional"`
+	starts_at                int64  `form:"starts_at,optional" json:"starts_at,optional"`
+	ends_at                  int64  `form:"ends_at,optional" json:"ends_at,optional"`
 }
 
 type AdminDeleteCouponRequest {
-    id uint64(path:"id")
+	id uint64 `path:"id"`
 }
+

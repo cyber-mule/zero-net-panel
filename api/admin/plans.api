@@ -1,92 +1,94 @@
 syntax = "v1"
 
-import "shared/types.api"
+import "../shared/types.api"
 
 @server (
-    name: znp
-    prefix: /api/v1
-    group: admin/plans
+	name:   znp
+	prefix: /api/v1
+	group:  admin/plans
 )
 service znp {
-    @doc "List subscription plans"
-    @handler AdminListPlans
-    get /admin/plans(AdminListPlansRequest) returns (AdminPlanListResponse)
+	@doc "List subscription plans"
+	@handler AdminListPlans
+	get /admin/plans (AdminListPlansRequest) returns (AdminPlanListResponse)
 
-    @doc "Create subscription plan"
-    @handler AdminCreatePlan
-    post /admin/plans(AdminCreatePlanRequest) returns (PlanSummary)
+	@doc "Create subscription plan"
+	@handler AdminCreatePlan
+	post /admin/plans (AdminCreatePlanRequest) returns (PlanSummary)
 
-    @doc "Update subscription plan"
-    @handler AdminUpdatePlan
-    patch /admin/plans/:id(AdminUpdatePlanRequest) returns (PlanSummary)
+	@doc "Update subscription plan"
+	@handler AdminUpdatePlan
+	patch /admin/plans/:id (AdminUpdatePlanRequest) returns (PlanSummary)
 }
 
 type AdminListPlansRequest {
-    page int(optional)
-    per_page int(optional)
-    sort string(optional)
-    direction string(optional)
-    q string(optional)
-    status string(optional)
-    visible bool(optional)
+	page      int    `form:"page,optional" json:"page,optional"`
+	per_page  int    `form:"per_page,optional" json:"per_page,optional"`
+	sort      string `form:"sort,optional" json:"sort,optional"`
+	direction string `form:"direction,optional" json:"direction,optional"`
+	q         string `form:"q,optional" json:"q,optional"`
+	status    string `form:"status,optional" json:"status,optional"`
+	visible   bool   `form:"visible,optional" json:"visible,optional"`
 }
 
 type AdminCreatePlanRequest {
-    name string
-    slug string(optional)
-    description string(optional)
-    tags []string(optional)
-    features []string(optional)
-    price_cents int64
-    currency string
-    duration_days int
-    traffic_limit_bytes int64(optional)
-    traffic_multipliers map[string]float64(optional)
-    devices_limit int(optional)
-    sort_order int(optional)
-    status string(optional)
-    visible bool(optional)
+	name                string
+	slug                string   `form:"slug,optional" json:"slug,optional"`
+	description         string   `form:"description,optional" json:"description,optional"`
+	tags                []string `form:"tags,optional" json:"tags,optional"`
+	features            []string `form:"features,optional" json:"features,optional"`
+	price_cents         int64
+	currency            string
+	duration_days       int
+	traffic_limit_bytes int64              `form:"traffic_limit_bytes,optional" json:"traffic_limit_bytes,optional"`
+	traffic_multipliers map[string]float64 `form:"traffic_multipliers,optional" json:"traffic_multipliers,optional"`
+	devices_limit       int                `form:"devices_limit,optional" json:"devices_limit,optional"`
+	sort_order          int                `form:"sort_order,optional" json:"sort_order,optional"`
+	status              string             `form:"status,optional" json:"status,optional"`
+	visible             bool               `form:"visible,optional" json:"visible,optional"`
 }
 
 type AdminUpdatePlanRequest {
-    id uint64
-    name string(optional)
-    slug string(optional)
-    description string(optional)
-    tags []string(optional)
-    features []string(optional)
-    price_cents int64(optional)
-    currency string(optional)
-    duration_days int(optional)
-    traffic_limit_bytes int64(optional)
-    traffic_multipliers map[string]float64(optional)
-    devices_limit int(optional)
-    sort_order int(optional)
-    status string(optional)
-    visible bool(optional)
+	id                  uint64
+	name                string             `form:"name,optional" json:"name,optional"`
+	slug                string             `form:"slug,optional" json:"slug,optional"`
+	description         string             `form:"description,optional" json:"description,optional"`
+	tags                []string           `form:"tags,optional" json:"tags,optional"`
+	features            []string           `form:"features,optional" json:"features,optional"`
+	price_cents         int64              `form:"price_cents,optional" json:"price_cents,optional"`
+	currency            string             `form:"currency,optional" json:"currency,optional"`
+	duration_days       int                `form:"duration_days,optional" json:"duration_days,optional"`
+	traffic_limit_bytes int64              `form:"traffic_limit_bytes,optional" json:"traffic_limit_bytes,optional"`
+	traffic_multipliers map[string]float64 `form:"traffic_multipliers,optional" json:"traffic_multipliers,optional"`
+	devices_limit       int                `form:"devices_limit,optional" json:"devices_limit,optional"`
+	sort_order          int                `form:"sort_order,optional" json:"sort_order,optional"`
+	status              string             `form:"status,optional" json:"status,optional"`
+	visible             bool               `form:"visible,optional" json:"visible,optional"`
 }
 
 type PlanSummary {
-    id uint64
-    name string
-    slug string
-    description string
-    tags []string
-    features []string
-    price_cents int64
-    currency string
-    duration_days int
-    traffic_limit_bytes int64
-    traffic_multipliers map[string]float64
-    devices_limit int
-    sort_order int
-    status string
-    visible bool
-    created_at int64
-    updated_at int64
+	id                  uint64
+	name                string
+	slug                string
+	description         string
+	tags                []string
+	features            []string
+	billing_options     []PlanBillingOptionSummary
+	price_cents         int64
+	currency            string
+	duration_days       int
+	traffic_limit_bytes int64
+	traffic_multipliers map[string]float64
+	devices_limit       int
+	sort_order          int
+	status              string
+	visible             bool
+	created_at          int64
+	updated_at          int64
 }
 
 type AdminPlanListResponse {
-    plans []PlanSummary
-    pagination PaginationMeta
+	plans      []PlanSummary
+	pagination PaginationMeta
 }
+

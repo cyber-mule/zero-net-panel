@@ -1,147 +1,148 @@
 syntax = "v1"
 
-import "shared/types.api"
+import "../shared/types.api"
 
 @server (
-    name: znp
-    prefix: /api/v1
-    group: admin/nodes
+	name:   znp
+	prefix: /api/v1
+	group:  admin/nodes
 )
 service znp {
-    @doc "List edge nodes"
-    @handler AdminListNodes
-    get /admin/nodes(AdminListNodesRequest) returns (AdminNodeListResponse)
+	@doc "List edge nodes"
+	@handler AdminListNodes
+	get /admin/nodes (AdminListNodesRequest) returns (AdminNodeListResponse)
 
-    @doc "Create node"
-    @handler AdminCreateNode
-    post /admin/nodes(AdminCreateNodeRequest) returns (AdminNodeResponse)
+	@doc "Create node"
+	@handler AdminCreateNode
+	post /admin/nodes (AdminCreateNodeRequest) returns (AdminNodeResponse)
 
-    @doc "Update node"
-    @handler AdminUpdateNode
-    patch /admin/nodes/:id(AdminUpdateNodeRequest) returns (AdminNodeResponse)
+	@doc "Update node"
+	@handler AdminUpdateNode
+	patch /admin/nodes/:id (AdminUpdateNodeRequest) returns (AdminNodeResponse)
 
-    @doc "Disable node"
-    @handler AdminDisableNode
-    post /admin/nodes/:id/disable(AdminDisableNodeRequest) returns (AdminNodeResponse)
+	@doc "Disable node"
+	@handler AdminDisableNode
+	post /admin/nodes/:id/disable (AdminDisableNodeRequest) returns (AdminNodeResponse)
 
-    @doc "Get node kernel endpoints"
-    @handler AdminNodeKernels
-    get /admin/nodes/:id/kernels(AdminNodeKernelPath) returns (AdminNodeKernelResponse)
+	@doc "Get node kernel endpoints"
+	@handler AdminNodeKernels
+	get /admin/nodes/:id/kernels (AdminNodeKernelPath) returns (AdminNodeKernelResponse)
 
-    @doc "Upsert node kernel endpoint"
-    @handler AdminUpsertNodeKernel
-    post /admin/nodes/:id/kernels(AdminUpsertNodeKernelRequest) returns (AdminNodeKernelUpsertResponse)
+	@doc "Upsert node kernel endpoint"
+	@handler AdminUpsertNodeKernel
+	post /admin/nodes/:id/kernels (AdminUpsertNodeKernelRequest) returns (AdminNodeKernelUpsertResponse)
 
-    @doc "Sync node kernel configuration"
-    @handler AdminSyncNodeKernel
-    post /admin/nodes/:id/kernels/sync(AdminSyncNodeKernelRequest) returns (AdminSyncNodeKernelResponse)
+	@doc "Sync node kernel configuration"
+	@handler AdminSyncNodeKernel
+	post /admin/nodes/:id/kernels/sync (AdminSyncNodeKernelRequest) returns (AdminSyncNodeKernelResponse)
 }
 
 type AdminListNodesRequest {
-    page int(optional)
-    per_page int(optional)
-    sort string(optional)
-    direction string(optional)
-    q string(optional)
-    status string(optional)
-    protocol string(optional)
+	page      int    `form:"page,optional" json:"page,optional"`
+	per_page  int    `form:"per_page,optional" json:"per_page,optional"`
+	sort      string `form:"sort,optional" json:"sort,optional"`
+	direction string `form:"direction,optional" json:"direction,optional"`
+	q         string `form:"q,optional" json:"q,optional"`
+	status    string `form:"status,optional" json:"status,optional"`
+	protocol  string `form:"protocol,optional" json:"protocol,optional"`
 }
 
 type NodeSummary {
-    id uint64
-    name string
-    region string
-    country string
-    isp string
-    status string
-    tags []string
-    protocols []string
-    capacity_mbps int
-    description string
-    last_synced_at int64
-    updated_at int64
+	id             uint64
+	name           string
+	region         string
+	country        string
+	isp            string
+	status         string
+	tags           []string
+	protocols      []string
+	capacity_mbps  int
+	description    string
+	last_synced_at int64
+	updated_at     int64
 }
 
 type AdminNodeResponse {
-    node NodeSummary
+	node NodeSummary
 }
 
 type AdminCreateNodeRequest {
-    name string
-    region string(optional)
-    country string(optional)
-    isp string(optional)
-    status string(optional)
-    tags []string(optional)
-    protocols []string(optional)
-    capacity_mbps int(optional)
-    description string(optional)
+	name          string
+	region        string   `form:"region,optional" json:"region,optional"`
+	country       string   `form:"country,optional" json:"country,optional"`
+	isp           string   `form:"isp,optional" json:"isp,optional"`
+	status        string   `form:"status,optional" json:"status,optional"`
+	tags          []string `form:"tags,optional" json:"tags,optional"`
+	protocols     []string `form:"protocols,optional" json:"protocols,optional"`
+	capacity_mbps int      `form:"capacity_mbps,optional" json:"capacity_mbps,optional"`
+	description   string   `form:"description,optional" json:"description,optional"`
 }
 
 type AdminUpdateNodeRequest {
-    id uint64
-    name string(optional)
-    region string(optional)
-    country string(optional)
-    isp string(optional)
-    status string(optional)
-    tags []string(optional)
-    protocols []string(optional)
-    capacity_mbps int(optional)
-    description string(optional)
+	id            uint64
+	name          string   `form:"name,optional" json:"name,optional"`
+	region        string   `form:"region,optional" json:"region,optional"`
+	country       string   `form:"country,optional" json:"country,optional"`
+	isp           string   `form:"isp,optional" json:"isp,optional"`
+	status        string   `form:"status,optional" json:"status,optional"`
+	tags          []string `form:"tags,optional" json:"tags,optional"`
+	protocols     []string `form:"protocols,optional" json:"protocols,optional"`
+	capacity_mbps int      `form:"capacity_mbps,optional" json:"capacity_mbps,optional"`
+	description   string   `form:"description,optional" json:"description,optional"`
 }
 
 type AdminDisableNodeRequest {
-    id uint64
+	id uint64
 }
 
 type AdminNodeListResponse {
-    nodes []NodeSummary
-    pagination PaginationMeta
+	nodes      []NodeSummary
+	pagination PaginationMeta
 }
 
 type AdminNodeKernelPath {
-    id uint64
+	id uint64
 }
 
 type NodeKernelSummary {
-    protocol string
-    endpoint string
-    revision string
-    status string
-    config map[string]any
-    last_synced_at int64
+	protocol       string
+	endpoint       string
+	revision       string
+	status         string
+	config         map[string]interface{}
+	last_synced_at int64
 }
 
 type AdminNodeKernelResponse {
-    node_id uint64
-    kernels []NodeKernelSummary
+	node_id uint64
+	kernels []NodeKernelSummary
 }
 
 type AdminUpsertNodeKernelRequest {
-    id uint64
-    protocol string
-    endpoint string
-    revision string(optional)
-    status string(optional)
-    config map[string]any(optional)
-    last_synced_at int64(optional)
+	id             uint64
+	protocol       string
+	endpoint       string
+	revision       string                 `form:"revision,optional" json:"revision,optional"`
+	status         string                 `form:"status,optional" json:"status,optional"`
+	config         map[string]interface{} `form:"config,optional" json:"config,optional"`
+	last_synced_at int64                  `form:"last_synced_at,optional" json:"last_synced_at,optional"`
 }
 
 type AdminNodeKernelUpsertResponse {
-    node_id uint64
-    kernel NodeKernelSummary
+	node_id uint64
+	kernel  NodeKernelSummary
 }
 
 type AdminSyncNodeKernelRequest {
-    id uint64
-    protocol string(optional)
+	id       uint64
+	protocol string `form:"protocol,optional" json:"protocol,optional"`
 }
 
 type AdminSyncNodeKernelResponse {
-    node_id uint64
-    protocol string
-    revision string
-    synced_at int64
-    message string
+	node_id   uint64
+	protocol  string
+	revision  string
+	synced_at int64
+	message   string
 }
+

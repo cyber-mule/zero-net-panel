@@ -1,114 +1,115 @@
 syntax = "v1"
 
-import "shared/types.api"
+import "../shared/types.api"
 
 @server (
-    name: znp
-    prefix: /api/v1
-    group: user/subscriptions
+	name:   znp
+	prefix: /api/v1
+	group:  user/subscriptions
 )
 service znp {
-    @doc "List user subscriptions"
-    @handler UserListSubscriptions
-    get /user/subscriptions(UserListSubscriptionsRequest) returns (UserSubscriptionListResponse)
+	@doc "List user subscriptions"
+	@handler UserListSubscriptions
+	get /user/subscriptions (UserListSubscriptionsRequest) returns (UserSubscriptionListResponse)
 
-    @doc "Preview user subscription"
-    @handler UserSubscriptionPreview
-    get /user/subscriptions/:id/preview(UserSubscriptionPreviewRequest) returns (UserSubscriptionPreviewResponse)
+	@doc "Preview user subscription"
+	@handler UserSubscriptionPreview
+	get /user/subscriptions/:id/preview (UserSubscriptionPreviewRequest) returns (UserSubscriptionPreviewResponse)
 
-    @doc "Update user subscription template"
-    @handler UserUpdateSubscriptionTemplate
-    post /user/subscriptions/:id/template(UserUpdateSubscriptionTemplateRequest) returns (UserUpdateSubscriptionTemplateResponse)
+	@doc "Update user subscription template"
+	@handler UserUpdateSubscriptionTemplate
+	post /user/subscriptions/:id/template (UserUpdateSubscriptionTemplateRequest) returns (UserUpdateSubscriptionTemplateResponse)
 
-    @doc "Subscription traffic usage"
-    @handler UserSubscriptionTraffic
-    get /user/subscriptions/:id/traffic(UserSubscriptionTrafficRequest) returns (UserSubscriptionTrafficResponse)
+	@doc "Subscription traffic usage"
+	@handler UserSubscriptionTraffic
+	get /user/subscriptions/:id/traffic (UserSubscriptionTrafficRequest) returns (UserSubscriptionTrafficResponse)
 }
 
 type UserListSubscriptionsRequest {
-    page int(optional)
-    per_page int(optional)
-    sort string(optional)
-    direction string(optional)
-    q string(optional)
-    status string(optional)
+	page      int    `form:"page,optional" json:"page,optional"`
+	per_page  int    `form:"per_page,optional" json:"per_page,optional"`
+	sort      string `form:"sort,optional" json:"sort,optional"`
+	direction string `form:"direction,optional" json:"direction,optional"`
+	q         string `form:"q,optional" json:"q,optional"`
+	status    string `form:"status,optional" json:"status,optional"`
 }
 
 type UserSubscriptionSummary {
-    id uint64
-    name string
-    plan_name string
-    status string
-    template_id uint64
-    available_template_ids []uint64
-    expires_at int64
-    traffic_total_bytes int64
-    traffic_used_bytes int64
-    devices_limit int
-    last_refreshed_at int64
+	id                     uint64
+	name                   string
+	plan_name              string
+	status                 string
+	template_id            uint64
+	available_template_ids []uint64
+	expires_at             int64
+	traffic_total_bytes    int64
+	traffic_used_bytes     int64
+	devices_limit          int
+	last_refreshed_at      int64
 }
 
 type UserSubscriptionListResponse {
-    subscriptions []UserSubscriptionSummary
-    pagination PaginationMeta
+	subscriptions []UserSubscriptionSummary
+	pagination    PaginationMeta
 }
 
 type UserSubscriptionPreviewRequest {
-    id uint64
-    template_id uint64(optional)
+	id          uint64
+	template_id uint64 `form:"template_id,optional" json:"template_id,optional"`
 }
 
 type UserSubscriptionPreviewResponse {
-    subscription_id uint64
-    template_id uint64
-    content string
-    content_type string
-    etag string
-    generated_at int64
+	subscription_id uint64
+	template_id     uint64
+	content         string
+	content_type    string
+	etag            string
+	generated_at    int64
 }
 
 type UserUpdateSubscriptionTemplateRequest {
-    id uint64
-    template_id uint64
+	id          uint64
+	template_id uint64
 }
 
 type UserUpdateSubscriptionTemplateResponse {
-    subscription_id uint64
-    template_id uint64
-    updated_at int64
+	subscription_id uint64
+	template_id     uint64
+	updated_at      int64
 }
 
 type UserSubscriptionTrafficRequest {
-    id uint64
-    page int(optional)
-    per_page int(optional)
-    protocol string(optional)
-    node_id uint64(optional)
-    binding_id uint64(optional)
-    from int64(optional)
-    to int64(optional)
+	id         uint64
+	page       int    `form:"page,optional" json:"page,optional"`
+	per_page   int    `form:"per_page,optional" json:"per_page,optional"`
+	protocol   string `form:"protocol,optional" json:"protocol,optional"`
+	node_id    uint64 `form:"node_id,optional" json:"node_id,optional"`
+	binding_id uint64 `form:"binding_id,optional" json:"binding_id,optional"`
+	from       int64  `form:"from,optional" json:"from,optional"`
+	to         int64  `form:"to,optional" json:"to,optional"`
 }
 
 type UserTrafficUsageRecord {
-    id uint64
-    protocol string
-    node_id uint64
-    binding_id uint64
-    bytes_up int64
-    bytes_down int64
-    raw_bytes int64
-    charged_bytes int64
-    multiplier float64
-    observed_at int64
+	id            uint64
+	protocol      string
+	node_id       uint64
+	binding_id    uint64
+	bytes_up      int64
+	bytes_down    int64
+	raw_bytes     int64
+	charged_bytes int64
+	multiplier    float64
+	observed_at   int64
 }
 
 type UserSubscriptionTrafficSummary {
-    raw_bytes int64
-    charged_bytes int64
+	raw_bytes     int64
+	charged_bytes int64
 }
 
 type UserSubscriptionTrafficResponse {
-    summary UserSubscriptionTrafficSummary
-    records []UserTrafficUsageRecord
-    pagination PaginationMeta
+	summary    UserSubscriptionTrafficSummary
+	records    []UserTrafficUsageRecord
+	pagination PaginationMeta
 }
+

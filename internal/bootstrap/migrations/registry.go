@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"gorm.io/gorm"
@@ -359,6 +360,66 @@ var migrationRegistry = []Migration{
 			}
 			if migrator.HasTable(&repository.Coupon{}) {
 				if err := migrator.DropTable(&repository.Coupon{}); err != nil {
+					return err
+				}
+			}
+			return nil
+		},
+	},
+	{
+		Version: 2025050101,
+		Name:    "plan-billing-options",
+		Up: func(ctx context.Context, db *gorm.DB) error {
+			if err := db.WithContext(ctx).AutoMigrate(&repository.PlanBillingOption{}); err != nil {
+				return err
+			}
+
+			var count int64
+			if err := db.WithContext(ctx).Model(&repository.PlanBillingOption{}).Count(&count).Error; err != nil {
+				return err
+			}
+			if count > 0 {
+				return nil
+			}
+
+			var plans []repository.Plan
+			if err := db.WithContext(ctx).Find(&plans).Error; err != nil {
+				return err
+			}
+			if len(plans) == 0 {
+				return nil
+			}
+
+			now := time.Now().UTC()
+			options := make([]repository.PlanBillingOption, 0, len(plans))
+			for _, plan := range plans {
+				if plan.DurationDays <= 0 {
+					continue
+				}
+				option := repository.PlanBillingOption{
+					PlanID:        plan.ID,
+					Name:          strings.TrimSpace(plan.Name),
+					DurationValue: plan.DurationDays,
+					DurationUnit:  repository.DurationUnitDay,
+					PriceCents:    plan.PriceCents,
+					Currency:      plan.Currency,
+					SortOrder:     plan.SortOrder,
+					Status:        plan.Status,
+					Visible:       plan.Visible,
+					CreatedAt:     now,
+					UpdatedAt:     now,
+				}
+				options = append(options, option)
+			}
+			if len(options) == 0 {
+				return nil
+			}
+			return db.WithContext(ctx).Create(&options).Error
+		},
+		Down: func(ctx context.Context, db *gorm.DB) error {
+			migrator := db.WithContext(ctx).Migrator()
+			if migrator.HasTable(&repository.PlanBillingOption{}) {
+				if err := migrator.DropTable(&repository.PlanBillingOption{}); err != nil {
 					return err
 				}
 			}

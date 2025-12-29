@@ -1,65 +1,66 @@
 syntax = "v1"
 
-import "shared/types.api"
+import "../shared/types.api"
 
 @server (
-    name: znp
-    prefix: /api/v1
-    group: admin/audit-logs
+	name:   znp
+	prefix: /api/v1
+	group:  admin/audit-logs
 )
 service znp {
-    @doc "List audit logs"
-    @handler AdminAuditLogList
-    get /admin/audit-logs(AdminAuditLogListRequest) returns (AdminAuditLogListResponse)
+	@doc "List audit logs"
+	@handler AdminAuditLogList
+	get /admin/audit-logs (AdminAuditLogListRequest) returns (AdminAuditLogListResponse)
 
-    @doc "Export audit logs"
-    @handler AdminAuditLogExport
-    get /admin/audit-logs/export(AdminAuditLogExportRequest) returns (AdminAuditLogExportResponse)
+	@doc "Export audit logs"
+	@handler AdminAuditLogExport
+	get /admin/audit-logs/export (AdminAuditLogExportRequest) returns (AdminAuditLogExportResponse)
 }
 
 type AuditLogSummary {
-    id uint64
-    actor_id *uint64
-    actor_email string
-    actor_roles []string
-    action string
-    resource_type string
-    resource_id string
-    source_ip string
-    metadata map[string]any
-    created_at int64
+	id            uint64
+	actor_id      *uint64
+	actor_email   string
+	actor_roles   []string
+	action        string
+	resource_type string
+	resource_id   string
+	source_ip     string
+	metadata      map[string]interface{}
+	created_at    int64
 }
 
 type AdminAuditLogListRequest {
-    page int(optional)
-    per_page int(optional)
-    actor_id *uint64(optional)
-    action string(optional)
-    resource_type string(optional)
-    resource_id string(optional)
-    since int64(optional)
-    until int64(optional)
+	page          int     `form:"page,optional" json:"page,optional"`
+	per_page      int     `form:"per_page,optional" json:"per_page,optional"`
+	actor_id      *uint64 `form:"actor_id,optional" json:"actor_id,optional"`
+	action        string  `form:"action,optional" json:"action,optional"`
+	resource_type string  `form:"resource_type,optional" json:"resource_type,optional"`
+	resource_id   string  `form:"resource_id,optional" json:"resource_id,optional"`
+	since         int64   `form:"since,optional" json:"since,optional"`
+	until         int64   `form:"until,optional" json:"until,optional"`
 }
 
 type AdminAuditLogListResponse {
-    logs []AuditLogSummary
-    pagination PaginationMeta
+	logs       []AuditLogSummary
+	pagination PaginationMeta
 }
 
 type AdminAuditLogExportRequest {
-    page int(optional)
-    per_page int(optional)
-    actor_id *uint64(optional)
-    action string(optional)
-    resource_type string(optional)
-    resource_id string(optional)
-    since int64(optional)
-    until int64(optional)
-    format string(optional)
+	page          int     `form:"page,optional" json:"page,optional"`
+	per_page      int     `form:"per_page,optional" json:"per_page,optional"`
+	actor_id      *uint64 `form:"actor_id,optional" json:"actor_id,optional"`
+	action        string  `form:"action,optional" json:"action,optional"`
+	resource_type string  `form:"resource_type,optional" json:"resource_type,optional"`
+	resource_id   string  `form:"resource_id,optional" json:"resource_id,optional"`
+	since         int64   `form:"since,optional" json:"since,optional"`
+	until         int64   `form:"until,optional" json:"until,optional"`
+	format        string  `form:"format,optional" json:"format,optional"`
 }
 
 type AdminAuditLogExportResponse {
-    logs []AuditLogSummary
-    total_count int64
-    exported_at int64
+	logs        []AuditLogSummary
+	total_count int64
+	exported_at int64
 }
+

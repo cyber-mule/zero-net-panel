@@ -124,7 +124,8 @@ func EnsureOrderSubscription(ctx context.Context, repos *repository.Repositories
 type planInfo struct {
 	PlanName          string
 	Name              string
-	DurationDays      int
+	DurationValue     int
+	DurationUnit      string
 	TrafficLimitBytes int64
 	DevicesLimit      int
 	Quantity          int
@@ -152,8 +153,19 @@ func buildPlanInfo(order repository.Order, items []repository.OrderItem) (planIn
 		}
 		info.PlanName = strings.TrimSpace(planItem.Name)
 		info.Name = info.PlanName
-		if value, ok := intFromAny(planItem.Metadata["duration_days"]); ok {
-			info.DurationDays = value
+		if unit := normalizeDurationUnit(stringFromMap(planItem.Metadata, "duration_unit")); unit != "" {
+			info.DurationUnit = unit
+		}
+		if value, ok := intFromAny(planItem.Metadata["duration_value"]); ok {
+			info.DurationValue = value
+		}
+		if info.DurationValue == 0 {
+			if value, ok := intFromAny(planItem.Metadata["duration_days"]); ok {
+				info.DurationValue = value
+				if info.DurationUnit == "" {
+					info.DurationUnit = repository.DurationUnitDay
+				}
+			}
 		}
 		if value, ok := int64FromAny(planItem.Metadata["traffic_limit_bytes"]); ok {
 			info.TrafficLimitBytes = value
@@ -172,9 +184,22 @@ func buildPlanInfo(order repository.Order, items []repository.OrderItem) (planIn
 		info.Name = info.PlanName
 	}
 
-	if info.DurationDays == 0 {
+	if info.DurationUnit == "" {
+		if unit := normalizeDurationUnit(stringFromMap(order.PlanSnapshot, "duration_unit")); unit != "" {
+			info.DurationUnit = unit
+		}
+	}
+	if info.DurationValue == 0 {
+		if value, ok := intFromAny(order.PlanSnapshot["duration_value"]); ok {
+			info.DurationValue = value
+		}
+	}
+	if info.DurationValue == 0 {
 		if value, ok := intFromAny(order.PlanSnapshot["duration_days"]); ok {
-			info.DurationDays = value
+			info.DurationValue = value
+			if info.DurationUnit == "" {
+				info.DurationUnit = repository.DurationUnitDay
+			}
 		}
 	}
 	if info.TrafficLimitBytes == 0 {
@@ -193,6 +218,9 @@ func buildPlanInfo(order repository.Order, items []repository.OrderItem) (planIn
 	}
 	if info.Quantity <= 0 {
 		info.Quantity = 1
+	}
+	if info.DurationValue > 0 && info.DurationUnit == "" {
+		info.DurationUnit = repository.DurationUnitDay
 	}
 	if info.DevicesLimit <= 0 {
 		info.DevicesLimit = 1
@@ -265,15 +293,52 @@ func isEligible(sub repository.Subscription) bool {
 	return !strings.EqualFold(sub.Status, "disabled")
 }
 
+func normalizeDurationUnit(unit string) string {
+	unit = strings.TrimSpace(strings.ToLower(unit))
+	switch unit {
+	case "hours":
+		return repository.DurationUnitHour
+	case "days":
+		return repository.DurationUnitDay
+	case "months":
+		return repository.DurationUnitMonth
+	case "years":
+		return repository.DurationUnitYear
+	default:
+		return unit
+	}
+}
+
+func addDuration(base time.Time, unit string, value int) (time.Time, error) {
+	if value <= 0 {
+		return base, nil
+	}
+	switch normalizeDurationUnit(unit) {
+	case repository.DurationUnitHour:
+		return base.Add(time.Duration(value) * time.Hour), nil
+	case repository.DurationUnitDay:
+		return base.Add(time.Duration(value) * 24 * time.Hour), nil
+	case repository.DurationUnitMonth:
+		return base.AddDate(0, value, 0), nil
+	case repository.DurationUnitYear:
+		return base.AddDate(value, 0, 0), nil
+	default:
+		return time.Time{}, repository.ErrInvalidArgument
+	}
+}
+
 func renewSubscription(ctx context.Context, repos *repository.Repositories, sub repository.Subscription, info planInfo, paidAt, now time.Time, defaultTemplateID uint64, available []uint64) (repository.Subscription, error) {
-	duration := time.Duration(info.DurationDays*info.Quantity) * 24 * time.Hour
 	expiresAt := sub.ExpiresAt
-	if duration > 0 {
+	if info.DurationValue > 0 {
 		base := paidAt
 		if !sub.ExpiresAt.IsZero() && sub.ExpiresAt.After(paidAt) {
 			base = sub.ExpiresAt
 		}
-		expiresAt = base.Add(duration)
+		updated, err := addDuration(base, info.DurationUnit, info.DurationValue*info.Quantity)
+		if err != nil {
+			return repository.Subscription{}, err
+		}
+		expiresAt = updated
 	}
 
 	status := sub.Status
@@ -345,10 +410,13 @@ func createSubscription(ctx context.Context, repos *repository.Repositories, use
 		return repository.Subscription{}, err
 	}
 
-	duration := time.Duration(info.DurationDays*info.Quantity) * 24 * time.Hour
 	expiresAt := time.Time{}
-	if duration > 0 {
-		expiresAt = paidAt.Add(duration)
+	if info.DurationValue > 0 {
+		updated, err := addDuration(paidAt, info.DurationUnit, info.DurationValue*info.Quantity)
+		if err != nil {
+			return repository.Subscription{}, err
+		}
+		expiresAt = updated
 	}
 
 	trafficTotal := info.TrafficLimitBytes * int64(info.Quantity)
