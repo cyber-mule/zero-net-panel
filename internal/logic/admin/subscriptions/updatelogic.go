@@ -8,6 +8,7 @@ import (
 
 	"github.com/zeromicro/go-zero/core/logx"
 
+	subscriptionutil "github.com/zero-net-panel/zero-net-panel/internal/logic/subscriptionutil"
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 	"github.com/zero-net-panel/zero-net-panel/internal/security"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
@@ -53,6 +54,9 @@ func (l *UpdateLogic) Update(req *types.AdminUpdateSubscriptionRequest) (*types.
 	if req.TemplateID != nil && *req.TemplateID == 0 {
 		return nil, repository.ErrInvalidArgument
 	}
+	if req.PlanID != nil && *req.PlanID == 0 {
+		return nil, repository.ErrInvalidArgument
+	}
 
 	if req.AvailableTemplateIDs != nil {
 		for _, id := range *req.AvailableTemplateIDs {
@@ -65,6 +69,36 @@ func (l *UpdateLogic) Update(req *types.AdminUpdateSubscriptionRequest) (*types.
 	sub, err := l.svcCtx.Repositories.Subscription.Get(l.ctx, req.SubscriptionID)
 	if err != nil {
 		return nil, err
+	}
+
+	now := time.Now().UTC()
+	var planName *string
+	var planSnapshot *map[string]any
+	if req.PlanID != nil {
+		plan, err := l.svcCtx.Repositories.Plan.Get(l.ctx, *req.PlanID)
+		if err != nil {
+			return nil, err
+		}
+		bindingIDs, err := l.svcCtx.Repositories.PlanProtocolBinding.ListBindingIDs(l.ctx, plan.ID)
+		if err != nil {
+			return nil, err
+		}
+		name := strings.TrimSpace(plan.Name)
+		if req.PlanName != nil && strings.TrimSpace(*req.PlanName) != "" {
+			name = strings.TrimSpace(*req.PlanName)
+		}
+		if name == "" {
+			return nil, repository.ErrInvalidArgument
+		}
+		planName = &name
+		snapshot := subscriptionutil.BuildPlanSnapshot(plan, bindingIDs)
+		planSnapshot = &snapshot
+	} else if req.PlanName != nil {
+		if strings.TrimSpace(*req.PlanName) == "" {
+			return nil, repository.ErrInvalidArgument
+		}
+		trimmed := strings.TrimSpace(*req.PlanName)
+		planName = &trimmed
 	}
 
 	if req.TemplateID != nil {
@@ -101,7 +135,9 @@ func (l *UpdateLogic) Update(req *types.AdminUpdateSubscriptionRequest) (*types.
 
 	input := repository.UpdateSubscriptionInput{
 		Name:                 req.Name,
-		PlanName:             req.PlanName,
+		PlanName:             planName,
+		PlanID:               req.PlanID,
+		PlanSnapshot:         planSnapshot,
 		Status:               status,
 		TemplateID:           req.TemplateID,
 		AvailableTemplateIDs: req.AvailableTemplateIDs,
@@ -119,6 +155,11 @@ func (l *UpdateLogic) Update(req *types.AdminUpdateSubscriptionRequest) (*types.
 			return err
 		}
 		updated = result
+		if subscriptionutil.IsSubscriptionEffective(updated, now) {
+			if err := txRepos.Subscription.DisableOtherActive(l.ctx, updated.UserID, updated.ID); err != nil {
+				return err
+			}
+		}
 
 		actor, ok := security.UserFromContext(l.ctx)
 		var actorID *uint64
@@ -129,6 +170,12 @@ func (l *UpdateLogic) Update(req *types.AdminUpdateSubscriptionRequest) (*types.
 		metadata := map[string]any{}
 		if req.Status != nil {
 			metadata["status"] = updated.Status
+		}
+		if req.PlanID != nil {
+			metadata["plan_id"] = updated.PlanID
+		}
+		if planName != nil {
+			metadata["plan_name"] = updated.PlanName
 		}
 		if req.TemplateID != nil {
 			metadata["template_id"] = updated.TemplateID

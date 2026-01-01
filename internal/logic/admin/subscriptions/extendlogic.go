@@ -7,6 +7,7 @@ import (
 
 	"github.com/zeromicro/go-zero/core/logx"
 
+	subscriptionutil "github.com/zero-net-panel/zero-net-panel/internal/logic/subscriptionutil"
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 	"github.com/zero-net-panel/zero-net-panel/internal/security"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
@@ -64,6 +65,7 @@ func (l *ExtendLogic) Extend(req *types.AdminExtendSubscriptionRequest) (*types.
 		input.Status = &updateStatus
 	}
 
+	now := time.Now().UTC()
 	var updated repository.Subscription
 	if err := l.svcCtx.Repositories.Transaction(l.ctx, func(txRepos *repository.Repositories) error {
 		result, err := txRepos.Subscription.Update(l.ctx, req.SubscriptionID, input)
@@ -71,6 +73,11 @@ func (l *ExtendLogic) Extend(req *types.AdminExtendSubscriptionRequest) (*types.
 			return err
 		}
 		updated = result
+		if subscriptionutil.IsSubscriptionEffective(updated, now) {
+			if err := txRepos.Subscription.DisableOtherActive(l.ctx, updated.UserID, updated.ID); err != nil {
+				return err
+			}
+		}
 
 		actor, ok := security.UserFromContext(l.ctx)
 		var actorID *uint64

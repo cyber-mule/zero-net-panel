@@ -31,13 +31,16 @@ func Run(ctx context.Context, db *gorm.DB) error {
 		if err := seedProtocolBindings(tx); err != nil {
 			return err
 		}
+		if err := seedPlans(tx); err != nil {
+			return err
+		}
+		if err := seedPlanProtocolBindings(tx); err != nil {
+			return err
+		}
 		if err := seedTemplates(tx); err != nil {
 			return err
 		}
 		if err := seedSubscriptions(tx); err != nil {
-			return err
-		}
-		if err := seedPlans(tx); err != nil {
 			return err
 		}
 		if err := seedAnnouncements(tx); err != nil {
@@ -363,6 +366,7 @@ func seedProtocolBindings(tx *gorm.DB) error {
 			Name:             "hk-vless",
 			NodeID:           hkNode.ID,
 			ProtocolConfigID: vlessCfg.ID,
+			Protocol:         vlessCfg.Protocol,
 			Role:             "listener",
 			Listen:           "hk.example.com:443",
 			Status:           "active",
@@ -371,6 +375,7 @@ func seedProtocolBindings(tx *gorm.DB) error {
 			HealthStatus:     "healthy",
 			Tags:             []string{"edge", "hk"},
 			Description:      "香港入口示例",
+			Profile:          vlessCfg.Profile,
 			CreatedAt:        now.Add(-12 * time.Hour),
 			UpdatedAt:        now.Add(-30 * time.Minute),
 			LastSyncedAt:     now.Add(-30 * time.Minute),
@@ -380,6 +385,7 @@ func seedProtocolBindings(tx *gorm.DB) error {
 			Name:             "la-ss",
 			NodeID:           laNode.ID,
 			ProtocolConfigID: ssCfg.ID,
+			Protocol:         ssCfg.Protocol,
 			Role:             "listener",
 			Listen:           "la.example.com:443",
 			Status:           "active",
@@ -388,6 +394,7 @@ func seedProtocolBindings(tx *gorm.DB) error {
 			HealthStatus:     "degraded",
 			Tags:             []string{"edge", "us"},
 			Description:      "洛杉矶入口示例",
+			Profile:          ssCfg.Profile,
 			CreatedAt:        now.Add(-18 * time.Hour),
 			UpdatedAt:        now.Add(-2 * time.Hour),
 			LastSyncedAt:     now.Add(-2 * time.Hour),
@@ -497,6 +504,11 @@ func seedSubscriptions(tx *gorm.DB) error {
 		return err
 	}
 
+	var plan repository.Plan
+	if err := tx.Where("slug = ?", "standard").First(&plan).Error; err != nil {
+		return err
+	}
+
 	var templates []repository.SubscriptionTemplate
 	if err := tx.Find(&templates).Error; err != nil {
 		return err
@@ -521,7 +533,8 @@ func seedSubscriptions(tx *gorm.DB) error {
 	subscription := repository.Subscription{
 		UserID:               member.ID,
 		Name:                 "VIP 全球高速",
-		PlanName:             "VIP-Plus",
+		PlanName:             plan.Name,
+		PlanID:               plan.ID,
 		Status:               "active",
 		TemplateID:           defaultTemplateID,
 		AvailableTemplateIDs: allowed,
@@ -621,6 +634,46 @@ func seedPlans(tx *gorm.DB) error {
 	}
 
 	return tx.Create(&options).Error
+}
+
+func seedPlanProtocolBindings(tx *gorm.DB) error {
+	var count int64
+	if err := tx.Model(&repository.PlanProtocolBinding{}).Count(&count).Error; err != nil {
+		return err
+	}
+	if count > 0 {
+		return nil
+	}
+
+	var plans []repository.Plan
+	if err := tx.Find(&plans).Error; err != nil {
+		return err
+	}
+	if len(plans) == 0 {
+		return nil
+	}
+
+	var bindings []repository.ProtocolBinding
+	if err := tx.Find(&bindings).Error; err != nil {
+		return err
+	}
+	if len(bindings) == 0 {
+		return nil
+	}
+
+	now := time.Now().UTC()
+	rows := make([]repository.PlanProtocolBinding, 0, len(plans)*len(bindings))
+	for _, plan := range plans {
+		for _, binding := range bindings {
+			rows = append(rows, repository.PlanProtocolBinding{
+				PlanID:    plan.ID,
+				BindingID: binding.ID,
+				CreatedAt: now,
+			})
+		}
+	}
+
+	return tx.Create(&rows).Error
 }
 
 func seedAnnouncements(tx *gorm.DB) error {

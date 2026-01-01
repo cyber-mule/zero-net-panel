@@ -8,8 +8,8 @@
 
 ## 数据模型
 - 节点 `nodes`：节点元信息、状态、标签等（`internal/repository/node_repository.go`）。
-- 协议配置 `protocol_configs`：协议类型 + profile 配置（`internal/repository/protocol_config_repository.go`）。
-- 协议绑定 `protocol_bindings`：绑定节点 + 协议配置 + 监听/中转信息 + 同步/健康状态（`internal/repository/protocol_binding_repository.go`）。
+- 协议模板 `protocol_configs`：协议类型 + profile 模板（`internal/repository/protocol_config_repository.go`）。
+- 协议绑定 `protocol_bindings`：绑定节点 + 实际协议配置（profile）+ 监听/中转信息 + 同步/健康状态（`internal/repository/protocol_binding_repository.go`）。
 - 流量记录 `traffic_usage_records`：原始与倍数计费流量（`internal/repository/traffic_usage_repository.go`）。
 - 套餐倍数 `plans.traffic_multipliers`：协议 -> 倍数（`internal/repository/plan_repository.go`）。
 

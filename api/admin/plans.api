@@ -37,6 +37,7 @@ type AdminCreatePlanRequest {
 	description         string   `form:"description,optional" json:"description,optional"`
 	tags                []string `form:"tags,optional" json:"tags,optional"`
 	features            []string `form:"features,optional" json:"features,optional"`
+	binding_ids         []uint64 `form:"binding_ids,optional" json:"binding_ids,optional"`
 	price_cents         int64
 	currency            string
 	duration_days       int
@@ -55,6 +56,7 @@ type AdminUpdatePlanRequest {
 	description         string             `form:"description,optional" json:"description,optional"`
 	tags                []string           `form:"tags,optional" json:"tags,optional"`
 	features            []string           `form:"features,optional" json:"features,optional"`
+	binding_ids         []uint64           `form:"binding_ids,optional" json:"binding_ids,optional"`
 	price_cents         int64              `form:"price_cents,optional" json:"price_cents,optional"`
 	currency            string             `form:"currency,optional" json:"currency,optional"`
 	duration_days       int                `form:"duration_days,optional" json:"duration_days,optional"`
@@ -73,6 +75,7 @@ type PlanSummary {
 	description         string
 	tags                []string
 	features            []string
+	binding_ids         []uint64
 	billing_options     []PlanBillingOptionSummary
 	price_cents         int64
 	currency            string

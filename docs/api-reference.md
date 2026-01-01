@@ -565,7 +565,7 @@ ProtocolBindingSummary 字段：
 #### GET /api/v1/{adminPrefix}/subscriptions
 
 - 说明：订阅列表
-- 查询参数：`page`、`per_page`、`q`、`status`、`user_id`、`plan_name`、`template_id`
+- 查询参数：`page`、`per_page`、`q`、`status`、`user_id`、`plan_name`、`plan_id`、`template_id`
 - 响应：
   - `subscriptions` []AdminSubscriptionSummary
   - `pagination` PaginationMeta
@@ -577,7 +577,7 @@ AdminSubscriptionUserSummary 字段：
 AdminSubscriptionSummary 字段：
 
 - `id`、`user`
-- `name`、`plan_name`、`status`
+- `name`、`plan_name`、`plan_id`、`plan_snapshot`、`status`
 - `template_id`、`available_template_ids`
 - `token`、`expires_at`
 - `traffic_total_bytes`、`traffic_used_bytes`
@@ -597,7 +597,8 @@ AdminSubscriptionSummary 字段：
 - 请求体：
   - `user_id` uint64
   - `name` string
-  - `plan_name` string
+  - `plan_name` string（可选）
+  - `plan_id` uint64
   - `status` string（可选）
   - `template_id` uint64
   - `available_template_ids` []uint64（可选）
@@ -614,7 +615,7 @@ AdminSubscriptionSummary 字段：
 - 说明：更新订阅
 - 路径参数：`id` uint64
 - 请求体（字段均可选）：
-  - `name`、`plan_name`、`status`
+  - `name`、`plan_name`、`plan_id`、`status`
   - `template_id`、`available_template_ids`
   - `token`、`expires_at`
   - `traffic_total_bytes`、`traffic_used_bytes`
@@ -734,6 +735,7 @@ SubscriptionTemplateHistoryEntry 字段：
 PlanSummary 字段：
 
 - `id`、`name`、`slug`、`description`、`tags`、`features`
+- `binding_ids`
 - `billing_options`
 - `price_cents`、`currency`、`duration_days`
 - `traffic_limit_bytes`、`traffic_multipliers`、`devices_limit`
@@ -757,6 +759,7 @@ PlanBillingOptionSummary 字段：
   - `description` string（可选）
   - `tags` []string（可选）
   - `features` []string（可选）
+  - `binding_ids` []uint64（可选，套餐绑定的协议）
   - `price_cents` int64
   - `currency` string
   - `duration_days` int
@@ -773,7 +776,7 @@ PlanBillingOptionSummary 字段：
 - 说明：更新套餐
 - 路径参数：`id` uint64
 - 请求体（字段均可选）：
-  - `name`、`slug`、`description`、`tags`、`features`
+  - `name`、`slug`、`description`、`tags`、`features`、`binding_ids`
   - `price_cents`、`currency`、`duration_days`
   - `traffic_limit_bytes`、`traffic_multipliers`、`devices_limit`
   - `sort_order`、`status`、`visible`
@@ -1195,6 +1198,20 @@ AdminOrderDetail 字段：
 - 响应：
   - `status`
 
+### 公共订阅（免登录）
+
+#### GET /api/v1/subscriptions/{token}
+
+- 说明：客户端订阅拉取（免登录）
+- 路径参数：`token` string
+- 响应：**非 JSON**，直接返回订阅内容
+  - `Content-Type`：`text/plain` 或 `application/json`（取决于模板格式）
+  - `ETag`：内容哈希
+- 规则：
+  - 仅 `status=active` 且未过期的订阅可拉取
+  - `User-Agent` 关键词匹配客户端类型，忽略大小写；命中后优先选择对应 `client_type` 的默认模板
+  - 未命中则回退订阅默认模板
+
 ### 用户端（需要 user 权限）
 
 #### GET /api/v1/user/subscriptions
@@ -1202,13 +1219,16 @@ AdminOrderDetail 字段：
 - 说明：订阅列表
 - 查询参数：`page`、`per_page`、`sort`、`direction`、`q`、`status`
 - `sort` 可选：`name`、`plan_name`、`status`、`expires_at`、`created_at`
+- 说明：
+  - 用户侧默认不返回 `disabled` 状态订阅
+  - `expired` 状态仍会返回，便于续费
 - 响应：
   - `subscriptions` []UserSubscriptionSummary
   - `pagination` PaginationMeta
 
 UserSubscriptionSummary 字段：
 
-- `id`、`name`、`plan_name`、`status`
+- `id`、`name`、`plan_name`、`plan_id`、`status`
 - `template_id`、`available_template_ids`
 - `expires_at`、`traffic_total_bytes`、`traffic_used_bytes`
 - `devices_limit`、`last_refreshed_at`
@@ -1218,6 +1238,7 @@ UserSubscriptionSummary 字段：
 - 说明：订阅预览
 - 路径参数：`id` uint64
 - 查询参数：`template_id`（可选）
+- 说明：`disabled` 状态订阅返回 404
 - 响应：
   - `subscription_id` uint64
   - `template_id` uint64
@@ -1232,6 +1253,7 @@ UserSubscriptionSummary 字段：
 - 路径参数：`id` uint64
 - 请求体：
   - `template_id` uint64
+- 说明：`disabled` 状态订阅返回 404
 - 响应：
   - `subscription_id` uint64
   - `template_id` uint64
@@ -1243,6 +1265,7 @@ UserSubscriptionSummary 字段：
 - 路径参数：`id` uint64
 - 查询参数：`page`、`per_page`、`protocol`、`node_id`、`binding_id`、`from`、`to`
 - `from`/`to` 为 Unix 秒
+- 说明：`disabled` 状态订阅返回 404
 - 响应：
   - `summary` UserSubscriptionTrafficSummary
   - `records` []UserTrafficUsageRecord

@@ -42,11 +42,20 @@ func (l *UpdateLogic) Update(req *types.AdminUpdateProtocolBindingRequest) (*typ
 		}
 		input.NodeID = req.NodeID
 	}
-	if req.ProtocolConfigID != nil && *req.ProtocolConfigID > 0 {
-		if _, err := l.svcCtx.Repositories.ProtocolConfig.Get(l.ctx, *req.ProtocolConfigID); err != nil {
-			return nil, err
+	if req.ProtocolConfigID != nil {
+		if *req.ProtocolConfigID > 0 {
+			if _, err := l.svcCtx.Repositories.ProtocolConfig.Get(l.ctx, *req.ProtocolConfigID); err != nil {
+				return nil, err
+			}
 		}
 		input.ProtocolConfigID = req.ProtocolConfigID
+	}
+	if req.Protocol != nil {
+		protocol := strings.ToLower(strings.TrimSpace(*req.Protocol))
+		if protocol == "" {
+			return nil, repository.ErrInvalidArgument
+		}
+		input.Protocol = &protocol
 	}
 	if req.Role != nil {
 		role, ok := normalizeRole(*req.Role)
@@ -98,6 +107,10 @@ func (l *UpdateLogic) Update(req *types.AdminUpdateProtocolBindingRequest) (*typ
 	if req.Description != nil {
 		description := strings.TrimSpace(*req.Description)
 		input.Description = &description
+	}
+	if req.Profile != nil {
+		profile := cloneBindingProfile(req.Profile)
+		input.Profile = &profile
 	}
 	if req.Metadata != nil {
 		metadata := req.Metadata

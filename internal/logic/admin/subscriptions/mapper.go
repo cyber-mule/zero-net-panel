@@ -17,6 +17,8 @@ func toAdminSubscriptionSummary(sub repository.Subscription, user repository.Use
 		},
 		Name:                 sub.Name,
 		PlanName:             sub.PlanName,
+		PlanID:               sub.PlanID,
+		PlanSnapshot:         sub.PlanSnapshot,
 		Status:               sub.Status,
 		TemplateID:           sub.TemplateID,
 		AvailableTemplateIDs: append([]uint64(nil), sub.AvailableTemplateIDs...),

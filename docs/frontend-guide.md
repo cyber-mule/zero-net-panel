@@ -194,6 +194,8 @@ Content-Type: application/json
 - `kernel_statuses[]`：节点同步摘要（来自最近一次同步记录）
 - `protocol_statuses[]`：协议绑定健康状态
   - `health_status`：`healthy`/`degraded`/`unhealthy`/`offline`/`unknown`
+- 节点范围来自当前生效订阅（`active` 且未过期）绑定的协议；无生效订阅时返回空数组
+- `protocol` 过滤时仅在套餐允许的协议绑定中筛选
 
 提示：`kernel_statuses` 表示同步记录状态，不是实时心跳。
 
@@ -201,6 +203,7 @@ Content-Type: application/json
 
 - `GET /api/v1/user/subscriptions/{id}/preview`
 - 查询参数：`template_id`（可选）
+  - 用户侧订阅列表默认不返回 `disabled` 状态，`expired` 仍可展示用于续费
 
 响应字段：
 
@@ -218,6 +221,25 @@ Content-Type: application/json
 
 - `nodes`/`protocol_bindings` 输出为空数组
 - `user_identity` 字段为空字符串
+  - `status=disabled` 时接口返回 `404`
+
+当订阅 `status = active` 时：
+
+- `nodes`/`protocol_bindings` 仅包含套餐绑定的协议
+
+模板变量中的套餐快照字段：
+
+- `subscription.plan_snapshot`：套餐快照（含 `binding_ids`、`traffic_multipliers` 等），用于保证订阅长期一致性
+
+### 6.5 订阅拉取地址（客户端）
+
+- `GET /api/v1/subscriptions/{token}`
+- 根据 `User-Agent` 自动选择模板：
+  - 命中 `clash` 相关客户端 → `client_type=clash`
+  - 命中 `sing-box` 客户端 → `client_type=sing-box`
+  - 常见识别关键字：`mihomo`、`clash-verge`、`surge`、`quantumult`、`stash`、`shadowrocket`、`loon`、`nekobox`、`v2rayn`、`v2rayng`
+- 未识别则回退订阅默认模板
+- 订阅非 `active` 或已过期时返回 `404`
 
 ## 7. 数据格式与展示建议
 

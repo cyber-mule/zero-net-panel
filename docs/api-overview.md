@@ -26,6 +26,7 @@
 > 注册/找回/验证接口已开放，需在配置中开启注册开关并配置邮件发送与验证码策略。
 
 - `/api/v1/user/subscriptions`：用户订阅列表、预览、模板切换。
+- `/api/v1/subscriptions/{token}`：订阅拉取地址（免登录，按 `User-Agent` 选择模板）。
 - `/api/v1/user/plans`：面向终端的套餐列表，返回价格、特性、流量限制与 `billing_options`。
 - `/api/v1/user/nodes`：用户侧节点运行状态（脱敏展示）。
 - `/api/v1/user/announcements`：按受众过滤当前有效公告，支持置顶排序与限量返回。
@@ -34,6 +35,7 @@
 - `/api/v1/user/account/password`：用户自主改密。
 - `/api/v1/user/account/email`：用户自主改邮箱（验证码流程）。
 - `/api/v1/user/orders`：创建、查询订单并支持取消待支付或零元订单，返回计划快照、条目与余额快照（可选 `billing_option_id`）。
+  - 用户侧默认不返回 `disabled` 状态订阅，`expired` 仍可展示用于续费。
 
 ### 订单操作补充说明
 

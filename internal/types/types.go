@@ -359,6 +359,7 @@ type ProtocolBindingSummary struct {
 	LastSyncError    string         `json:"last_sync_error"`
 	Tags             []string       `json:"tags"`
 	Description      string         `json:"description"`
+	Profile          map[string]any `json:"profile"`
 	Metadata         map[string]any `json:"metadata"`
 	CreatedAt        int64          `json:"created_at"`
 	UpdatedAt        int64          `json:"updated_at"`
@@ -374,7 +375,8 @@ type AdminProtocolBindingListResponse struct {
 type AdminCreateProtocolBindingRequest struct {
 	Name             string         `json:"name"`
 	NodeID           uint64         `json:"node_id"`
-	ProtocolConfigID uint64         `json:"protocol_config_id"`
+	ProtocolConfigID *uint64        `json:"protocol_config_id,optional"`
+	Protocol         string         `json:"protocol"`
 	Role             string         `json:"role"`
 	Listen           string         `json:"listen"`
 	Connect          string         `json:"connect"`
@@ -382,6 +384,7 @@ type AdminCreateProtocolBindingRequest struct {
 	KernelID         string         `json:"kernel_id"`
 	Tags             []string       `json:"tags"`
 	Description      string         `json:"description"`
+	Profile          map[string]any `json:"profile"`
 	Metadata         map[string]any `json:"metadata"`
 }
 
@@ -391,6 +394,7 @@ type AdminUpdateProtocolBindingRequest struct {
 	Name             *string        `json:"name,optional"`
 	NodeID           *uint64        `json:"node_id,optional"`
 	ProtocolConfigID *uint64        `json:"protocol_config_id,optional"`
+	Protocol         *string        `json:"protocol,optional"`
 	Role             *string        `json:"role,optional"`
 	Listen           *string        `json:"listen,optional"`
 	Connect          *string        `json:"connect,optional"`
@@ -403,6 +407,7 @@ type AdminUpdateProtocolBindingRequest struct {
 	LastSyncError    *string        `json:"last_sync_error,optional"`
 	Tags             []string       `json:"tags,optional"`
 	Description      *string        `json:"description,optional"`
+	Profile          map[string]any `json:"profile,optional"`
 	Metadata         map[string]any `json:"metadata,optional"`
 }
 
@@ -547,6 +552,7 @@ type UserSubscriptionSummary struct {
 	ID                   uint64   `json:"id"`
 	Name                 string   `json:"name"`
 	PlanName             string   `json:"plan_name"`
+	PlanID               uint64   `json:"plan_id"`
 	Status               string   `json:"status"`
 	TemplateID           uint64   `json:"template_id"`
 	AvailableTemplateIDs []uint64 `json:"available_template_ids"`
@@ -649,6 +655,7 @@ type AdminCreatePlanRequest struct {
 	Description        string             `json:"description"`
 	Tags               []string           `json:"tags"`
 	Features           []string           `json:"features"`
+	BindingIDs         []uint64           `json:"binding_ids"`
 	PriceCents         int64              `json:"price_cents"`
 	Currency           string             `json:"currency"`
 	DurationDays       int                `json:"duration_days"`
@@ -668,6 +675,7 @@ type AdminUpdatePlanRequest struct {
 	Description        *string            `json:"description,optional"`
 	Tags               []string           `json:"tags,optional"`
 	Features           []string           `json:"features,optional"`
+	BindingIDs         []uint64           `json:"binding_ids,optional"`
 	PriceCents         *int64             `json:"price_cents,optional"`
 	Currency           *string            `json:"currency,optional"`
 	DurationDays       *int               `json:"duration_days,optional"`
@@ -687,6 +695,7 @@ type PlanSummary struct {
 	Description        string                     `json:"description"`
 	Tags               []string                   `json:"tags"`
 	Features           []string                   `json:"features"`
+	BindingIDs         []uint64                   `json:"binding_ids"`
 	BillingOptions     []PlanBillingOptionSummary `json:"billing_options"`
 	PriceCents         int64                      `json:"price_cents"`
 	Currency           string                     `json:"currency"`

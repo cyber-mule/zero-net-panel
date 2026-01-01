@@ -30,6 +30,10 @@ Project:
   Description: CLI migrate test
   Version: 0.0.0
 
+Site:
+  Name: Test Site
+  LogoURL: ""
+
 Database:
   Driver: sqlite
   DSN: %q
@@ -52,6 +56,7 @@ Cache:
 
 Kernel:
   DefaultProtocol: http
+  StatusPollInterval: 0s
   HTTP:
     BaseURL: http://localhost
     Token: ""
@@ -66,6 +71,41 @@ Auth:
   AccessExpire: 1h
   RefreshSecret: test-refresh
   RefreshExpire: 1h
+  Registration:
+    Enabled: true
+    InviteOnly: false
+    InviteCodes: []
+    DefaultRoles: ["user"]
+    RequireEmailVerification: false
+  Verification:
+    CodeLength: 6
+    CodeTTL: 15m
+    SendCooldown: 1m
+    SendLimitPerHour: 5
+  PasswordReset:
+    CodeLength: 6
+    CodeTTL: 15m
+    SendCooldown: 1m
+    SendLimitPerHour: 5
+  PasswordPolicy:
+    MinLength: 8
+    MaxLength: 0
+    RequireUpper: false
+    RequireLower: true
+    RequireDigit: false
+    RequireSpecial: false
+  Lockout:
+    MaxAttempts: 5
+    LockDuration: 15m
+  Email:
+    Provider: log
+    From: no-reply@localhost
+    SMTP:
+      Host: ""
+      Port: 0
+      Username: ""
+      Password: ""
+      UseTLS: false
 
 Credentials:
   MasterKey: test-credentials

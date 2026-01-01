@@ -6,6 +6,7 @@ import (
 
 	"github.com/zeromicro/go-zero/core/logx"
 
+	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
 )
@@ -28,6 +29,18 @@ func NewUpdateLogic(ctx context.Context, svcCtx *svc.ServiceContext) *UpdateLogi
 
 // Update 更新套餐。
 func (l *UpdateLogic) Update(req *types.AdminUpdatePlanRequest) (*types.PlanSummary, error) {
+	var bindingIDs []uint64
+	if req.BindingIDs != nil {
+		normalized, err := normalizeBindingIDs(req.BindingIDs)
+		if err != nil {
+			return nil, err
+		}
+		if err := ensureBindingsExist(l.ctx, l.svcCtx.Repositories.ProtocolBinding, normalized); err != nil {
+			return nil, err
+		}
+		bindingIDs = normalized
+	}
+
 	plan, err := l.svcCtx.Repositories.Plan.Get(l.ctx, req.PlanID)
 	if err != nil {
 		return nil, err
@@ -76,11 +89,28 @@ func (l *UpdateLogic) Update(req *types.AdminUpdatePlanRequest) (*types.PlanSumm
 		plan.Visible = *req.Visible
 	}
 
-	updated, err := l.svcCtx.Repositories.Plan.Update(l.ctx, req.PlanID, plan)
-	if err != nil {
+	var updated repository.Plan
+	if err := l.svcCtx.Repositories.Transaction(l.ctx, func(txRepos *repository.Repositories) error {
+		updatedPlan, err := txRepos.Plan.Update(l.ctx, req.PlanID, plan)
+		if err != nil {
+			return err
+		}
+		updated = updatedPlan
+		if req.BindingIDs != nil {
+			return txRepos.PlanProtocolBinding.Replace(l.ctx, req.PlanID, bindingIDs)
+		}
+		return nil
+	}); err != nil {
 		return nil, err
 	}
 
-	summary := toPlanSummary(updated, nil)
+	if req.BindingIDs == nil {
+		bindingIDs, err = l.svcCtx.Repositories.PlanProtocolBinding.ListBindingIDs(l.ctx, updated.ID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	summary := toPlanSummary(updated, nil, bindingIDs)
 	return &summary, nil
 }

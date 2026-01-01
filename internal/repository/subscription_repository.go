@@ -14,11 +14,13 @@ import (
 
 // Subscription 表示用户订阅信息。
 type Subscription struct {
-	ID                   uint64 `gorm:"primaryKey"`
-	UserID               uint64 `gorm:"index"`
-	Name                 string `gorm:"size:255"`
-	PlanName             string `gorm:"size:255"`
-	Status               string `gorm:"size:32"`
+	ID                   uint64         `gorm:"primaryKey"`
+	UserID               uint64         `gorm:"index"`
+	Name                 string         `gorm:"size:255"`
+	PlanName             string         `gorm:"size:255"`
+	PlanID               uint64         `gorm:"index"`
+	PlanSnapshot         map[string]any `gorm:"serializer:json"`
+	Status               string         `gorm:"size:32"`
 	TemplateID           uint64
 	AvailableTemplateIDs []uint64 `gorm:"serializer:json"`
 	Token                string   `gorm:"size:255"`
@@ -36,15 +38,17 @@ func (Subscription) TableName() string { return "subscriptions" }
 
 // ListSubscriptionsOptions 控制订阅列表的分页与过滤。
 type ListSubscriptionsOptions struct {
-	Page       int
-	PerPage    int
-	Sort       string
-	Direction  string
-	Query      string
-	Status     string
-	UserID     *uint64
-	PlanName   string
-	TemplateID uint64
+	Page          int
+	PerPage       int
+	Sort          string
+	Direction     string
+	Query         string
+	Status        string
+	ExcludeStatus []string
+	UserID        *uint64
+	PlanName      string
+	PlanID        uint64
+	TemplateID    uint64
 }
 
 // SubscriptionRepository 提供订阅相关操作。
@@ -52,7 +56,9 @@ type SubscriptionRepository interface {
 	List(ctx context.Context, opts ListSubscriptionsOptions) ([]Subscription, int64, error)
 	ListByUser(ctx context.Context, userID uint64, opts ListSubscriptionsOptions) ([]Subscription, int64, error)
 	Get(ctx context.Context, id uint64) (Subscription, error)
+	GetByToken(ctx context.Context, token string) (Subscription, error)
 	GetActiveByUser(ctx context.Context, userID uint64) (Subscription, error)
+	DisableOtherActive(ctx context.Context, userID uint64, excludeID uint64) error
 	Create(ctx context.Context, sub Subscription) (Subscription, error)
 	Update(ctx context.Context, id uint64, input UpdateSubscriptionInput) (Subscription, error)
 	UpdateTemplate(ctx context.Context, subscriptionID uint64, templateID uint64, userID uint64) (Subscription, error)
@@ -107,6 +113,24 @@ func (r *subscriptionRepository) Get(ctx context.Context, id uint64) (Subscripti
 	return subscription, nil
 }
 
+func (r *subscriptionRepository) GetByToken(ctx context.Context, token string) (Subscription, error) {
+	if err := ctx.Err(); err != nil {
+		return Subscription{}, err
+	}
+
+	token = strings.TrimSpace(token)
+	if token == "" {
+		return Subscription{}, ErrInvalidArgument
+	}
+
+	var subscription Subscription
+	if err := r.db.WithContext(ctx).Where("token = ?", token).First(&subscription).Error; err != nil {
+		return Subscription{}, translateError(err)
+	}
+
+	return subscription, nil
+}
+
 func (r *subscriptionRepository) GetActiveByUser(ctx context.Context, userID uint64) (Subscription, error) {
 	if err := ctx.Err(); err != nil {
 		return Subscription{}, err
@@ -127,10 +151,36 @@ func (r *subscriptionRepository) GetActiveByUser(ctx context.Context, userID uin
 	return subscription, nil
 }
 
+func (r *subscriptionRepository) DisableOtherActive(ctx context.Context, userID uint64, excludeID uint64) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if userID == 0 {
+		return ErrInvalidArgument
+	}
+
+	updates := map[string]any{
+		"status":     "disabled",
+		"updated_at": time.Now().UTC(),
+	}
+
+	query := r.db.WithContext(ctx).Model(&Subscription{}).
+		Where("user_id = ? AND status = ?", userID, "active")
+	if excludeID != 0 {
+		query = query.Where("id <> ?", excludeID)
+	}
+	if err := query.Updates(updates).Error; err != nil {
+		return translateError(err)
+	}
+	return nil
+}
+
 // UpdateSubscriptionInput defines mutable subscription fields.
 type UpdateSubscriptionInput struct {
 	Name                 *string
 	PlanName             *string
+	PlanID               *uint64
+	PlanSnapshot         *map[string]any
 	Status               *string
 	TemplateID           *uint64
 	AvailableTemplateIDs *[]uint64
@@ -147,7 +197,7 @@ func (r *subscriptionRepository) Create(ctx context.Context, sub Subscription) (
 		return Subscription{}, err
 	}
 
-	if sub.UserID == 0 || strings.TrimSpace(sub.Name) == "" || strings.TrimSpace(sub.PlanName) == "" {
+	if sub.UserID == 0 || strings.TrimSpace(sub.Name) == "" || strings.TrimSpace(sub.PlanName) == "" || sub.PlanID == 0 {
 		return Subscription{}, ErrInvalidArgument
 	}
 	now := time.Now().UTC()
@@ -179,6 +229,12 @@ func (r *subscriptionRepository) Update(ctx context.Context, id uint64, input Up
 	}
 	if input.PlanName != nil {
 		updates["plan_name"] = strings.TrimSpace(*input.PlanName)
+	}
+	if input.PlanID != nil {
+		updates["plan_id"] = *input.PlanID
+	}
+	if input.PlanSnapshot != nil {
+		updates["plan_snapshot"] = *input.PlanSnapshot
 	}
 	if input.Status != nil {
 		updates["status"] = strings.TrimSpace(*input.Status)
@@ -257,6 +313,9 @@ func (r *subscriptionRepository) UpdateTemplate(ctx context.Context, subscriptio
 		if subscription.UserID != userID {
 			return ErrForbidden
 		}
+		if strings.EqualFold(subscription.Status, "disabled") {
+			return ErrNotFound
+		}
 
 		targetTemplate := templateID
 		if targetTemplate == 0 {
@@ -314,8 +373,17 @@ func (r *subscriptionRepository) listWithOptions(ctx context.Context, opts ListS
 	if status := strings.TrimSpace(strings.ToLower(opts.Status)); status != "" {
 		base = base.Where("LOWER(status) = ?", status)
 	}
+	if len(opts.ExcludeStatus) > 0 {
+		excluded := normalizeStatusFilters(opts.ExcludeStatus)
+		if len(excluded) > 0 {
+			base = base.Where("LOWER(status) NOT IN ?", excluded)
+		}
+	}
 	if planName := strings.TrimSpace(strings.ToLower(opts.PlanName)); planName != "" {
 		base = base.Where("LOWER(plan_name) = ?", planName)
+	}
+	if opts.PlanID != 0 {
+		base = base.Where("plan_id = ?", opts.PlanID)
 	}
 	if opts.TemplateID != 0 {
 		base = base.Where("template_id = ?", opts.TemplateID)
@@ -383,4 +451,24 @@ func normalizeListSubscriptionsOptions(opts ListSubscriptionsOptions) ListSubscr
 		opts.Direction = "desc"
 	}
 	return opts
+}
+
+func normalizeStatusFilters(values []string) []string {
+	if len(values) == 0 {
+		return nil
+	}
+	seen := make(map[string]struct{}, len(values))
+	result := make([]string, 0, len(values))
+	for _, value := range values {
+		normalized := strings.ToLower(strings.TrimSpace(value))
+		if normalized == "" {
+			continue
+		}
+		if _, ok := seen[normalized]; ok {
+			continue
+		}
+		seen[normalized] = struct{}{}
+		result = append(result, normalized)
+	}
+	return result
 }

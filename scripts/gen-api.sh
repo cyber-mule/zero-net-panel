@@ -3,7 +3,7 @@ set -euo pipefail
 
 REPO_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 API_ENTRY=${1:-${REPO_ROOT}/api/znp.api}
-OUTPUT_DIR=${2:-${REPO_ROOT}/internal}
+OUTPUT_DIR=${2:-${REPO_ROOT}}
 
 if ! command -v goctl >/dev/null 2>&1; then
     echo "goctl command is required but not found in PATH" >&2

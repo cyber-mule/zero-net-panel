@@ -2,6 +2,7 @@ package subscription
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -41,6 +42,9 @@ func (l *TrafficLogic) Traffic(req *types.UserSubscriptionTrafficRequest) (*type
 	}
 	if sub.UserID != user.ID {
 		return nil, repository.ErrForbidden
+	}
+	if strings.EqualFold(sub.Status, "disabled") {
+		return nil, repository.ErrNotFound
 	}
 
 	var from *time.Time

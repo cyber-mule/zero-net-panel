@@ -45,6 +45,7 @@ func (l *ListLogic) List(req *types.AdminListSubscriptionsRequest) (*types.Admin
 		Query:      req.Query,
 		Status:     req.Status,
 		PlanName:   req.PlanName,
+		PlanID:     req.PlanID,
 		TemplateID: req.TemplateID,
 	}
 	if req.UserID != 0 {

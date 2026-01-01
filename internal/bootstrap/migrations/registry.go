@@ -426,6 +426,101 @@ var migrationRegistry = []Migration{
 			return nil
 		},
 	},
+	{
+		Version: 2025051201,
+		Name:    "protocol-binding-profile",
+		Up: func(ctx context.Context, db *gorm.DB) error {
+			return db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+				if err := tx.WithContext(ctx).AutoMigrate(&repository.ProtocolBinding{}); err != nil {
+					return err
+				}
+
+				var bindings []repository.ProtocolBinding
+				if err := tx.WithContext(ctx).Find(&bindings).Error; err != nil {
+					return err
+				}
+				if len(bindings) == 0 {
+					return nil
+				}
+
+				var configs []repository.ProtocolConfig
+				if err := tx.WithContext(ctx).Find(&configs).Error; err != nil {
+					return err
+				}
+				configMap := make(map[uint64]repository.ProtocolConfig, len(configs))
+				for _, cfg := range configs {
+					configMap[cfg.ID] = cfg
+				}
+
+				for _, binding := range bindings {
+					updates := map[string]any{}
+					if strings.TrimSpace(binding.Protocol) == "" {
+						if cfg, ok := configMap[binding.ProtocolConfigID]; ok && strings.TrimSpace(cfg.Protocol) != "" {
+							updates["protocol"] = strings.TrimSpace(cfg.Protocol)
+						}
+					}
+					if binding.Profile == nil || len(binding.Profile) == 0 {
+						if cfg, ok := configMap[binding.ProtocolConfigID]; ok && cfg.Profile != nil {
+							updates["profile"] = cfg.Profile
+						}
+					}
+					if len(updates) == 0 {
+						continue
+					}
+					if err := tx.WithContext(ctx).
+						Model(&repository.ProtocolBinding{}).
+						Where("id = ?", binding.ID).
+						Updates(updates).Error; err != nil {
+						return err
+					}
+				}
+
+				return nil
+			})
+		},
+		Down: func(ctx context.Context, db *gorm.DB) error {
+			migrator := db.WithContext(ctx).Migrator()
+			columns := []string{"profile", "protocol"}
+			for _, column := range columns {
+				if migrator.HasColumn(&repository.ProtocolBinding{}, column) {
+					if err := migrator.DropColumn(&repository.ProtocolBinding{}, column); err != nil {
+						return err
+					}
+				}
+			}
+			return nil
+		},
+	},
+	{
+		Version: 2025051301,
+		Name:    "plan-protocol-bindings",
+		Up: func(ctx context.Context, db *gorm.DB) error {
+			return db.WithContext(ctx).AutoMigrate(&repository.PlanProtocolBinding{})
+		},
+		Down: func(ctx context.Context, db *gorm.DB) error {
+			migrator := db.WithContext(ctx).Migrator()
+			if migrator.HasTable(&repository.PlanProtocolBinding{}) {
+				return migrator.DropTable(&repository.PlanProtocolBinding{})
+			}
+			return nil
+		},
+	},
+	{
+		Version: 2025052201,
+		Name:    "subscription-plan-snapshot",
+		Up: func(ctx context.Context, db *gorm.DB) error {
+			return db.WithContext(ctx).AutoMigrate(&repository.Subscription{})
+		},
+		Down: func(ctx context.Context, db *gorm.DB) error {
+			migrator := db.WithContext(ctx).Migrator()
+			if migrator.HasColumn(&repository.Subscription{}, "plan_snapshot") {
+				if err := migrator.DropColumn(&repository.Subscription{}, "plan_snapshot"); err != nil {
+					return err
+				}
+			}
+			return nil
+		},
+	},
 }
 
 func init() {

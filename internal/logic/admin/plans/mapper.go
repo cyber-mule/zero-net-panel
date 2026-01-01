@@ -5,7 +5,7 @@ import (
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
 )
 
-func toPlanSummary(plan repository.Plan, options []repository.PlanBillingOption) types.PlanSummary {
+func toPlanSummary(plan repository.Plan, options []repository.PlanBillingOption, bindingIDs []uint64) types.PlanSummary {
 	return types.PlanSummary{
 		ID:                 plan.ID,
 		Name:               plan.Name,
@@ -13,6 +13,7 @@ func toPlanSummary(plan repository.Plan, options []repository.PlanBillingOption)
 		Description:        plan.Description,
 		Tags:               append([]string(nil), plan.Tags...),
 		Features:           append([]string(nil), plan.Features...),
+		BindingIDs:         append([]uint64(nil), bindingIDs...),
 		BillingOptions:     toPlanBillingOptionSummaries(options),
 		PriceCents:         plan.PriceCents,
 		Currency:           plan.Currency,

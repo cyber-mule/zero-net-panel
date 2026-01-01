@@ -5,7 +5,7 @@ import "../shared/types.api"
 @server (
 	name:   znp
 	prefix: /api/v1
-	group:  admin/plan_billing_options
+	group:  admin/planbillingoptions
 )
 service znp {
 	@doc "List plan billing options"
@@ -55,4 +55,3 @@ type AdminUpdatePlanBillingOptionRequest {
 type AdminPlanBillingOptionListResponse {
 	options []PlanBillingOptionSummary
 }
-

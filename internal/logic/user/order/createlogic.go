@@ -215,6 +215,12 @@ func (l *CreateLogic) Create(req *types.UserCreateOrderRequest) (resp *types.Use
 			}
 		}
 
+		bindingIDs, err := l.svcCtx.Repositories.PlanProtocolBinding.ListBindingIDs(l.ctx, plan.ID)
+		if err != nil {
+			return err
+		}
+		bindingIDs = uniqueUint64s(bindingIDs)
+
 		snapshot := map[string]any{
 			"id":                  plan.ID,
 			"name":                plan.Name,
@@ -225,9 +231,13 @@ func (l *CreateLogic) Create(req *types.UserCreateOrderRequest) (resp *types.Use
 			"duration_unit":       durationUnit,
 			"duration_value":      durationValue,
 			"traffic_limit_bytes": plan.TrafficLimitBytes,
+			"traffic_multipliers": cloneTrafficMultipliers(plan.TrafficMultipliers),
 			"devices_limit":       plan.DevicesLimit,
 			"features":            plan.Features,
 			"tags":                plan.Tags,
+		}
+		if len(bindingIDs) > 0 {
+			snapshot["binding_ids"] = bindingIDs
 		}
 		if durationUnit == repository.DurationUnitDay && durationValue > 0 {
 			snapshot["duration_days"] = durationValue
@@ -565,4 +575,31 @@ func calculateDiscount(coupon repository.Coupon, baseTotalCents int64, currency 
 	default:
 		return 0, repository.ErrInvalidArgument
 	}
+}
+
+func uniqueUint64s(input []uint64) []uint64 {
+	seen := make(map[uint64]struct{}, len(input))
+	result := make([]uint64, 0, len(input))
+	for _, value := range input {
+		if value == 0 {
+			continue
+		}
+		if _, ok := seen[value]; ok {
+			continue
+		}
+		seen[value] = struct{}{}
+		result = append(result, value)
+	}
+	return result
+}
+
+func cloneTrafficMultipliers(input map[string]float64) map[string]float64 {
+	if input == nil {
+		return map[string]float64{}
+	}
+	result := make(map[string]float64, len(input))
+	for key, value := range input {
+		result[key] = value
+	}
+	return result
 }

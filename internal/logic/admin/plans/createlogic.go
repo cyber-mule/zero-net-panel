@@ -29,6 +29,14 @@ func NewCreateLogic(ctx context.Context, svcCtx *svc.ServiceContext) *CreateLogi
 
 // Create 创建套餐。
 func (l *CreateLogic) Create(req *types.AdminCreatePlanRequest) (*types.PlanSummary, error) {
+	bindingIDs, err := normalizeBindingIDs(req.BindingIDs)
+	if err != nil {
+		return nil, err
+	}
+	if err := ensureBindingsExist(l.ctx, l.svcCtx.Repositories.ProtocolBinding, bindingIDs); err != nil {
+		return nil, err
+	}
+
 	currency := strings.TrimSpace(req.Currency)
 	if currency == "" {
 		currency = "CNY"
@@ -55,11 +63,18 @@ func (l *CreateLogic) Create(req *types.AdminCreatePlanRequest) (*types.PlanSumm
 		Visible:            req.Visible,
 	}
 
-	created, err := l.svcCtx.Repositories.Plan.Create(l.ctx, plan)
-	if err != nil {
+	var created repository.Plan
+	if err := l.svcCtx.Repositories.Transaction(l.ctx, func(txRepos *repository.Repositories) error {
+		createdPlan, err := txRepos.Plan.Create(l.ctx, plan)
+		if err != nil {
+			return err
+		}
+		created = createdPlan
+		return txRepos.PlanProtocolBinding.Replace(l.ctx, created.ID, bindingIDs)
+	}); err != nil {
 		return nil, err
 	}
 
-	summary := toPlanSummary(created, nil)
+	summary := toPlanSummary(created, nil, bindingIDs)
 	return &summary, nil
 }

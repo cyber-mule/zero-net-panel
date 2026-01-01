@@ -12,6 +12,7 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/zero-net-panel/zero-net-panel/internal/logic/credentialutil"
+	subscriptionutil "github.com/zero-net-panel/zero-net-panel/internal/logic/subscriptionutil"
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 	"github.com/zero-net-panel/zero-net-panel/internal/security"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
@@ -50,6 +51,9 @@ func (l *PreviewLogic) Preview(req *types.UserSubscriptionPreviewRequest) (*type
 	if sub.UserID != user.ID {
 		return nil, repository.ErrForbidden
 	}
+	if strings.EqualFold(sub.Status, "disabled") {
+		return nil, repository.ErrNotFound
+	}
 
 	templateID := req.TemplateID
 	if templateID == 0 {
@@ -61,11 +65,6 @@ func (l *PreviewLogic) Preview(req *types.UserSubscriptionPreviewRequest) (*type
 	}
 
 	tpl, err := l.svcCtx.Repositories.SubscriptionTemplate.Get(l.ctx, templateID)
-	if err != nil {
-		return nil, err
-	}
-
-	bindings, err := l.svcCtx.Repositories.ProtocolBinding.ListAll(l.ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -105,6 +104,14 @@ func (l *PreviewLogic) Preview(req *types.UserSubscriptionPreviewRequest) (*type
 		}
 	}
 
+	bindings := []repository.ProtocolBinding{}
+	if isActive {
+		bindings, err = subscriptionutil.LoadSubscriptionBindings(l.ctx, l.svcCtx.Repositories, sub)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	bindingContext := normalizeBindingContext(bindings)
 	if !isActive {
 		bindingContext = []map[string]any{}
@@ -114,6 +121,8 @@ func (l *PreviewLogic) Preview(req *types.UserSubscriptionPreviewRequest) (*type
 			"id":                      sub.ID,
 			"name":                    sub.Name,
 			"plan":                    sub.PlanName,
+			"plan_id":                 sub.PlanID,
+			"plan_snapshot":           sub.PlanSnapshot,
 			"status":                  sub.Status,
 			"token":                   sub.Token,
 			"expires_at":              sub.ExpiresAt.Format(time.RFC3339),
@@ -171,7 +180,7 @@ func normalizeBindingContext(bindings []repository.ProtocolBinding) []map[string
 			"id":            binding.ID,
 			"binding_id":    binding.ID,
 			"kernel_id":     binding.KernelID,
-			"protocol":      binding.ProtocolConfig.Protocol,
+			"protocol":      binding.Protocol,
 			"role":          binding.Role,
 			"hostname":      host,
 			"port":          port,

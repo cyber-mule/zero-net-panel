@@ -8,6 +8,7 @@ type AdminListSubscriptionsRequest struct {
 	Status     string `form:"status,optional" json:"status,optional"`
 	UserID     uint64 `form:"user_id,optional" json:"user_id,optional"`
 	PlanName   string `form:"plan_name,optional" json:"plan_name,optional"`
+	PlanID     uint64 `form:"plan_id,optional" json:"plan_id,optional"`
 	TemplateID uint64 `form:"template_id,optional" json:"template_id,optional"`
 }
 
@@ -24,6 +25,8 @@ type AdminSubscriptionSummary struct {
 	User                 AdminSubscriptionUserSummary `json:"user"`
 	Name                 string                       `json:"name"`
 	PlanName             string                       `json:"plan_name"`
+	PlanID               uint64                       `json:"plan_id"`
+	PlanSnapshot         map[string]any               `json:"plan_snapshot"`
 	Status               string                       `json:"status"`
 	TemplateID           uint64                       `json:"template_id"`
 	AvailableTemplateIDs []uint64                     `json:"available_template_ids"`
@@ -57,7 +60,8 @@ type AdminSubscriptionResponse struct {
 type AdminCreateSubscriptionRequest struct {
 	UserID               uint64   `json:"user_id"`
 	Name                 string   `json:"name"`
-	PlanName             string   `json:"plan_name"`
+	PlanName             string   `json:"plan_name,omitempty,optional"`
+	PlanID               uint64   `json:"plan_id"`
 	Status               *string  `json:"status,omitempty,optional"`
 	TemplateID           uint64   `json:"template_id"`
 	AvailableTemplateIDs []uint64 `json:"available_template_ids,omitempty,optional"`
@@ -73,6 +77,7 @@ type AdminUpdateSubscriptionRequest struct {
 	SubscriptionID       uint64    `path:"id"`
 	Name                 *string   `json:"name,omitempty,optional"`
 	PlanName             *string   `json:"plan_name,omitempty,optional"`
+	PlanID               *uint64   `json:"plan_id,omitempty,optional"`
 	Status               *string   `json:"status,omitempty,optional"`
 	TemplateID           *uint64   `json:"template_id,omitempty,optional"`
 	AvailableTemplateIDs *[]uint64 `json:"available_template_ids,omitempty,optional"`

@@ -36,18 +36,45 @@ func (l *CreateLogic) Create(req *types.AdminCreateProtocolBindingRequest) (*typ
 	if _, err := l.svcCtx.Repositories.Node.Get(l.ctx, req.NodeID); err != nil {
 		return nil, err
 	}
-	if _, err := l.svcCtx.Repositories.ProtocolConfig.Get(l.ctx, req.ProtocolConfigID); err != nil {
-		return nil, err
+
+	protocol := strings.ToLower(strings.TrimSpace(req.Protocol))
+	if protocol == "" {
+		return nil, repository.ErrInvalidArgument
+	}
+
+	var template repository.ProtocolConfig
+	if req.ProtocolConfigID != nil && *req.ProtocolConfigID > 0 {
+		cfg, err := l.svcCtx.Repositories.ProtocolConfig.Get(l.ctx, *req.ProtocolConfigID)
+		if err != nil {
+			return nil, err
+		}
+		template = cfg
+	}
+	if template.ID != 0 {
+		templateProtocol := strings.ToLower(strings.TrimSpace(template.Protocol))
+		if templateProtocol != "" && templateProtocol != protocol {
+			return nil, repository.ErrInvalidArgument
+		}
 	}
 
 	status := strings.TrimSpace(req.Status)
 	if status == "" {
 		status = "active"
 	}
+
+	profile := req.Profile
+	if profile == nil {
+		if template.ID == 0 {
+			return nil, repository.ErrInvalidArgument
+		}
+		profile = template.Profile
+	}
+
 	binding := repository.ProtocolBinding{
 		Name:             strings.TrimSpace(req.Name),
 		NodeID:           req.NodeID,
-		ProtocolConfigID: req.ProtocolConfigID,
+		ProtocolConfigID: 0,
+		Protocol:         protocol,
 		Role:             role,
 		Listen:           strings.TrimSpace(req.Listen),
 		Connect:          strings.TrimSpace(req.Connect),
@@ -55,7 +82,11 @@ func (l *CreateLogic) Create(req *types.AdminCreateProtocolBindingRequest) (*typ
 		KernelID:         strings.TrimSpace(req.KernelID),
 		Tags:             append([]string(nil), req.Tags...),
 		Description:      strings.TrimSpace(req.Description),
+		Profile:          cloneBindingProfile(profile),
 		Metadata:         req.Metadata,
+	}
+	if req.ProtocolConfigID != nil {
+		binding.ProtocolConfigID = *req.ProtocolConfigID
 	}
 
 	created, err := l.svcCtx.Repositories.ProtocolBinding.Create(l.ctx, binding)
@@ -65,4 +96,15 @@ func (l *CreateLogic) Create(req *types.AdminCreateProtocolBindingRequest) (*typ
 
 	summary := mapProtocolBindingSummary(created)
 	return &summary, nil
+}
+
+func cloneBindingProfile(profile map[string]any) map[string]any {
+	if profile == nil {
+		return nil
+	}
+	cloned := make(map[string]any, len(profile))
+	for key, value := range profile {
+		cloned[key] = value
+	}
+	return cloned
 }

@@ -16,6 +16,7 @@ type ProtocolBinding struct {
 	Name             string         `gorm:"size:255"`
 	NodeID           uint64         `gorm:"index"`
 	ProtocolConfigID uint64         `gorm:"index"`
+	Protocol         string         `gorm:"size:32;index"`
 	Role             string         `gorm:"size:32"`
 	Listen           string         `gorm:"size:512"`
 	Connect          string         `gorm:"size:512"`
@@ -28,6 +29,7 @@ type ProtocolBinding struct {
 	LastSyncError    string         `gorm:"type:text"`
 	Tags             []string       `gorm:"serializer:json"`
 	Description      string         `gorm:"type:text"`
+	Profile          map[string]any `gorm:"serializer:json"`
 	Metadata         map[string]any `gorm:"serializer:json"`
 	UpdatedAt        time.Time
 	CreatedAt        time.Time
@@ -57,6 +59,7 @@ type UpdateProtocolBindingInput struct {
 	Name             *string
 	NodeID           *uint64
 	ProtocolConfigID *uint64
+	Protocol         *string
 	Role             *string
 	Listen           *string
 	Connect          *string
@@ -69,12 +72,14 @@ type UpdateProtocolBindingInput struct {
 	LastSyncError    *string
 	Tags             *[]string
 	Description      *string
+	Profile          *map[string]any
 	Metadata         *map[string]any
 }
 
 // ProtocolBindingRepository manages protocol binding persistence.
 type ProtocolBindingRepository interface {
 	List(ctx context.Context, opts ListProtocolBindingsOptions) ([]ProtocolBinding, int64, error)
+	ListByIDs(ctx context.Context, ids []uint64) ([]ProtocolBinding, error)
 	ListByNodeIDs(ctx context.Context, nodeIDs []uint64) ([]ProtocolBinding, error)
 	ListAll(ctx context.Context) ([]ProtocolBinding, error)
 	Get(ctx context.Context, id uint64) (ProtocolBinding, error)
@@ -119,7 +124,7 @@ func (r *protocolBindingRepository) List(ctx context.Context, opts ListProtocolB
 		base = base.Where("protocol_config_id = ?", *opts.ConfigID)
 	}
 	if protocol := strings.TrimSpace(strings.ToLower(opts.Protocol)); protocol != "" {
-		base = base.Joins("JOIN protocol_configs pc ON pc.id = protocol_bindings.protocol_config_id AND LOWER(pc.protocol) = ?", protocol)
+		base = base.Where("LOWER(protocol) = ?", protocol)
 	}
 
 	countQuery := base.Session(&gorm.Session{})
@@ -156,6 +161,25 @@ func (r *protocolBindingRepository) ListByNodeIDs(ctx context.Context, nodeIDs [
 	if err := r.db.WithContext(ctx).
 		Where("node_id IN ?", nodeIDs).
 		Order("node_id ASC, updated_at DESC").
+		Preload("ProtocolConfig").
+		Find(&bindings).Error; err != nil {
+		return nil, err
+	}
+	return bindings, nil
+}
+
+func (r *protocolBindingRepository) ListByIDs(ctx context.Context, ids []uint64) ([]ProtocolBinding, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if len(ids) == 0 {
+		return []ProtocolBinding{}, nil
+	}
+
+	var bindings []ProtocolBinding
+	if err := r.db.WithContext(ctx).
+		Where("id IN ?", ids).
+		Preload("Node").
 		Preload("ProtocolConfig").
 		Find(&bindings).Error; err != nil {
 		return nil, err
@@ -202,10 +226,11 @@ func (r *protocolBindingRepository) Create(ctx context.Context, binding Protocol
 	binding.Connect = strings.TrimSpace(binding.Connect)
 	binding.Status = strings.TrimSpace(binding.Status)
 	binding.KernelID = strings.TrimSpace(binding.KernelID)
+	binding.Protocol = strings.ToLower(strings.TrimSpace(binding.Protocol))
 	binding.SyncStatus = strings.TrimSpace(binding.SyncStatus)
 	binding.HealthStatus = strings.TrimSpace(binding.HealthStatus)
 	binding.Description = strings.TrimSpace(binding.Description)
-	if binding.NodeID == 0 || binding.ProtocolConfigID == 0 || binding.Role == "" {
+	if binding.NodeID == 0 || binding.Protocol == "" || binding.Role == "" {
 		return ProtocolBinding{}, ErrInvalidArgument
 	}
 	if binding.Status == "" {
@@ -219,6 +244,9 @@ func (r *protocolBindingRepository) Create(ctx context.Context, binding Protocol
 	}
 	if binding.Tags == nil {
 		binding.Tags = []string{}
+	}
+	if binding.Profile == nil {
+		binding.Profile = map[string]any{}
 	}
 	if binding.Metadata == nil {
 		binding.Metadata = map[string]any{}
@@ -356,6 +384,9 @@ func (r *protocolBindingRepository) buildBindingUpdates(input UpdateProtocolBind
 	if input.ProtocolConfigID != nil {
 		updates["protocol_config_id"] = *input.ProtocolConfigID
 	}
+	if input.Protocol != nil {
+		updates["protocol"] = strings.ToLower(strings.TrimSpace(*input.Protocol))
+	}
 	if input.Role != nil {
 		updates["role"] = strings.TrimSpace(*input.Role)
 	}
@@ -391,6 +422,9 @@ func (r *protocolBindingRepository) buildBindingUpdates(input UpdateProtocolBind
 	}
 	if input.Description != nil {
 		updates["description"] = strings.TrimSpace(*input.Description)
+	}
+	if input.Profile != nil {
+		updates["profile"] = *input.Profile
 	}
 	if input.Metadata != nil {
 		updates["metadata"] = *input.Metadata

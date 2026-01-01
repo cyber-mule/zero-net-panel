@@ -59,7 +59,7 @@ func (l *TrafficIngestLogic) ingestRecord(record types.KernelTrafficRecord) erro
 	}
 
 	protocol := strings.ToLower(strings.TrimSpace(record.Protocol))
-	multiplier := l.resolveMultiplier(subscription.PlanName, protocol)
+	multiplier := l.resolveMultiplier(subscription, protocol)
 	raw := maxInt64(record.BytesUp+record.BytesDown, 0)
 	charged := int64(math.Round(float64(raw) * multiplier))
 
@@ -101,20 +101,25 @@ func (l *TrafficIngestLogic) resolveSubscription(record types.KernelTrafficRecor
 	return repository.Subscription{}, repository.ErrInvalidArgument
 }
 
-func (l *TrafficIngestLogic) resolveMultiplier(planName, protocol string) float64 {
-	if planName == "" {
+func (l *TrafficIngestLogic) resolveMultiplier(sub repository.Subscription, protocol string) float64 {
+	if protocol == "" {
 		return 1
 	}
 
-	plan, err := l.svcCtx.Repositories.Plan.GetByName(l.ctx, planName)
+	if snapshotMultipliers := extractTrafficMultipliers(sub.PlanSnapshot); snapshotMultipliers != nil {
+		if multiplier, ok := snapshotMultipliers[protocol]; ok && multiplier > 0 {
+			return multiplier
+		}
+	}
+	if sub.PlanID == 0 {
+		return 1
+	}
+
+	plan, err := l.svcCtx.Repositories.Plan.Get(l.ctx, sub.PlanID)
 	if err != nil {
 		return 1
 	}
-
 	if plan.TrafficMultipliers == nil {
-		return 1
-	}
-	if protocol == "" {
 		return 1
 	}
 
@@ -122,6 +127,39 @@ func (l *TrafficIngestLogic) resolveMultiplier(planName, protocol string) float6
 		return multiplier
 	}
 	return 1
+}
+
+func extractTrafficMultipliers(snapshot map[string]any) map[string]float64 {
+	if snapshot == nil {
+		return nil
+	}
+	raw, ok := snapshot["traffic_multipliers"]
+	if !ok {
+		return nil
+	}
+	switch value := raw.(type) {
+	case map[string]float64:
+		result := make(map[string]float64, len(value))
+		for key, multiplier := range value {
+			result[strings.ToLower(strings.TrimSpace(key))] = multiplier
+		}
+		return result
+	case map[string]any:
+		result := make(map[string]float64, len(value))
+		for key, rawValue := range value {
+			switch v := rawValue.(type) {
+			case float64:
+				result[strings.ToLower(strings.TrimSpace(key))] = v
+			case int:
+				result[strings.ToLower(strings.TrimSpace(key))] = float64(v)
+			case int64:
+				result[strings.ToLower(strings.TrimSpace(key))] = float64(v)
+			}
+		}
+		return result
+	default:
+		return nil
+	}
 }
 
 func maxInt64(a, b int64) int64 {

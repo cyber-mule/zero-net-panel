@@ -31,7 +31,7 @@ func mapProtocolBindingSummary(binding repository.ProtocolBinding) types.Protoco
 		NodeID:           binding.NodeID,
 		NodeName:         binding.Node.Name,
 		ProtocolConfigID: binding.ProtocolConfigID,
-		Protocol:         binding.ProtocolConfig.Protocol,
+		Protocol:         normalizeBindingProtocol(binding),
 		Role:             binding.Role,
 		Listen:           binding.Listen,
 		Connect:          binding.Connect,
@@ -44,6 +44,7 @@ func mapProtocolBindingSummary(binding repository.ProtocolBinding) types.Protoco
 		LastSyncError:    binding.LastSyncError,
 		Tags:             append([]string(nil), binding.Tags...),
 		Description:      binding.Description,
+		Profile:          cloneBindingProfile(binding.Profile),
 		Metadata:         binding.Metadata,
 		CreatedAt:        toUnixOrZero(binding.CreatedAt),
 		UpdatedAt:        toUnixOrZero(binding.UpdatedAt),
@@ -68,4 +69,11 @@ func extractHostPort(address string) (string, int) {
 	}
 	portNum, _ := strconv.Atoi(port)
 	return host, portNum
+}
+
+func normalizeBindingProtocol(binding repository.ProtocolBinding) string {
+	if value := strings.ToLower(strings.TrimSpace(binding.Protocol)); value != "" {
+		return value
+	}
+	return strings.ToLower(strings.TrimSpace(binding.ProtocolConfig.Protocol))
 }

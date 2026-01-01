@@ -40,6 +40,7 @@ type AdminListSubscriptionsRequest {
 	status      string `form:"status,optional" json:"status,optional"`
 	user_id     uint64 `form:"user_id,optional" json:"user_id,optional"`
 	plan_name   string `form:"plan_name,optional" json:"plan_name,optional"`
+	plan_id     uint64 `form:"plan_id,optional" json:"plan_id,optional"`
 	template_id uint64 `form:"template_id,optional" json:"template_id,optional"`
 }
 
@@ -54,6 +55,8 @@ type AdminSubscriptionSummary {
 	user                   AdminSubscriptionUserSummary
 	name                   string
 	plan_name              string
+	plan_id                uint64
+	plan_snapshot          map[string]interface{}
 	status                 string
 	template_id            uint64
 	available_template_ids []uint64
@@ -83,7 +86,8 @@ type AdminSubscriptionResponse {
 type AdminCreateSubscriptionRequest {
 	user_id                uint64
 	name                   string
-	plan_name              string
+	plan_name              string `form:"plan_name,optional" json:"plan_name,optional"`
+	plan_id                uint64
 	status                 string `form:"status,optional" json:"status,optional"`
 	template_id            uint64
 	available_template_ids []uint64 `form:"available_template_ids,optional" json:"available_template_ids,optional"`
@@ -98,6 +102,7 @@ type AdminUpdateSubscriptionRequest {
 	id                     uint64
 	name                   string   `form:"name,optional" json:"name,optional"`
 	plan_name              string   `form:"plan_name,optional" json:"plan_name,optional"`
+	plan_id                uint64   `form:"plan_id,optional" json:"plan_id,optional"`
 	status                 string   `form:"status,optional" json:"status,optional"`
 	template_id            uint64   `form:"template_id,optional" json:"template_id,optional"`
 	available_template_ids []uint64 `form:"available_template_ids,optional" json:"available_template_ids,optional"`
@@ -119,4 +124,3 @@ type AdminExtendSubscriptionRequest {
 	extend_hours int   `form:"extend_hours,optional" json:"extend_hours,optional"`
 	expires_at   int64 `form:"expires_at,optional" json:"expires_at,optional"`
 }
-

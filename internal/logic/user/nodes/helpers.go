@@ -26,7 +26,7 @@ func mapUserNodeStatus(node repository.Node, kernels []repository.NodeKernel, bi
 	for _, binding := range bindings {
 		protocolStatuses = append(protocolStatuses, types.UserNodeProtocolStatusSummary{
 			BindingID:       binding.ID,
-			Protocol:        binding.ProtocolConfig.Protocol,
+			Protocol:        binding.Protocol,
 			Role:            binding.Role,
 			Status:          binding.Status,
 			HealthStatus:    binding.HealthStatus,

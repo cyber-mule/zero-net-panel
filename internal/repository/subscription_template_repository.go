@@ -96,6 +96,7 @@ type PublishSubscriptionTemplateInput struct {
 // SubscriptionTemplateRepository 定义模板操作接口。
 type SubscriptionTemplateRepository interface {
 	List(ctx context.Context, opts ListTemplatesOptions) ([]SubscriptionTemplate, int64, error)
+	ListByIDs(ctx context.Context, ids []uint64) ([]SubscriptionTemplate, error)
 	Create(ctx context.Context, input CreateSubscriptionTemplateInput) (SubscriptionTemplate, error)
 	Update(ctx context.Context, id uint64, input UpdateSubscriptionTemplateInput) (SubscriptionTemplate, error)
 	Publish(ctx context.Context, id uint64, input PublishSubscriptionTemplateInput) (SubscriptionTemplate, SubscriptionTemplateHistory, error)
@@ -157,6 +158,21 @@ func (r *subscriptionTemplateRepository) List(ctx context.Context, opts ListTemp
 	}
 
 	return templates, total, nil
+}
+
+func (r *subscriptionTemplateRepository) ListByIDs(ctx context.Context, ids []uint64) ([]SubscriptionTemplate, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if len(ids) == 0 {
+		return []SubscriptionTemplate{}, ErrInvalidArgument
+	}
+
+	var templates []SubscriptionTemplate
+	if err := r.db.WithContext(ctx).Where("id IN ?", ids).Find(&templates).Error; err != nil {
+		return nil, err
+	}
+	return templates, nil
 }
 
 func (r *subscriptionTemplateRepository) Create(ctx context.Context, input CreateSubscriptionTemplateInput) (SubscriptionTemplate, error) {

@@ -57,6 +57,7 @@ type ListNodesOptions struct {
 	Query     string
 	Status    string
 	Protocol  string
+	NodeIDs   []uint64
 }
 
 // NodeRepository 定义节点仓储接口。
@@ -97,6 +98,9 @@ func (r *nodeRepository) List(ctx context.Context, opts ListNodesOptions) ([]Nod
 	}
 	if status := strings.TrimSpace(strings.ToLower(opts.Status)); status != "" {
 		base = base.Where("LOWER(status) = ?", status)
+	}
+	if len(opts.NodeIDs) > 0 {
+		base = base.Where("id IN ?", opts.NodeIDs)
 	}
 	if protocol := strings.TrimSpace(strings.ToLower(opts.Protocol)); protocol != "" {
 		base = base.Joins("JOIN node_kernels nk ON nk.node_id = nodes.id AND LOWER(nk.protocol) = ?", protocol)

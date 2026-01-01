@@ -8,6 +8,7 @@ import (
 
 	"github.com/zeromicro/go-zero/core/logx"
 
+	subscriptionutil "github.com/zero-net-panel/zero-net-panel/internal/logic/subscriptionutil"
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 	"github.com/zero-net-panel/zero-net-panel/internal/security"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
@@ -32,7 +33,7 @@ func NewCreateLogic(ctx context.Context, svcCtx *svc.ServiceContext) *CreateLogi
 
 // Create provisions a new subscription.
 func (l *CreateLogic) Create(req *types.AdminCreateSubscriptionRequest) (*types.AdminSubscriptionResponse, error) {
-	if req.UserID == 0 || strings.TrimSpace(req.Name) == "" || strings.TrimSpace(req.PlanName) == "" || req.TemplateID == 0 {
+	if req.UserID == 0 || strings.TrimSpace(req.Name) == "" || req.PlanID == 0 || req.TemplateID == 0 {
 		return nil, repository.ErrInvalidArgument
 	}
 
@@ -71,6 +72,16 @@ func (l *CreateLogic) Create(req *types.AdminCreateSubscriptionRequest) (*types.
 		return nil, err
 	}
 
+	plan, err := l.svcCtx.Repositories.Plan.Get(l.ctx, req.PlanID)
+	if err != nil {
+		return nil, err
+	}
+	bindingIDs, err := l.svcCtx.Repositories.PlanProtocolBinding.ListBindingIDs(l.ctx, plan.ID)
+	if err != nil {
+		return nil, err
+	}
+	planSnapshot := subscriptionutil.BuildPlanSnapshot(plan, bindingIDs)
+
 	if err := l.ensureTemplates(req.TemplateID, available); err != nil {
 		return nil, err
 	}
@@ -90,10 +101,19 @@ func (l *CreateLogic) Create(req *types.AdminCreateSubscriptionRequest) (*types.
 	}
 
 	now := time.Now().UTC()
+	planName := strings.TrimSpace(req.PlanName)
+	if planName == "" {
+		planName = plan.Name
+	}
+	if strings.TrimSpace(planName) == "" {
+		return nil, repository.ErrInvalidArgument
+	}
 	subscription := repository.Subscription{
 		UserID:               req.UserID,
 		Name:                 strings.TrimSpace(req.Name),
-		PlanName:             strings.TrimSpace(req.PlanName),
+		PlanName:             strings.TrimSpace(planName),
+		PlanID:               req.PlanID,
+		PlanSnapshot:         planSnapshot,
 		Status:               status,
 		TemplateID:           req.TemplateID,
 		AvailableTemplateIDs: available,
@@ -114,6 +134,11 @@ func (l *CreateLogic) Create(req *types.AdminCreateSubscriptionRequest) (*types.
 			return err
 		}
 		created = sub
+		if subscriptionutil.IsSubscriptionEffective(created, now) {
+			if err := txRepos.Subscription.DisableOtherActive(l.ctx, created.UserID, created.ID); err != nil {
+				return err
+			}
+		}
 
 		actor, ok := security.UserFromContext(l.ctx)
 		var actorID *uint64
@@ -131,6 +156,7 @@ func (l *CreateLogic) Create(req *types.AdminCreateSubscriptionRequest) (*types.
 			Metadata: map[string]any{
 				"user_id":  req.UserID,
 				"plan":     subscription.PlanName,
+				"plan_id":  subscription.PlanID,
 				"status":   subscription.Status,
 				"template": subscription.TemplateID,
 			},

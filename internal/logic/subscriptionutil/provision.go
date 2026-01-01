@@ -77,7 +77,7 @@ func EnsureOrderSubscription(ctx context.Context, repos *repository.Repositories
 		return result, err
 	}
 
-	existing, found, err := findEligibleSubscription(ctx, repos, lockedOrder.UserID, info.PlanName)
+	existing, found, err := findEligibleSubscription(ctx, repos, lockedOrder.UserID, info.PlanID, info.PlanName)
 	if err != nil {
 		return result, err
 	}
@@ -122,6 +122,7 @@ func EnsureOrderSubscription(ctx context.Context, repos *repository.Repositories
 }
 
 type planInfo struct {
+	PlanID            uint64
 	PlanName          string
 	Name              string
 	DurationValue     int
@@ -129,6 +130,7 @@ type planInfo struct {
 	TrafficLimitBytes int64
 	DevicesLimit      int
 	Quantity          int
+	PlanSnapshot      map[string]any
 }
 
 func buildPlanInfo(order repository.Order, items []repository.OrderItem) (planInfo, error) {
@@ -148,6 +150,9 @@ func buildPlanInfo(order repository.Order, items []repository.OrderItem) (planIn
 	}
 
 	if planItem != nil {
+		if planItem.ItemID != 0 {
+			info.PlanID = planItem.ItemID
+		}
 		if planItem.Quantity > 0 {
 			info.Quantity = planItem.Quantity
 		}
@@ -178,6 +183,9 @@ func buildPlanInfo(order repository.Order, items []repository.OrderItem) (planIn
 	if info.PlanName == "" {
 		info.PlanName = stringFromMap(order.PlanSnapshot, "name", "plan_name", "plan")
 		info.Name = info.PlanName
+	}
+	if info.PlanID == 0 && order.PlanID != nil {
+		info.PlanID = *order.PlanID
 	}
 	if info.PlanName == "" && order.PlanID != nil {
 		info.PlanName = fmt.Sprintf("plan-%d", *order.PlanID)
@@ -212,8 +220,17 @@ func buildPlanInfo(order repository.Order, items []repository.OrderItem) (planIn
 			info.DevicesLimit = value
 		}
 	}
+	if info.PlanSnapshot == nil && len(order.PlanSnapshot) > 0 {
+		info.PlanSnapshot = ClonePlanSnapshot(order.PlanSnapshot)
+	}
+	if info.PlanSnapshot == nil && info.PlanID != 0 {
+		info.PlanSnapshot = map[string]any{
+			"id":   info.PlanID,
+			"name": info.PlanName,
+		}
+	}
 
-	if info.PlanName == "" {
+	if info.PlanName == "" || info.PlanID == 0 {
 		return planInfo{}, repository.ErrInvalidArgument
 	}
 	if info.Quantity <= 0 {
@@ -261,7 +278,7 @@ func loadTemplates(ctx context.Context, repos *repository.Repositories) (uint64,
 	return defaultID, available, nil
 }
 
-func findEligibleSubscription(ctx context.Context, repos *repository.Repositories, userID uint64, planName string) (repository.Subscription, bool, error) {
+func findEligibleSubscription(ctx context.Context, repos *repository.Repositories, userID uint64, planID uint64, planName string) (repository.Subscription, bool, error) {
 	subs, _, err := repos.Subscription.ListByUser(ctx, userID, repository.ListSubscriptionsOptions{
 		PerPage: 100,
 		Sort:    "updated_at",
@@ -274,7 +291,10 @@ func findEligibleSubscription(ctx context.Context, repos *repository.Repositorie
 		if !isEligible(subs[i]) {
 			continue
 		}
-		if planName != "" && strings.EqualFold(subs[i].PlanName, planName) {
+		if planID > 0 && subs[i].PlanID == planID {
+			return subs[i], true, nil
+		}
+		if planID == 0 && planName != "" && strings.EqualFold(subs[i].PlanName, planName) {
 			return subs[i], true, nil
 		}
 	}
@@ -379,6 +399,15 @@ func renewSubscription(ctx context.Context, repos *repository.Repositories, sub 
 	if info.PlanName != "" {
 		planName = info.PlanName
 	}
+	planID := sub.PlanID
+	if info.PlanID != 0 {
+		planID = info.PlanID
+	}
+
+	planSnapshot := sub.PlanSnapshot
+	if info.PlanSnapshot != nil {
+		planSnapshot = ClonePlanSnapshot(info.PlanSnapshot)
+	}
 
 	devicesLimit := sub.DevicesLimit
 	if info.DevicesLimit > 0 {
@@ -392,6 +421,8 @@ func renewSubscription(ctx context.Context, repos *repository.Repositories, sub 
 		Status:               &status,
 		Name:                 &name,
 		PlanName:             &planName,
+		PlanID:               &planID,
+		PlanSnapshot:         &planSnapshot,
 		TemplateID:           &templateID,
 		AvailableTemplateIDs: &availableTemplates,
 		ExpiresAt:            &expiresAt,
@@ -401,7 +432,16 @@ func renewSubscription(ctx context.Context, repos *repository.Repositories, sub 
 		LastRefreshedAt:      &now,
 	}
 
-	return repos.Subscription.Update(ctx, sub.ID, input)
+	updated, err := repos.Subscription.Update(ctx, sub.ID, input)
+	if err != nil {
+		return repository.Subscription{}, err
+	}
+	if IsSubscriptionEffective(updated, now) {
+		if err := repos.Subscription.DisableOtherActive(ctx, updated.UserID, updated.ID); err != nil {
+			return repository.Subscription{}, err
+		}
+	}
+	return updated, nil
 }
 
 func createSubscription(ctx context.Context, repos *repository.Repositories, userID uint64, info planInfo, paidAt, now time.Time, defaultTemplateID uint64, available []uint64) (repository.Subscription, error) {
@@ -429,6 +469,8 @@ func createSubscription(ctx context.Context, repos *repository.Repositories, use
 		UserID:               userID,
 		Name:                 strings.TrimSpace(info.Name),
 		PlanName:             strings.TrimSpace(info.PlanName),
+		PlanID:               info.PlanID,
+		PlanSnapshot:         ClonePlanSnapshot(info.PlanSnapshot),
 		Status:               "active",
 		TemplateID:           defaultTemplateID,
 		AvailableTemplateIDs: append([]uint64(nil), available...),
@@ -449,7 +491,16 @@ func createSubscription(ctx context.Context, repos *repository.Repositories, use
 		subscription.PlanName = subscription.Name
 	}
 
-	return repos.Subscription.Create(ctx, subscription)
+	created, err := repos.Subscription.Create(ctx, subscription)
+	if err != nil {
+		return repository.Subscription{}, err
+	}
+	if IsSubscriptionEffective(created, now) {
+		if err := repos.Subscription.DisableOtherActive(ctx, created.UserID, created.ID); err != nil {
+			return repository.Subscription{}, err
+		}
+	}
+	return created, nil
 }
 
 func generateToken() (string, error) {

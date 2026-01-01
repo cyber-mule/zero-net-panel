@@ -2,10 +2,14 @@ package nodes
 
 import (
 	"context"
+	"errors"
+	"strings"
 
 	"github.com/zeromicro/go-zero/core/logx"
 
+	subscriptionutil "github.com/zero-net-panel/zero-net-panel/internal/logic/subscriptionutil"
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
+	"github.com/zero-net-panel/zero-net-panel/internal/security"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
 )
@@ -28,6 +32,37 @@ func NewListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *ListLogic {
 
 // List 返回用户可见节点状态。
 func (l *ListLogic) List(req *types.UserNodeStatusListRequest) (*types.UserNodeStatusListResponse, error) {
+	user, ok := security.UserFromContext(l.ctx)
+	if !ok {
+		return nil, repository.ErrForbidden
+	}
+
+	sub, err := l.svcCtx.Repositories.Subscription.GetActiveByUser(l.ctx, user.ID)
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return emptyNodeResponse(req.Page, req.PerPage), nil
+		}
+		return nil, err
+	}
+
+	bindings, err := subscriptionutil.LoadSubscriptionBindings(l.ctx, l.svcCtx.Repositories, sub)
+	if err != nil {
+		return nil, err
+	}
+
+	filterProtocol := strings.ToLower(strings.TrimSpace(req.Protocol))
+	bindingsByNode := make(map[uint64][]repository.ProtocolBinding)
+	for _, binding := range bindings {
+		if filterProtocol != "" && !strings.EqualFold(binding.Protocol, filterProtocol) {
+			continue
+		}
+		bindingsByNode[binding.NodeID] = append(bindingsByNode[binding.NodeID], binding)
+	}
+
+	if len(bindingsByNode) == 0 {
+		return emptyNodeResponse(req.Page, req.PerPage), nil
+	}
+
 	opts := repository.ListNodesOptions{
 		Page:     req.Page,
 		PerPage:  req.PerPage,
@@ -35,25 +70,15 @@ func (l *ListLogic) List(req *types.UserNodeStatusListRequest) (*types.UserNodeS
 		Protocol: req.Protocol,
 	}
 
+	nodeIDs := make([]uint64, 0, len(bindingsByNode))
+	for nodeID := range bindingsByNode {
+		nodeIDs = append(nodeIDs, nodeID)
+	}
+	opts.NodeIDs = nodeIDs
+
 	nodes, total, err := l.svcCtx.Repositories.Node.List(l.ctx, opts)
 	if err != nil {
 		return nil, err
-	}
-
-	nodeIDs := make([]uint64, 0, len(nodes))
-	for _, node := range nodes {
-		nodeIDs = append(nodeIDs, node.ID)
-	}
-
-	bindingsByNode := make(map[uint64][]repository.ProtocolBinding, len(nodes))
-	if len(nodeIDs) > 0 {
-		bindings, err := l.svcCtx.Repositories.ProtocolBinding.ListByNodeIDs(l.ctx, nodeIDs)
-		if err != nil {
-			return nil, err
-		}
-		for _, binding := range bindings {
-			bindingsByNode[binding.NodeID] = append(bindingsByNode[binding.NodeID], binding)
-		}
 	}
 
 	result := make([]types.UserNodeStatusSummary, 0, len(nodes))
@@ -78,4 +103,18 @@ func (l *ListLogic) List(req *types.UserNodeStatusListRequest) (*types.UserNodeS
 		Nodes:      result,
 		Pagination: pagination,
 	}, nil
+}
+
+func emptyNodeResponse(page, perPage int) *types.UserNodeStatusListResponse {
+	page, perPage = normalizePage(page, perPage)
+	return &types.UserNodeStatusListResponse{
+		Nodes: []types.UserNodeStatusSummary{},
+		Pagination: types.PaginationMeta{
+			Page:       page,
+			PerPage:    perPage,
+			TotalCount: 0,
+			HasNext:    false,
+			HasPrev:    page > 1,
+		},
+	}
 }

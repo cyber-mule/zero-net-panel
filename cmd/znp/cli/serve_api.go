@@ -15,6 +15,7 @@ import (
 
 	"github.com/zero-net-panel/zero-net-panel/internal/config"
 	"github.com/zero-net-panel/zero-net-panel/internal/handler"
+	publicsubscriptions "github.com/zero-net-panel/zero-net-panel/internal/handler/public/subscriptions"
 	kernellogic "github.com/zero-net-panel/zero-net-panel/internal/logic/kernel"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 )
@@ -124,6 +125,12 @@ func runHTTPServer(ctx context.Context, cfg config.Config, svcCtx *svc.ServiceCo
 	}
 
 	handler.RegisterHandlers(server, svcCtx)
+
+	server.AddRoute(rest.Route{
+		Method:  http.MethodGet,
+		Path:    "/api/v1/subscriptions/:token",
+		Handler: publicsubscriptions.PublicSubscriptionDownloadHandler(svcCtx),
+	})
 
 	fmt.Printf("Starting HTTP API at %s:%d...\n", cfg.Host, cfg.Port)
 

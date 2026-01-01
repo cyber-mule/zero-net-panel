@@ -35,12 +35,13 @@ func (l *ListLogic) List(req *types.UserListSubscriptionsRequest) (*types.UserSu
 	}
 
 	opts := repository.ListSubscriptionsOptions{
-		Page:      req.Page,
-		PerPage:   req.PerPage,
-		Sort:      req.Sort,
-		Direction: req.Direction,
-		Query:     req.Query,
-		Status:    req.Status,
+		Page:          req.Page,
+		PerPage:       req.PerPage,
+		Sort:          req.Sort,
+		Direction:     req.Direction,
+		Query:         req.Query,
+		Status:        req.Status,
+		ExcludeStatus: []string{"disabled"},
 	}
 
 	subs, total, err := l.svcCtx.Repositories.Subscription.ListByUser(l.ctx, user.ID, opts)

@@ -38,6 +38,7 @@ type UserSubscriptionSummary {
 	id                     uint64
 	name                   string
 	plan_name              string
+	plan_id                uint64
 	status                 string
 	template_id            uint64
 	available_template_ids []uint64

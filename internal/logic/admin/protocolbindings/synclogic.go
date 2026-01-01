@@ -118,12 +118,15 @@ func (l *SyncLogic) syncBinding(binding repository.ProtocolBinding) types.Protoc
 	profile := kernel.NodeProfile{
 		ID:          binding.KernelID,
 		Role:        binding.Role,
-		Protocol:    binding.ProtocolConfig.Protocol,
+		Protocol:    normalizeBindingProtocol(binding),
 		Tags:        mergeTags(binding.ProtocolConfig.Tags, binding.Tags),
 		Description: firstNonEmpty(binding.Description, binding.ProtocolConfig.Description),
-		Profile:     binding.ProtocolConfig.Profile,
+		Profile:     cloneBindingProfile(binding.Profile),
 	}
-	if profile.Profile == nil {
+	if len(profile.Profile) == 0 {
+		profile.Profile = cloneBindingProfile(binding.ProtocolConfig.Profile)
+	}
+	if len(profile.Profile) == 0 {
 		profile.Profile = map[string]any{}
 	}
 

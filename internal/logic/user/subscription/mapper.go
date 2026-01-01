@@ -10,6 +10,7 @@ func toUserSummary(sub repository.Subscription) types.UserSubscriptionSummary {
 		ID:                   sub.ID,
 		Name:                 sub.Name,
 		PlanName:             sub.PlanName,
+		PlanID:               sub.PlanID,
 		Status:               sub.Status,
 		TemplateID:           sub.TemplateID,
 		AvailableTemplateIDs: append([]uint64(nil), sub.AvailableTemplateIDs...),
