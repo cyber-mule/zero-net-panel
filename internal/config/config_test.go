@@ -73,3 +73,19 @@ func TestConfigNormalizeSiteDefaults(t *testing.T) {
 		t.Fatalf("expected trimmed logo url, got %q", cfg.Site.LogoURL)
 	}
 }
+
+func TestCORSConfigNormalize(t *testing.T) {
+	cfg := CORSConfig{
+		Enabled:      true,
+		AllowOrigins: []string{" http://localhost:5173 ", "", "http://localhost:5173"},
+		AllowHeaders: []string{" X-ZNP-API-Key ", "x-znp-api-key", "Authorization"},
+	}
+	cfg.Normalize()
+
+	if len(cfg.AllowOrigins) != 1 || cfg.AllowOrigins[0] != "http://localhost:5173" {
+		t.Fatalf("expected trimmed origin list, got %#v", cfg.AllowOrigins)
+	}
+	if len(cfg.AllowHeaders) != 2 {
+		t.Fatalf("expected de-duplicated headers, got %#v", cfg.AllowHeaders)
+	}
+}

@@ -10,8 +10,8 @@ import (
 
 // PlanProtocolBinding links a plan to protocol bindings.
 type PlanProtocolBinding struct {
-	PlanID    uint64    `gorm:"primaryKey;autoIncrement:false;index"`
-	BindingID uint64    `gorm:"primaryKey;autoIncrement:false;index"`
+	PlanID    uint64 `gorm:"primaryKey;autoIncrement:false;index"`
+	BindingID uint64 `gorm:"primaryKey;autoIncrement:false;index"`
 	CreatedAt time.Time
 }
 
@@ -23,6 +23,7 @@ type PlanProtocolBindingRepository interface {
 	ListBindingIDs(ctx context.Context, planID uint64) ([]uint64, error)
 	ListBindingsByPlanIDs(ctx context.Context, planIDs []uint64) (map[uint64][]uint64, error)
 	Replace(ctx context.Context, planID uint64, bindingIDs []uint64) error
+	DeleteByBindingIDs(ctx context.Context, bindingIDs []uint64) error
 }
 
 type planProtocolBindingRepository struct {
@@ -112,4 +113,17 @@ func (r *planProtocolBindingRepository) Replace(ctx context.Context, planID uint
 
 		return tx.Create(&rows).Error
 	})
+}
+
+func (r *planProtocolBindingRepository) DeleteByBindingIDs(ctx context.Context, bindingIDs []uint64) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if len(bindingIDs) == 0 {
+		return nil
+	}
+
+	return r.db.WithContext(ctx).
+		Where("binding_id IN ?", bindingIDs).
+		Delete(&PlanProtocolBinding{}).Error
 }

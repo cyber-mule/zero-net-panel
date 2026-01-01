@@ -22,6 +22,11 @@
 - 管理端：`${API_BASE_URL}/api/v1/${ADMIN_PREFIX}`
 - 用户端：`${API_BASE_URL}/api/v1/user`
 
+跨域提示：
+
+- 前后端分离部署时，需要在后端配置 `CORS` 允许前端域名访问。
+- 推荐在 `etc/znp-*.yaml` 中配置 `CORS.AllowOrigins` 与 `CORS.AllowHeaders`。
+
 ## 3. API 客户端设计
 
 推荐封装统一的请求层：

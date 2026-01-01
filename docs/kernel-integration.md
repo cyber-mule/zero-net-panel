@@ -88,6 +88,23 @@
 若内核无法推送事件，可通过 `Kernel.StatusPollInterval` 启用状态轮询，面板会定期调用
 `GET /v1/status` 同步协议节点健康度。
 
+为了避免内核不可用时刷屏，支持失败退避：
+
+```yaml
+Kernel:
+  StatusPollInterval: 30s
+  StatusPollBackoff:
+    Enabled: true
+    MaxInterval: 5m
+    Multiplier: 2
+    Jitter: 0.2
+```
+
+- `Enabled=true` 时，连续失败会按倍率退避，成功后恢复基准间隔
+- `MaxInterval` 为退避上限
+- `Multiplier` 为退避倍率
+- `Jitter` 为抖动比例（0~1）
+
 ## 维护约定
 
 - 内核对外接口变更时需同步更新 `core.yaml`，并在 PR 中注明影响范围与兼容策略。

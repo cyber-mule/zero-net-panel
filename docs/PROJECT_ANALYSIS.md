@@ -482,6 +482,11 @@ Admin:
 Kernel:
   DefaultProtocol: http
   StatusPollInterval: 30s
+  StatusPollBackoff:
+    Enabled: true
+    MaxInterval: 5m
+    Multiplier: 2
+    Jitter: 0.2
   HTTP:
     BaseURL: "http://kernel.local"
     Token: ""
@@ -490,6 +495,18 @@ Kernel:
     Endpoint: ""
     TLSCert: ""
     Timeout: 5s
+
+CORS:
+  Enabled: true
+  AllowOrigins:
+    - "http://localhost:5173"
+  AllowHeaders:
+    - X-ZNP-API-Key
+    - X-ZNP-Timestamp
+    - X-ZNP-Nonce
+    - X-ZNP-Signature
+    - X-ZNP-Encrypted
+    - X-ZNP-IV
 
 Metrics:
   Enable: true

@@ -4,7 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
+	"math/rand"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -92,26 +95,93 @@ func RunServices(ctx context.Context, cfg config.Config) error {
 }
 
 func runKernelStatusPoller(ctx context.Context, svcCtx *svc.ServiceContext, interval time.Duration) {
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
-
 	logger := logx.WithContext(ctx)
+	backoff := newKernelStatusBackoff(interval, svcCtx.Config.Kernel.StatusPollBackoff)
+	nextDelay := interval
 
 	for {
 		if err := kernellogic.SyncStatus(ctx, svcCtx); err != nil {
-			logger.Errorf("kernel status poll failed: %v", err)
+			nextDelay = backoff.NextDelay()
+			logger.Errorf("kernel status poll failed: %v (next=%s)", err, nextDelay)
+		} else {
+			backoff.Reset()
+			nextDelay = interval
 		}
 
+		timer := time.NewTimer(nextDelay)
 		select {
 		case <-ctx.Done():
+			timer.Stop()
 			return
-		case <-ticker.C:
+		case <-timer.C:
 		}
 	}
 }
 
+type kernelStatusBackoff struct {
+	enabled    bool
+	base       time.Duration
+	max        time.Duration
+	multiplier float64
+	jitter     float64
+	failures   int
+	rng        *rand.Rand
+}
+
+func newKernelStatusBackoff(base time.Duration, cfg config.KernelBackoff) *kernelStatusBackoff {
+	b := &kernelStatusBackoff{
+		enabled:    cfg.Enabled,
+		base:       base,
+		max:        cfg.MaxInterval,
+		multiplier: cfg.Multiplier,
+		jitter:     cfg.Jitter,
+	}
+	if b.enabled {
+		b.rng = rand.New(rand.NewSource(time.Now().UnixNano()))
+	}
+	if b.max <= 0 {
+		b.max = base
+	}
+	if b.multiplier <= 1 {
+		b.multiplier = 2
+	}
+	if b.jitter < 0 {
+		b.jitter = 0
+	}
+	if b.jitter > 1 {
+		b.jitter = 1
+	}
+	if b.max < b.base {
+		b.max = b.base
+	}
+	return b
+}
+
+func (b *kernelStatusBackoff) NextDelay() time.Duration {
+	if !b.enabled {
+		return b.base
+	}
+	b.failures++
+	delay := float64(b.base) * math.Pow(b.multiplier, float64(b.failures))
+	if delay > float64(b.max) {
+		delay = float64(b.max)
+	}
+	if b.jitter > 0 && b.rng != nil {
+		jitter := (b.rng.Float64()*2 - 1) * b.jitter
+		delay = delay * (1 + jitter)
+	}
+	if delay < float64(b.base) {
+		delay = float64(b.base)
+	}
+	return time.Duration(delay)
+}
+
+func (b *kernelStatusBackoff) Reset() {
+	b.failures = 0
+}
+
 func runHTTPServer(ctx context.Context, cfg config.Config, svcCtx *svc.ServiceContext) error {
-	server := rest.MustNewServer(cfg.RestConf)
+	server := rest.MustNewServer(cfg.RestConf, corsOptions(cfg.CORS)...)
 	defer server.Stop()
 
 	if cfg.Metrics.Enabled() && !cfg.Metrics.Standalone() {
@@ -147,6 +217,27 @@ func runHTTPServer(ctx context.Context, cfg config.Config, svcCtx *svc.ServiceCo
 		return nil
 	case <-done:
 		return nil
+	}
+}
+
+func corsOptions(cfg config.CORSConfig) []rest.RunOption {
+	if !cfg.Enabled {
+		return nil
+	}
+
+	origins := cfg.AllowOrigins
+	if len(origins) == 0 {
+		origins = []string{"*"}
+	}
+	if len(cfg.AllowHeaders) == 0 {
+		return []rest.RunOption{rest.WithCors(origins...)}
+	}
+
+	headers := append([]string(nil), cfg.AllowHeaders...)
+	return []rest.RunOption{
+		rest.WithCustomCors(func(header http.Header) {
+			header.Add("Access-Control-Allow-Headers", strings.Join(headers, ", "))
+		}, nil, origins...),
 	}
 }
 

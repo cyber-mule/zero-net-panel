@@ -142,6 +142,12 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Handler: adminnodes.AdminUpdateNodeHandler(serverCtx),
 			},
 			{
+				// Delete node
+				Method:  http.MethodDelete,
+				Path:    "/admin/nodes/:id",
+				Handler: adminnodes.AdminDeleteNodeHandler(serverCtx),
+			},
+			{
 				// Disable node
 				Method:  http.MethodPost,
 				Path:    "/admin/nodes/:id/disable",

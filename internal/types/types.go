@@ -211,6 +211,11 @@ type AdminDisableNodeRequest struct {
 	NodeID uint64 `path:"id"`
 }
 
+// AdminDeleteNodeRequest 管理端删除节点请求。
+type AdminDeleteNodeRequest struct {
+	NodeID uint64 `path:"id"`
+}
+
 // AdminNodeListResponse 节点列表响应。
 type AdminNodeListResponse struct {
 	Nodes      []NodeSummary  `json:"nodes"`

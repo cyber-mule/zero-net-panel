@@ -14,17 +14,18 @@ import (
 
 // Node 表示节点元信息。
 type Node struct {
-	ID           uint64    `gorm:"primaryKey"`
-	Name         string    `gorm:"size:255;uniqueIndex"`
-	Region       string    `gorm:"size:128"`
-	Country      string    `gorm:"size:8"`
-	ISP          string    `gorm:"size:128"`
-	Status       string    `gorm:"size:32"`
-	Tags         []string  `gorm:"serializer:json"`
-	Protocols    []string  `gorm:"serializer:json"`
-	CapacityMbps int       `gorm:"column:capacity_mbps"`
-	Description  string    `gorm:"type:text"`
-	LastSyncedAt time.Time `gorm:"column:last_synced_at"`
+	ID           uint64         `gorm:"primaryKey"`
+	Name         string         `gorm:"size:255;uniqueIndex"`
+	Region       string         `gorm:"size:128"`
+	Country      string         `gorm:"size:8"`
+	ISP          string         `gorm:"size:128"`
+	Status       string         `gorm:"size:32"`
+	Tags         []string       `gorm:"serializer:json"`
+	Protocols    []string       `gorm:"serializer:json"`
+	CapacityMbps int            `gorm:"column:capacity_mbps"`
+	Description  string         `gorm:"type:text"`
+	LastSyncedAt time.Time      `gorm:"column:last_synced_at"`
+	DeletedAt    gorm.DeletedAt `gorm:"index"`
 	UpdatedAt    time.Time
 	CreatedAt    time.Time
 }
@@ -66,6 +67,7 @@ type NodeRepository interface {
 	Get(ctx context.Context, nodeID uint64) (Node, error)
 	Create(ctx context.Context, node Node) (Node, error)
 	Update(ctx context.Context, nodeID uint64, input UpdateNodeInput) (Node, error)
+	Delete(ctx context.Context, nodeID uint64) error
 	GetKernels(ctx context.Context, nodeID uint64) ([]NodeKernel, error)
 	RecordKernelSync(ctx context.Context, nodeID uint64, kernel NodeKernel) (NodeKernel, error)
 	UpsertKernel(ctx context.Context, nodeID uint64, input UpsertNodeKernelInput) (NodeKernel, error)
@@ -220,6 +222,25 @@ func (r *nodeRepository) Update(ctx context.Context, nodeID uint64, input Update
 	}
 
 	return r.Get(ctx, nodeID)
+}
+
+func (r *nodeRepository) Delete(ctx context.Context, nodeID uint64) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if nodeID == 0 {
+		return ErrInvalidArgument
+	}
+
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("node_id = ?", nodeID).Delete(&NodeKernel{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Delete(&Node{}, nodeID).Error; err != nil {
+			return translateError(err)
+		}
+		return nil
+	})
 }
 
 // UpdateNodeInput defines mutable node fields.

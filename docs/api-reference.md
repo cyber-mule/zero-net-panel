@@ -426,9 +426,15 @@ NodeSummary 字段：
 }
 ```
 
+#### DELETE /api/v1/{adminPrefix}/nodes/{id}
+
+- 说明：删除节点（软删除，同时清理关联协议绑定与内核记录）
+- 路径参数：`id` uint64
+- 响应：`204 No Content`
+
 #### POST /api/v1/{adminPrefix}/nodes/{id}/disable
 
-- 说明：禁用节点（软删除）
+- 说明：禁用节点
 - 路径参数：`id` uint64
 - 响应：
   - `node` NodeSummary

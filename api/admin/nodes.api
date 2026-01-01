@@ -20,6 +20,10 @@ service znp {
 	@handler AdminUpdateNode
 	patch /admin/nodes/:id (AdminUpdateNodeRequest) returns (AdminNodeResponse)
 
+	@doc "Delete node (soft delete)"
+	@handler AdminDeleteNode
+	delete /admin/nodes/:id (AdminDeleteNodeRequest)
+
 	@doc "Disable node"
 	@handler AdminDisableNode
 	post /admin/nodes/:id/disable (AdminDisableNodeRequest) returns (AdminNodeResponse)
@@ -95,6 +99,10 @@ type AdminDisableNodeRequest {
 	id uint64
 }
 
+type AdminDeleteNodeRequest {
+	id uint64
+}
+
 type AdminNodeListResponse {
 	nodes      []NodeSummary
 	pagination PaginationMeta
@@ -145,4 +153,3 @@ type AdminSyncNodeKernelResponse {
 	synced_at int64
 	message   string
 }
-

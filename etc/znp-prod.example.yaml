@@ -36,6 +36,11 @@ Cache:
 Kernel:
   DefaultProtocol: http
   StatusPollInterval: 30s
+  StatusPollBackoff:
+    Enabled: true
+    MaxInterval: 5m
+    Multiplier: 2
+    Jitter: 0.2
   HTTP:
     BaseURL: "https://kernel.example.com"  # 必填：内核 HTTP 入口
     Token: "<token>"                       # 必填：内核访问令牌
@@ -44,6 +49,18 @@ Kernel:
     Endpoint: ""                           # 如需 gRPC 同步则填写
     TLSCert: ""
     Timeout: 5s
+
+CORS:
+  Enabled: true
+  AllowOrigins:
+    - "https://panel.example.com"
+  AllowHeaders:
+    - X-ZNP-API-Key
+    - X-ZNP-Timestamp
+    - X-ZNP-Nonce
+    - X-ZNP-Signature
+    - X-ZNP-Encrypted
+    - X-ZNP-IV
 
 Auth:
   AccessSecret: "<access-secret>"          # 必填：强随机字符串

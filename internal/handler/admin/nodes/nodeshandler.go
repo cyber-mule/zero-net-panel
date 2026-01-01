@@ -92,6 +92,25 @@ func AdminDisableNodeHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	}
 }
 
+// AdminDeleteNodeHandler deletes a node.
+func AdminDeleteNodeHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req types.AdminDeleteNodeRequest
+		if err := httpx.Parse(r, &req); err != nil {
+			handlercommon.RespondError(w, r, repository.ErrInvalidArgument)
+			return
+		}
+
+		logic := adminnodes.NewDeleteLogic(r.Context(), svcCtx)
+		if err := logic.Delete(&req); err != nil {
+			handlercommon.RespondError(w, r, err)
+			return
+		}
+
+		w.WriteHeader(http.StatusNoContent)
+	}
+}
+
 // AdminNodeKernelsHandler shows kernel status for a specific node.
 func AdminNodeKernelsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

@@ -521,6 +521,22 @@ var migrationRegistry = []Migration{
 			return nil
 		},
 	},
+	{
+		Version: 2025052301,
+		Name:    "node-soft-delete",
+		Up: func(ctx context.Context, db *gorm.DB) error {
+			return db.WithContext(ctx).AutoMigrate(&repository.Node{})
+		},
+		Down: func(ctx context.Context, db *gorm.DB) error {
+			migrator := db.WithContext(ctx).Migrator()
+			if migrator.HasColumn(&repository.Node{}, "deleted_at") {
+				if err := migrator.DropColumn(&repository.Node{}, "deleted_at"); err != nil {
+					return err
+				}
+			}
+			return nil
+		},
+	},
 }
 
 func init() {

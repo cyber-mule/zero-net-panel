@@ -18,6 +18,7 @@ type Config struct {
 	Database    database.Config  `json:"database" yaml:"Database"`
 	Cache       cache.Config     `json:"cache" yaml:"Cache"`
 	Kernel      KernelConfig     `json:"kernel" yaml:"Kernel"`
+	CORS        CORSConfig       `json:"cors" yaml:"CORS"`
 	Auth        AuthConfig       `json:"auth" yaml:"Auth"`
 	Credentials CredentialConfig `json:"credentials" yaml:"Credentials"`
 	Metrics     MetricsConfig    `json:"metrics" yaml:"Metrics"`
@@ -42,6 +43,7 @@ type KernelConfig struct {
 	HTTP               KernelHTTPConfig `json:"http" yaml:"HTTP"`
 	GRPC               KernelGRPCConfig `json:"grpc" yaml:"GRPC"`
 	StatusPollInterval time.Duration    `json:"statusPollInterval" yaml:"StatusPollInterval"`
+	StatusPollBackoff  KernelBackoff    `json:"statusPollBackoff" yaml:"StatusPollBackoff"`
 }
 
 type KernelHTTPConfig struct {
@@ -61,6 +63,57 @@ func (k *KernelConfig) Normalize() {
 	k.DefaultProtocol = strings.TrimSpace(k.DefaultProtocol)
 	if k.StatusPollInterval < 0 {
 		k.StatusPollInterval = 0
+	}
+	k.StatusPollBackoff.Normalize(k.StatusPollInterval)
+}
+
+// CORSConfig configures cross-origin access for the HTTP API.
+type CORSConfig struct {
+	Enabled      bool     `json:"enabled" yaml:"Enabled"`
+	AllowOrigins []string `json:"allowOrigins" yaml:"AllowOrigins"`
+	AllowHeaders []string `json:"allowHeaders" yaml:"AllowHeaders"`
+}
+
+// Normalize applies defaults for CORS config.
+func (c *CORSConfig) Normalize() {
+	c.AllowOrigins = normalizeStringList(c.AllowOrigins, false)
+	c.AllowHeaders = normalizeStringList(c.AllowHeaders, true)
+	if c.Enabled && len(c.AllowOrigins) == 0 {
+		c.AllowOrigins = []string{"*"}
+	}
+}
+
+// KernelBackoff defines retry backoff behavior for kernel status polling.
+type KernelBackoff struct {
+	Enabled     bool          `json:"enabled" yaml:"Enabled"`
+	MaxInterval time.Duration `json:"maxInterval" yaml:"MaxInterval"`
+	Multiplier  float64       `json:"multiplier" yaml:"Multiplier"`
+	Jitter      float64       `json:"jitter" yaml:"Jitter"`
+}
+
+// Normalize applies defaults for backoff settings.
+func (b *KernelBackoff) Normalize(base time.Duration) {
+	if base <= 0 {
+		b.Enabled = false
+		return
+	}
+	if !b.Enabled {
+		return
+	}
+	if b.Multiplier <= 1 {
+		b.Multiplier = 2
+	}
+	if b.Jitter < 0 {
+		b.Jitter = 0
+	}
+	if b.Jitter > 1 {
+		b.Jitter = 1
+	}
+	if b.MaxInterval <= 0 {
+		b.MaxInterval = base * 8
+	}
+	if b.MaxInterval < base {
+		b.MaxInterval = base
 	}
 }
 
@@ -437,6 +490,7 @@ func (c *Config) Normalize() {
 		c.Site.Name = c.Project.Name
 	}
 	c.Kernel.Normalize()
+	c.CORS.Normalize()
 	c.Auth.Normalize()
 	c.Credentials.Normalize()
 	c.Metrics.Normalize()
@@ -449,4 +503,27 @@ func (c *Config) Normalize() {
 
 func boolPtr(v bool) *bool {
 	return &v
+}
+
+func normalizeStringList(values []string, lower bool) []string {
+	if len(values) == 0 {
+		return nil
+	}
+	seen := make(map[string]struct{}, len(values))
+	result := make([]string, 0, len(values))
+	for _, value := range values {
+		trimmed := strings.TrimSpace(value)
+		if trimmed == "" {
+			continue
+		}
+		if lower {
+			trimmed = strings.ToLower(trimmed)
+		}
+		if _, ok := seen[trimmed]; ok {
+			continue
+		}
+		seen[trimmed] = struct{}{}
+		result = append(result, trimmed)
+	}
+	return result
 }
