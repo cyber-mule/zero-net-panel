@@ -1,16 +1,19 @@
 package cli
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 
 	"github.com/zero-net-panel/zero-net-panel/internal/bootstrap"
 )
 
 type serveOptions struct {
-	autoMigrate   bool
-	seedDemo      bool
-	disableGRPC   bool
-	targetVersion uint64
+	autoMigrate      bool
+	seedDemo         bool
+	disableGRPC      bool
+	targetVersion    uint64
+	targetVersionRaw string
 }
 
 func NewServeCommand(opts *GlobalOptions) *cobra.Command {
@@ -30,6 +33,12 @@ func NewServeCommand(opts *GlobalOptions) *cobra.Command {
 			}
 
 			if serveOpts.autoMigrate || serveOpts.seedDemo {
+				target, err := parseMigrationTarget(serveOpts.targetVersionRaw)
+				if err != nil {
+					return fmt.Errorf("invalid --migrate-to value: %w", err)
+				}
+				serveOpts.targetVersion = target
+
 				if _, err := bootstrap.PrepareDatabase(cmd.Context(), cfg, bootstrap.DatabaseOptions{
 					AutoMigrate:   serveOpts.autoMigrate,
 					SeedDemo:      serveOpts.seedDemo,
@@ -46,7 +55,7 @@ func NewServeCommand(opts *GlobalOptions) *cobra.Command {
 	cmd.Flags().BoolVar(&serveOpts.autoMigrate, "auto-migrate", serveOpts.autoMigrate, "Run database migrations before starting services")
 	cmd.Flags().BoolVar(&serveOpts.seedDemo, "seed-demo", serveOpts.seedDemo, "Seed demonstration data after migrations")
 	cmd.Flags().BoolVar(&serveOpts.disableGRPC, "disable-grpc", serveOpts.disableGRPC, "Disable the integrated gRPC server")
-	cmd.Flags().Uint64Var(&serveOpts.targetVersion, "migrate-to", serveOpts.targetVersion, "Apply migrations up to the specified version before starting services (0 = latest)")
+	cmd.Flags().StringVar(&serveOpts.targetVersionRaw, "migrate-to", "0", "Apply migrations up to the specified version before starting services (0/latest = latest)")
 
 	return cmd
 }

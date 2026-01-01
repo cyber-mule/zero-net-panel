@@ -14,11 +14,18 @@ func NewMigrateCommand(opts *GlobalOptions) *cobra.Command {
 	var seedDemo bool
 	var rollback bool
 	var targetVersion uint64
+	var targetVersionRaw string
 
 	cmd := &cobra.Command{
 		Use:   "migrate",
 		Short: "Run database migrations, rollbacks, and optional seed tasks",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			target, err := parseMigrationTarget(targetVersionRaw)
+			if err != nil {
+				return fmt.Errorf("invalid --to value: %w", err)
+			}
+			targetVersion = target
+
 			cfg, err := loadConfig(opts.ConfigFile)
 			if err != nil {
 				return err
@@ -86,7 +93,7 @@ func NewMigrateCommand(opts *GlobalOptions) *cobra.Command {
 	cmd.Flags().BoolVar(&apply, "apply", apply, "Apply database schema migrations")
 	cmd.Flags().BoolVar(&seedDemo, "seed-demo", seedDemo, "Seed demonstration data after migrations")
 	cmd.Flags().BoolVar(&rollback, "rollback", rollback, "Rollback schema to the specified version (requires --to)")
-	cmd.Flags().Uint64Var(&targetVersion, "to", targetVersion, "Run migrations up to the specified version (0 = latest)")
+	cmd.Flags().StringVar(&targetVersionRaw, "to", "0", "Run migrations up to the specified version (0/latest = latest)")
 
 	return cmd
 }
