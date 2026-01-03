@@ -177,22 +177,24 @@ func normalizeBindingContext(bindings []repository.ProtocolBinding) []map[string
 		address := selectBindingAddress(binding)
 		host, port := splitHostPort(address)
 		result = append(result, map[string]any{
-			"id":            binding.ID,
-			"binding_id":    binding.ID,
-			"kernel_id":     binding.KernelID,
-			"protocol":      binding.Protocol,
-			"role":          binding.Role,
-			"hostname":      host,
-			"port":          port,
-			"listen":        binding.Listen,
-			"connect":       binding.Connect,
-			"node_id":       binding.NodeID,
-			"node_name":     binding.Node.Name,
-			"region":        binding.Node.Region,
-			"country":       binding.Node.Country,
-			"status":        binding.Status,
-			"health_status": binding.HealthStatus,
-			"updated_at":    binding.UpdatedAt.Format(time.RFC3339),
+			"id":             binding.ID,
+			"binding_id":     binding.ID,
+			"kernel_id":      binding.KernelID,
+			"protocol":       binding.Protocol,
+			"role":           binding.Role,
+			"hostname":       host,
+			"port":           port,
+			"listen":         binding.Listen,
+			"connect":        binding.Connect,
+			"access_address": binding.Node.AccessAddress,
+			"access_port":    binding.AccessPort,
+			"node_id":        binding.NodeID,
+			"node_name":      binding.Node.Name,
+			"region":         binding.Node.Region,
+			"country":        binding.Node.Country,
+			"status":         binding.Status,
+			"health_status":  binding.HealthStatus,
+			"updated_at":     binding.UpdatedAt.Format(time.RFC3339),
 		})
 	}
 	return result
@@ -218,6 +220,9 @@ func maxInt64(a, b int64) int64 {
 }
 
 func selectBindingAddress(binding repository.ProtocolBinding) string {
+	if address := strings.TrimSpace(binding.Node.AccessAddress); address != "" && binding.AccessPort > 0 {
+		return net.JoinHostPort(address, strconv.Itoa(binding.AccessPort))
+	}
 	if strings.ToLower(binding.Role) == "listener" && binding.Listen != "" {
 		return binding.Listen
 	}

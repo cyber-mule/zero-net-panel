@@ -68,8 +68,9 @@ type AdminCreateProtocolBindingRequest struct {
 	Role string 
 	Listen string `form:"listen,optional" json:"listen,optional"`
 	Connect string `form:"connect,optional" json:"connect,optional"`
+	Access_port int `form:"access_port,optional" json:"access_port,optional"`
 	Status string `form:"status,optional" json:"status,optional"`
-	Kernel_id string `form:"kernel_id,optional" json:"kernel_id,optional"`
+	Kernel_id string `form:"kernel_id" json:"kernel_id"`
 	Tags []string `form:"tags,optional" json:"tags,optional"`
 	Description string `form:"description,optional" json:"description,optional"`
 	Metadata map[string]interface{} `form:"metadata,optional" json:"metadata,optional"`
@@ -92,6 +93,7 @@ type ProtocolBindingSummary struct {
 	Role string 
 	Listen string 
 	Connect string 
+	Access_port int 
 	Status string 
 	Kernel_id string 
 	Sync_status string 
@@ -131,6 +133,7 @@ type AdminUpdateProtocolBindingRequest struct {
 	Role string `form:"role,optional" json:"role,optional"`
 	Listen string `form:"listen,optional" json:"listen,optional"`
 	Connect string `form:"connect,optional" json:"connect,optional"`
+	Access_port int `form:"access_port,optional" json:"access_port,optional"`
 	Status string `form:"status,optional" json:"status,optional"`
 	Kernel_id string `form:"kernel_id,optional" json:"kernel_id,optional"`
 	Sync_status string `form:"sync_status,optional" json:"sync_status,optional"`
@@ -161,6 +164,7 @@ type ProtocolBindingSummary struct {
 	Role string 
 	Listen string 
 	Connect string 
+	Access_port int 
 	Status string 
 	Kernel_id string 
 	Sync_status string 
@@ -233,7 +237,37 @@ type ProtocolBindingSyncResult struct {
 }
 ```
 
-### 6. "Sync protocol bindings"
+### 6. "Sync protocol binding status"
+
+1. route definition
+
+- Url: /api/v1/admin/protocol-bindings/status/sync
+- Method: POST
+- Request: `AdminSyncProtocolBindingStatusRequest`
+- Response: `AdminSyncProtocolBindingStatusResponse`
+
+2. request definition
+
+
+
+```golang
+type AdminSyncProtocolBindingStatusRequest struct {
+	Node_ids []uint64 `form:"node_ids,optional" json:"node_ids,optional"`
+}
+```
+
+
+3. response definition
+
+
+
+```golang
+type AdminSyncProtocolBindingStatusResponse struct {
+	Results []ProtocolBindingStatusSyncResult 
+}
+```
+
+### 7. "Sync protocol bindings"
 
 1. route definition
 

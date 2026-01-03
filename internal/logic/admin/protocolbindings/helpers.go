@@ -35,6 +35,7 @@ func mapProtocolBindingSummary(binding repository.ProtocolBinding) types.Protoco
 		Role:             binding.Role,
 		Listen:           binding.Listen,
 		Connect:          binding.Connect,
+		AccessPort:       binding.AccessPort,
 		Status:           binding.Status,
 		KernelID:         binding.KernelID,
 		SyncStatus:       binding.SyncStatus,

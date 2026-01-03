@@ -2,6 +2,7 @@ package nodes
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"strings"
 	"time"
@@ -12,6 +13,7 @@ import (
 	"github.com/zero-net-panel/zero-net-panel/internal/security"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
+	"github.com/zero-net-panel/zero-net-panel/pkg/kernel"
 	"github.com/zero-net-panel/zero-net-panel/pkg/metrics"
 )
 
@@ -38,6 +40,12 @@ func (l *SyncLogic) Sync(req *types.AdminSyncNodeKernelRequest) (resp *types.Adm
 	if protocol == "" {
 		protocol = l.svcCtx.Kernel.DefaultProtocol()
 	}
+	if protocol == "" {
+		protocol = "http"
+	}
+	if protocol != "http" {
+		return nil, kernel.ErrProviderNotFound
+	}
 
 	defer func() {
 		result := "success"
@@ -47,10 +55,27 @@ func (l *SyncLogic) Sync(req *types.AdminSyncNodeKernelRequest) (resp *types.Adm
 		metrics.ObserveNodeSync(protocol, result, time.Since(start))
 	}()
 
-	provider, err := l.svcCtx.Kernel.Provider(protocol)
+	node, err := l.svcCtx.Repositories.Node.Get(l.ctx, req.NodeID)
 	if err != nil {
 		return nil, err
 	}
+	endpoint := strings.TrimSpace(node.ControlEndpoint)
+	if endpoint == "" {
+		return nil, fmt.Errorf("%w: node control endpoint not configured", repository.ErrInvalidArgument)
+	}
+	token := resolveNodeControlToken(node)
+
+	provider, err := kernel.NewHTTPProvider(kernel.HTTPOptions{
+		BaseURL: endpoint,
+		Token:   token,
+		Timeout: l.svcCtx.Config.Kernel.HTTP.Timeout,
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		_ = provider.Close()
+	}()
 
 	config, err := provider.FetchNodeConfig(l.ctx, fmt.Sprintf("%d", req.NodeID))
 	if err != nil {
@@ -98,4 +123,14 @@ func (l *SyncLogic) Sync(req *types.AdminSyncNodeKernelRequest) (resp *types.Adm
 	}
 
 	return resp, nil
+}
+
+func resolveNodeControlToken(node repository.Node) string {
+	accessKey := strings.TrimSpace(node.ControlAccessKey)
+	secretKey := strings.TrimSpace(node.ControlSecretKey)
+	if accessKey != "" && secretKey != "" {
+		encoded := base64.StdEncoding.EncodeToString([]byte(accessKey + ":" + secretKey))
+		return "Basic " + encoded
+	}
+	return strings.TrimSpace(node.ControlToken)
 }

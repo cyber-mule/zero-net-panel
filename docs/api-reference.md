@@ -368,8 +368,15 @@ AdminUserSummary 字段：
 
 NodeSummary 字段：
 
-- `id`、`name`、`region`、`country`、`isp`、`status`、`tags`、`protocols`
-- `capacity_mbps`、`description`、`last_synced_at`、`updated_at`
+- `id`、`name`、`region`、`country`、`isp`、`status`、`tags`
+- `capacity_mbps`、`description`、`access_address`、`control_endpoint`
+- `status_sync_enabled`（是否允许节点状态自动同步）
+- `last_synced_at`、`updated_at`
+备注：
+- `status` 为管理端维护字段，手动禁用时为 `disabled`；运行态健康度请看协议绑定健康状态。
+- 当 `status_sync_enabled=true` 且能访问节点控制面时，服务会自动将 `status` 更新为 `online`/`offline`。
+- 节点控制面必须配置 `control_endpoint`，不再回退全局 `Kernel.HTTP`。
+- 控制面鉴权优先级：`control_access_key` + `control_secret_key` → `control_token`（无全局兜底）
 
 #### POST /api/v1/{adminPrefix}/nodes
 
@@ -381,11 +388,19 @@ NodeSummary 字段：
   - `isp` string（可选）
   - `status` string（可选）
   - `tags` []string（可选）
-  - `protocols` []string（可选）
   - `capacity_mbps` int（可选）
   - `description` string（可选）
+  - `access_address` string（可选，客户端对外地址）
+  - `control_endpoint` string（必填，节点控制面地址）
+  - `control_access_key` string（可选，节点控制面 AK，写入不回显）
+  - `control_secret_key` string（可选，节点控制面 SK，写入不回显）
+  - `ak` string（可选，兼容字段，等同 control_access_key）
+  - `sk` string（可选，兼容字段，等同 control_secret_key）
+  - `control_token` string（可选，节点控制面鉴权 token，写入不回显）
+  - `status_sync_enabled` bool（可选，是否允许节点状态自动同步，默认 true）
 - 响应：
   - `node` NodeSummary
+注：`control_token` 可直接填写 `Basic <base64(ak:sk)>` 或 `Bearer <token>`，无前缀按 `Bearer` 处理。
 - 示例请求体：
 ```json
 {
@@ -395,9 +410,10 @@ NodeSummary 字段：
   "isp": "HKT",
   "status": "online",
   "tags": ["edge"],
-  "protocols": ["vless", "ss"],
   "capacity_mbps": 1000,
-  "description": "HK edge"
+  "description": "HK edge",
+  "access_address": "hk.example.com",
+  "control_endpoint": "https://kernel-hk.example.com/api"
 }
 ```
 
@@ -412,9 +428,16 @@ NodeSummary 字段：
   - `isp` string（可选）
   - `status` string（可选）
   - `tags` []string（可选）
-  - `protocols` []string（可选）
   - `capacity_mbps` int（可选）
   - `description` string（可选）
+  - `access_address` string（可选，客户端对外地址）
+  - `control_endpoint` string（可选，节点控制面地址）
+  - `control_access_key` string（可选，节点控制面 AK，写入不回显）
+  - `control_secret_key` string（可选，节点控制面 SK，写入不回显）
+  - `ak` string（可选，兼容字段，等同 control_access_key）
+  - `sk` string（可选，兼容字段，等同 control_secret_key）
+  - `control_token` string（可选，节点控制面鉴权 token，写入不回显）
+  - `status_sync_enabled` bool（可选，是否允许节点状态自动同步）
 - 响应：
   - `node` NodeSummary
 - 示例请求体：
@@ -457,13 +480,28 @@ NodeKernelSummary 字段：
 - 说明：触发节点与内核同步
 - 路径参数：`id` uint64
 - 请求体：
-  - `protocol` string（可选，空表示同步默认协议）
+  - `protocol` string（可选，空表示同步默认协议；当前仅支持 `http`）
 - 响应：
   - `node_id` uint64
   - `protocol` string
   - `revision` string
   - `synced_at` int64
   - `message` string
+
+#### POST /api/v1/{adminPrefix}/nodes/status/sync
+
+- 说明：手动触发节点状态同步（仅同步指定节点）
+- 请求体：
+  - `node_ids` []uint64（必填，节点 ID 列表）
+- 响应：
+  - `results` []NodeStatusSyncResult
+
+NodeStatusSyncResult 字段：
+
+- `node_id`、`status`、`message`、`synced_at`
+- `status` 可能为 `online` / `offline` / `skipped` / `error`
+- `skipped` 表示节点已 `disabled`
+- `error` 表示节点不存在或控制面地址缺失
 
 #### GET /api/v1/{adminPrefix}/protocol-configs
 
@@ -516,7 +554,8 @@ ProtocolConfigSummary 字段：
 ProtocolBindingSummary 字段：
 
 - `id`、`name`、`node_id`、`node_name`、`protocol_config_id`、`protocol`
-- `role`、`listen`、`connect`、`status`、`kernel_id`
+- `role`、`listen`、`connect`、`access_port`、`status`、`kernel_id`（字符串）
+- `kernel_id` 需与内核侧协议 ID 一致，通常不是数字
 - `sync_status`、`health_status`、`last_synced_at`、`last_heartbeat_at`、`last_sync_error`
 - `tags`、`description`、`metadata`
 - `created_at`、`updated_at`
@@ -530,8 +569,9 @@ ProtocolBindingSummary 字段：
   - `role` string
   - `listen` string（可选）
   - `connect` string（可选）
+  - `access_port` int（可选，客户端入口端口）
   - `status` string（可选）
-  - `kernel_id` string（可选）
+  - `kernel_id` string（必填，内核协议标识，通常为字符串）
   - `tags` []string（可选）
   - `description` string（可选）
   - `metadata` map（可选）
@@ -567,6 +607,19 @@ ProtocolBindingSummary 字段：
   - `node_ids` []uint64（可选）
 - 响应：
   - `results` []ProtocolBindingSyncResult
+
+#### POST /api/v1/{adminPrefix}/protocol-bindings/status/sync
+
+- 说明：手动反向同步协议健康状态
+- 请求体：
+  - `node_ids` []uint64（必填，节点 ID 列表）
+- 响应：
+  - `results` []ProtocolBindingStatusSyncResult
+
+ProtocolBindingStatusSyncResult 字段：
+
+- `node_id`、`status`、`message`、`synced_at`、`updated`
+- `status` 可能为 `synced` / `error` / `skipped`
 
 #### GET /api/v1/{adminPrefix}/subscriptions
 
@@ -1313,7 +1366,7 @@ UserPlanSummary 字段：
 UserNodeStatusSummary 字段：
 
 - `id`、`name`、`region`、`country`、`isp`、`status`
-- `tags`、`protocols`、`capacity_mbps`、`description`
+- `tags`、`capacity_mbps`、`description`
 - `last_synced_at`、`updated_at`
 - `kernel_statuses` []UserNodeKernelStatusSummary
 - `protocol_statuses` []UserNodeProtocolStatusSummary
@@ -1343,7 +1396,6 @@ UserNodeProtocolStatusSummary 字段：
       "isp": "HKT",
       "status": "online",
       "tags": ["edge"],
-      "protocols": ["vless", "ss"],
       "capacity_mbps": 1000,
       "description": "HK edge",
       "last_synced_at": 1734001010,

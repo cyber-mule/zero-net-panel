@@ -1,6 +1,9 @@
 package nodes
 
 import (
+	"errors"
+	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/zeromicro/go-zero/rest/httpx"
@@ -156,11 +159,33 @@ func AdminSyncNodeKernelHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.AdminSyncNodeKernelRequest
 		if err := httpx.Parse(r, &req); err != nil {
+			if !errors.Is(err, io.EOF) {
+				handlercommon.RespondError(w, r, fmt.Errorf("%w: %s", repository.ErrInvalidArgument, err))
+				return
+			}
+		}
+
+		logic := adminnodes.NewSyncLogic(r.Context(), svcCtx)
+		resp, err := logic.Sync(&req)
+		if err != nil {
+			handlercommon.RespondError(w, r, err)
+			return
+		}
+
+		httpx.OkJsonCtx(r.Context(), w, resp)
+	}
+}
+
+// AdminSyncNodeStatusHandler triggers node status sync for selected nodes.
+func AdminSyncNodeStatusHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req types.AdminSyncNodeStatusRequest
+		if err := httpx.Parse(r, &req); err != nil {
 			handlercommon.RespondError(w, r, repository.ErrInvalidArgument)
 			return
 		}
 
-		logic := adminnodes.NewSyncLogic(r.Context(), svcCtx)
+		logic := adminnodes.NewSyncStatusLogic(r.Context(), svcCtx)
 		resp, err := logic.Sync(&req)
 		if err != nil {
 			handlercommon.RespondError(w, r, err)

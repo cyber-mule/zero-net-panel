@@ -72,12 +72,21 @@ func (l *UpdateLogic) Update(req *types.AdminUpdateProtocolBindingRequest) (*typ
 		connect := strings.TrimSpace(*req.Connect)
 		input.Connect = &connect
 	}
+	if req.AccessPort != nil {
+		if *req.AccessPort < 0 {
+			return nil, repository.ErrInvalidArgument
+		}
+		input.AccessPort = req.AccessPort
+	}
 	if req.Status != nil {
 		status := strings.TrimSpace(*req.Status)
 		input.Status = &status
 	}
 	if req.KernelID != nil {
 		kernelID := strings.TrimSpace(*req.KernelID)
+		if kernelID == "" {
+			return nil, repository.ErrInvalidArgument
+		}
 		input.KernelID = &kernelID
 	}
 	if req.SyncStatus != nil {

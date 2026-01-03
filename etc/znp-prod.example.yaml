@@ -43,7 +43,9 @@ Kernel:
     Jitter: 0.2
   HTTP:
     BaseURL: "https://kernel.example.com"  # 必填：内核 HTTP 入口
-    Token: "<token>"                       # 必填：内核访问令牌
+    AccessKey: "<access-key>"              # 可选：内核 AK（Basic 鉴权）
+    AccessSecret: "<access-secret>"        # 可选：内核 SK（Basic 鉴权）
+    Token: "<token>"                       # 可选：Bearer 或 Basic 令牌
     Timeout: 5s
   GRPC:
     Endpoint: ""                           # 如需 gRPC 同步则填写

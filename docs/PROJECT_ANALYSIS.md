@@ -119,12 +119,13 @@ POST /api/v1/admin/nodes/{id}/kernels/sync  # 触发节点同步
 **功能特点 / Features**:
 - 协议配置 profile 管理与状态控制
 - 节点协议绑定、手动下发与同步状态跟踪
-- 回调/轮询更新协议健康状态与流量记录
+- 协议健康状态支持手动反向同步；流量记录通过回调上报
 
 **API 端点 / API Endpoints**:
 ```
 GET  /api/v1/admin/protocol-configs
 POST /api/v1/admin/protocol-bindings/{id}/sync
+POST /api/v1/admin/protocol-bindings/status/sync
 POST /api/v1/kernel/events
 POST /api/v1/kernel/traffic
 ```
@@ -489,6 +490,8 @@ Kernel:
     Jitter: 0.2
   HTTP:
     BaseURL: "http://kernel.local"
+    AccessKey: ""
+    AccessSecret: ""
     Token: ""
     Timeout: 5s
   GRPC:

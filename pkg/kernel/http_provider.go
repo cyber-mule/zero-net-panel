@@ -55,7 +55,13 @@ func (p *HTTPDiscoveryProvider) FetchNodeConfig(ctx context.Context, nodeID stri
 	}
 
 	if p.token != "" {
-		req.Header.Set("Authorization", "Bearer "+p.token)
+		token := strings.TrimSpace(p.token)
+		lower := strings.ToLower(token)
+		if strings.HasPrefix(lower, "bearer ") || strings.HasPrefix(lower, "basic ") {
+			req.Header.Set("Authorization", token)
+		} else {
+			req.Header.Set("Authorization", "Bearer "+token)
+		}
 	}
 	req.Header.Set("Accept", "application/json")
 

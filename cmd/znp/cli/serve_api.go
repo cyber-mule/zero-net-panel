@@ -20,6 +20,7 @@ import (
 	"github.com/zero-net-panel/zero-net-panel/internal/handler"
 	publicsubscriptions "github.com/zero-net-panel/zero-net-panel/internal/handler/public/subscriptions"
 	kernellogic "github.com/zero-net-panel/zero-net-panel/internal/logic/kernel"
+	"github.com/zero-net-panel/zero-net-panel/internal/middleware"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 )
 
@@ -74,7 +75,7 @@ func RunServices(ctx context.Context, cfg config.Config) error {
 		}()
 	}
 
-	if svcCtx.KernelControl != nil && cfg.Kernel.StatusPollInterval > 0 {
+	if cfg.Kernel.StatusPollInterval > 0 {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -183,6 +184,30 @@ func (b *kernelStatusBackoff) Reset() {
 func runHTTPServer(ctx context.Context, cfg config.Config, svcCtx *svc.ServiceContext) error {
 	server := rest.MustNewServer(cfg.RestConf, corsOptions(cfg.CORS)...)
 	defer server.Stop()
+
+	authMiddleware := middleware.NewAuthMiddleware(svcCtx.Auth, svcCtx.Repositories.User)
+	adminAccessMiddleware := middleware.NewAccessMiddleware(cfg.Admin.Access)
+	adminAuth := authMiddleware.RequireRoles("admin")
+	userAuth := authMiddleware.RequireRoles()
+	adminBasePath := cfg.Admin.APIBasePath()
+	adminPaymentCallbackPath := adminBasePath + "/orders/payments/callback"
+
+	server.Use(func(next http.HandlerFunc) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			path := r.URL.Path
+			handler := next
+			switch {
+			case path == adminPaymentCallbackPath:
+				// Allow webhook-based callbacks without admin auth.
+			case strings.HasPrefix(path, adminBasePath):
+				handler = adminAccessMiddleware.Handler(adminAuth(handler))
+			case strings.HasPrefix(path, "/api/v1/user/"):
+				handler = userAuth(handler)
+			}
+
+			handler(w, r)
+		}
+	})
 
 	if cfg.Metrics.Enabled() && !cfg.Metrics.Standalone() {
 		metricsHandler := promhttp.Handler()

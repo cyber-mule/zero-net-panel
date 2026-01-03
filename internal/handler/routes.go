@@ -171,6 +171,12 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Path:    "/admin/nodes/:id/kernels/sync",
 				Handler: adminnodes.AdminSyncNodeKernelHandler(serverCtx),
 			},
+			{
+				// Sync node status
+				Method:  http.MethodPost,
+				Path:    "/admin/nodes/status/sync",
+				Handler: adminnodes.AdminSyncNodeStatusHandler(serverCtx),
+			},
 		},
 		rest.WithPrefix("/api/v1"),
 	)
@@ -344,6 +350,12 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Method:  http.MethodPost,
 				Path:    "/admin/protocol-bindings/sync",
 				Handler: adminprotocolbindings.AdminSyncProtocolBindingsHandler(serverCtx),
+			},
+			{
+				// Sync protocol binding status
+				Method:  http.MethodPost,
+				Path:    "/admin/protocol-bindings/status/sync",
+				Handler: adminprotocolbindings.AdminSyncProtocolBindingStatusHandler(serverCtx),
 			},
 		},
 		rest.WithPrefix("/api/v1"),

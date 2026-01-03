@@ -494,9 +494,16 @@ type AdminCreateNodeRequest struct {
 	Isp string `form:"isp,optional" json:"isp,optional"`
 	Status string `form:"status,optional" json:"status,optional"`
 	Tags []string `form:"tags,optional" json:"tags,optional"`
-	Protocols []string `form:"protocols,optional" json:"protocols,optional"`
 	Capacity_mbps int `form:"capacity_mbps,optional" json:"capacity_mbps,optional"`
 	Description string `form:"description,optional" json:"description,optional"`
+	Access_address string `form:"access_address,optional" json:"access_address,optional"`
+	Control_endpoint string `form:"control_endpoint" json:"control_endpoint"`
+	Control_access_key string `form:"control_access_key,optional" json:"control_access_key,optional"`
+	Control_secret_key string `form:"control_secret_key,optional" json:"control_secret_key,optional"`
+	Ak string `form:"ak,optional" json:"ak,optional"`
+	Sk string `form:"sk,optional" json:"sk,optional"`
+	Control_token string `form:"control_token,optional" json:"control_token,optional"`
+	Status_sync_enabled bool `form:"status_sync_enabled,optional" json:"status_sync_enabled,optional"`
 }
 ```
 
@@ -518,9 +525,11 @@ type NodeSummary struct {
 	Isp string 
 	Status string 
 	Tags []string 
-	Protocols []string 
 	Capacity_mbps int 
 	Description string 
+	Access_address string 
+	Control_endpoint string 
+	Status_sync_enabled bool 
 	Last_synced_at int64 
 	Updated_at int64 
 }
@@ -548,9 +557,16 @@ type AdminUpdateNodeRequest struct {
 	Isp string `form:"isp,optional" json:"isp,optional"`
 	Status string `form:"status,optional" json:"status,optional"`
 	Tags []string `form:"tags,optional" json:"tags,optional"`
-	Protocols []string `form:"protocols,optional" json:"protocols,optional"`
 	Capacity_mbps int `form:"capacity_mbps,optional" json:"capacity_mbps,optional"`
 	Description string `form:"description,optional" json:"description,optional"`
+	Access_address string `form:"access_address,optional" json:"access_address,optional"`
+	Control_endpoint string `form:"control_endpoint,optional" json:"control_endpoint,optional"`
+	Control_access_key string `form:"control_access_key,optional" json:"control_access_key,optional"`
+	Control_secret_key string `form:"control_secret_key,optional" json:"control_secret_key,optional"`
+	Ak string `form:"ak,optional" json:"ak,optional"`
+	Sk string `form:"sk,optional" json:"sk,optional"`
+	Control_token string `form:"control_token,optional" json:"control_token,optional"`
+	Status_sync_enabled bool `form:"status_sync_enabled,optional" json:"status_sync_enabled,optional"`
 }
 ```
 
@@ -572,15 +588,40 @@ type NodeSummary struct {
 	Isp string 
 	Status string 
 	Tags []string 
-	Protocols []string 
 	Capacity_mbps int 
 	Description string 
+	Access_address string 
+	Control_endpoint string 
+	Status_sync_enabled bool 
 	Last_synced_at int64 
 	Updated_at int64 
 }
 ```
 
-### 14. "Disable node"
+### 14. "Delete node (soft delete)"
+
+1. route definition
+
+- Url: /api/v1/admin/nodes/:id
+- Method: DELETE
+- Request: `AdminDeleteNodeRequest`
+- Response: `-`
+
+2. request definition
+
+
+
+```golang
+type AdminDeleteNodeRequest struct {
+	Id uint64 
+}
+```
+
+
+3. response definition
+
+
+### 15. "Disable node"
 
 1. route definition
 
@@ -617,15 +658,17 @@ type NodeSummary struct {
 	Isp string 
 	Status string 
 	Tags []string 
-	Protocols []string 
 	Capacity_mbps int 
 	Description string 
+	Access_address string 
+	Control_endpoint string 
+	Status_sync_enabled bool 
 	Last_synced_at int64 
 	Updated_at int64 
 }
 ```
 
-### 15. "Get node kernel endpoints"
+### 16. "Get node kernel endpoints"
 
 1. route definition
 
@@ -656,7 +699,7 @@ type AdminNodeKernelResponse struct {
 }
 ```
 
-### 16. "Upsert node kernel endpoint"
+### 17. "Upsert node kernel endpoint"
 
 1. route definition
 
@@ -702,7 +745,7 @@ type NodeKernelSummary struct {
 }
 ```
 
-### 17. "Sync node kernel configuration"
+### 18. "Sync node kernel configuration"
 
 1. route definition
 
@@ -737,7 +780,37 @@ type AdminSyncNodeKernelResponse struct {
 }
 ```
 
-### 18. "List billing orders"
+### 19. "Sync node status"
+
+1. route definition
+
+- Url: /api/v1/admin/nodes/status/sync
+- Method: POST
+- Request: `AdminSyncNodeStatusRequest`
+- Response: `AdminSyncNodeStatusResponse`
+
+2. request definition
+
+
+
+```golang
+type AdminSyncNodeStatusRequest struct {
+	Node_ids []uint64 `form:"node_ids,optional" json:"node_ids,optional"`
+}
+```
+
+
+3. response definition
+
+
+
+```golang
+type AdminSyncNodeStatusResponse struct {
+	Results []NodeStatusSyncResult 
+}
+```
+
+### 20. "List billing orders"
 
 1. route definition
 
@@ -784,7 +857,7 @@ type PaginationMeta struct {
 }
 ```
 
-### 19. "Get order detail"
+### 21. "Get order detail"
 
 1. route definition
 
@@ -845,7 +918,7 @@ type OrderUserSummary struct {
 }
 ```
 
-### 20. "Cancel an order"
+### 22. "Cancel an order"
 
 1. route definition
 
@@ -908,7 +981,7 @@ type OrderUserSummary struct {
 }
 ```
 
-### 21. "Manually mark an order as paid"
+### 23. "Manually mark an order as paid"
 
 1. route definition
 
@@ -974,7 +1047,7 @@ type OrderUserSummary struct {
 }
 ```
 
-### 22. "Refund an order"
+### 24. "Refund an order"
 
 1. route definition
 
@@ -1040,7 +1113,7 @@ type OrderUserSummary struct {
 }
 ```
 
-### 23. "Process external payment callback"
+### 25. "Process external payment callback"
 
 1. route definition
 
@@ -1107,7 +1180,7 @@ type OrderUserSummary struct {
 }
 ```
 
-### 24. "Reconcile an external payment"
+### 26. "Reconcile an external payment"
 
 1. route definition
 
@@ -1169,7 +1242,7 @@ type OrderUserSummary struct {
 }
 ```
 
-### 25. "Process external payment callback without admin prefix"
+### 27. "Process external payment callback without admin prefix"
 
 1. route definition
 
@@ -1236,7 +1309,7 @@ type OrderUserSummary struct {
 }
 ```
 
-### 26. "List payment channels"
+### 28. "List payment channels"
 
 1. route definition
 
@@ -1281,7 +1354,7 @@ type PaginationMeta struct {
 }
 ```
 
-### 27. "Create payment channel"
+### 29. "Create payment channel"
 
 1. route definition
 
@@ -1324,7 +1397,7 @@ type PaymentChannelSummary struct {
 }
 ```
 
-### 28. "Get payment channel"
+### 30. "Get payment channel"
 
 1. route definition
 
@@ -1362,7 +1435,7 @@ type PaymentChannelSummary struct {
 }
 ```
 
-### 29. "Update payment channel"
+### 31. "Update payment channel"
 
 1. route definition
 
@@ -1406,7 +1479,7 @@ type PaymentChannelSummary struct {
 }
 ```
 
-### 30. "List plan billing options"
+### 32. "List plan billing options"
 
 1. route definition
 
@@ -1438,7 +1511,7 @@ type AdminPlanBillingOptionListResponse struct {
 }
 ```
 
-### 31. "Create plan billing option"
+### 33. "Create plan billing option"
 
 1. route definition
 
@@ -1487,7 +1560,7 @@ type PlanBillingOptionSummary struct {
 }
 ```
 
-### 32. "Update plan billing option"
+### 34. "Update plan billing option"
 
 1. route definition
 
@@ -1537,7 +1610,7 @@ type PlanBillingOptionSummary struct {
 }
 ```
 
-### 33. "List subscription plans"
+### 35. "List subscription plans"
 
 1. route definition
 
@@ -1582,7 +1655,7 @@ type PaginationMeta struct {
 }
 ```
 
-### 34. "Create subscription plan"
+### 36. "Create subscription plan"
 
 1. route definition
 
@@ -1644,7 +1717,7 @@ type PlanSummary struct {
 }
 ```
 
-### 35. "Update subscription plan"
+### 37. "Update subscription plan"
 
 1. route definition
 
@@ -1707,7 +1780,7 @@ type PlanSummary struct {
 }
 ```
 
-### 36. "List protocol bindings"
+### 38. "List protocol bindings"
 
 1. route definition
 
@@ -1754,7 +1827,7 @@ type PaginationMeta struct {
 }
 ```
 
-### 37. "Create protocol binding"
+### 39. "Create protocol binding"
 
 1. route definition
 
@@ -1777,8 +1850,9 @@ type AdminCreateProtocolBindingRequest struct {
 	Role string 
 	Listen string `form:"listen,optional" json:"listen,optional"`
 	Connect string `form:"connect,optional" json:"connect,optional"`
+	Access_port int `form:"access_port,optional" json:"access_port,optional"`
 	Status string `form:"status,optional" json:"status,optional"`
-	Kernel_id string `form:"kernel_id,optional" json:"kernel_id,optional"`
+	Kernel_id string `form:"kernel_id" json:"kernel_id"`
 	Tags []string `form:"tags,optional" json:"tags,optional"`
 	Description string `form:"description,optional" json:"description,optional"`
 	Metadata map[string]interface{} `form:"metadata,optional" json:"metadata,optional"`
@@ -1801,6 +1875,7 @@ type ProtocolBindingSummary struct {
 	Role string 
 	Listen string 
 	Connect string 
+	Access_port int 
 	Status string 
 	Kernel_id string 
 	Sync_status string 
@@ -1817,7 +1892,7 @@ type ProtocolBindingSummary struct {
 }
 ```
 
-### 38. "Update protocol binding"
+### 40. "Update protocol binding"
 
 1. route definition
 
@@ -1840,6 +1915,7 @@ type AdminUpdateProtocolBindingRequest struct {
 	Role string `form:"role,optional" json:"role,optional"`
 	Listen string `form:"listen,optional" json:"listen,optional"`
 	Connect string `form:"connect,optional" json:"connect,optional"`
+	Access_port int `form:"access_port,optional" json:"access_port,optional"`
 	Status string `form:"status,optional" json:"status,optional"`
 	Kernel_id string `form:"kernel_id,optional" json:"kernel_id,optional"`
 	Sync_status string `form:"sync_status,optional" json:"sync_status,optional"`
@@ -1870,6 +1946,7 @@ type ProtocolBindingSummary struct {
 	Role string 
 	Listen string 
 	Connect string 
+	Access_port int 
 	Status string 
 	Kernel_id string 
 	Sync_status string 
@@ -1886,7 +1963,7 @@ type ProtocolBindingSummary struct {
 }
 ```
 
-### 39. "Delete protocol binding"
+### 41. "Delete protocol binding"
 
 1. route definition
 
@@ -1909,7 +1986,7 @@ type AdminDeleteProtocolBindingRequest struct {
 3. response definition
 
 
-### 40. "Sync protocol binding"
+### 42. "Sync protocol binding"
 
 1. route definition
 
@@ -1942,7 +2019,37 @@ type ProtocolBindingSyncResult struct {
 }
 ```
 
-### 41. "Sync protocol bindings"
+### 43. "Sync protocol binding status"
+
+1. route definition
+
+- Url: /api/v1/admin/protocol-bindings/status/sync
+- Method: POST
+- Request: `AdminSyncProtocolBindingStatusRequest`
+- Response: `AdminSyncProtocolBindingStatusResponse`
+
+2. request definition
+
+
+
+```golang
+type AdminSyncProtocolBindingStatusRequest struct {
+	Node_ids []uint64 `form:"node_ids,optional" json:"node_ids,optional"`
+}
+```
+
+
+3. response definition
+
+
+
+```golang
+type AdminSyncProtocolBindingStatusResponse struct {
+	Results []ProtocolBindingStatusSyncResult 
+}
+```
+
+### 44. "Sync protocol bindings"
 
 1. route definition
 
@@ -1973,7 +2080,7 @@ type AdminSyncProtocolBindingsResponse struct {
 }
 ```
 
-### 42. "List protocol configs"
+### 45. "List protocol configs"
 
 1. route definition
 
@@ -2018,7 +2125,7 @@ type PaginationMeta struct {
 }
 ```
 
-### 43. "Create protocol config"
+### 46. "Create protocol config"
 
 1. route definition
 
@@ -2061,7 +2168,7 @@ type ProtocolConfigSummary struct {
 }
 ```
 
-### 44. "Update protocol config"
+### 47. "Update protocol config"
 
 1. route definition
 
@@ -2105,7 +2212,7 @@ type ProtocolConfigSummary struct {
 }
 ```
 
-### 45. "Delete protocol config"
+### 48. "Delete protocol config"
 
 1. route definition
 
@@ -2128,7 +2235,7 @@ type AdminDeleteProtocolConfigRequest struct {
 3. response definition
 
 
-### 46. "Get third-party security settings"
+### 49. "Get third-party security settings"
 
 1. route definition
 
@@ -2162,7 +2269,7 @@ type SecuritySetting struct {
 }
 ```
 
-### 47. "Update third-party security settings"
+### 50. "Update third-party security settings"
 
 1. route definition
 
@@ -2207,7 +2314,7 @@ type SecuritySetting struct {
 }
 ```
 
-### 48. "Get site settings"
+### 51. "Get site settings"
 
 1. route definition
 
@@ -2238,7 +2345,7 @@ type SiteSetting struct {
 }
 ```
 
-### 49. "Update site settings"
+### 52. "Update site settings"
 
 1. route definition
 
@@ -2277,7 +2384,7 @@ type SiteSetting struct {
 }
 ```
 
-### 50. "List subscriptions"
+### 53. "List subscriptions"
 
 1. route definition
 
@@ -2323,7 +2430,7 @@ type PaginationMeta struct {
 }
 ```
 
-### 51. "Create subscription"
+### 54. "Create subscription"
 
 1. route definition
 
@@ -2387,7 +2494,7 @@ type AdminSubscriptionUserSummary struct {
 }
 ```
 
-### 52. "Get subscription detail"
+### 55. "Get subscription detail"
 
 1. route definition
 
@@ -2440,7 +2547,7 @@ type AdminSubscriptionUserSummary struct {
 }
 ```
 
-### 53. "Update subscription"
+### 56. "Update subscription"
 
 1. route definition
 
@@ -2504,7 +2611,7 @@ type AdminSubscriptionUserSummary struct {
 }
 ```
 
-### 54. "Disable subscription"
+### 57. "Disable subscription"
 
 1. route definition
 
@@ -2558,7 +2665,7 @@ type AdminSubscriptionUserSummary struct {
 }
 ```
 
-### 55. "Extend subscription expiry"
+### 58. "Extend subscription expiry"
 
 1. route definition
 
@@ -2614,7 +2721,7 @@ type AdminSubscriptionUserSummary struct {
 }
 ```
 
-### 56. "List subscription templates"
+### 59. "List subscription templates"
 
 1. route definition
 
@@ -2660,7 +2767,7 @@ type PaginationMeta struct {
 }
 ```
 
-### 57. "Create subscription template"
+### 60. "Create subscription template"
 
 1. route definition
 
@@ -2707,7 +2814,7 @@ type SubscriptionTemplateSummary struct {
 }
 ```
 
-### 58. "Update subscription template"
+### 61. "Update subscription template"
 
 1. route definition
 
@@ -2754,7 +2861,7 @@ type SubscriptionTemplateSummary struct {
 }
 ```
 
-### 59. "List template publish history"
+### 62. "List template publish history"
 
 1. route definition
 
@@ -2785,7 +2892,7 @@ type AdminSubscriptionTemplateHistoryResponse struct {
 }
 ```
 
-### 60. "Publish subscription template"
+### 63. "Publish subscription template"
 
 1. route definition
 
@@ -2841,7 +2948,7 @@ type SubscriptionTemplateHistoryEntry struct {
 }
 ```
 
-### 61. "List users with filters"
+### 64. "List users with filters"
 
 1. route definition
 
@@ -2884,7 +2991,7 @@ type PaginationMeta struct {
 }
 ```
 
-### 62. "Create a new user"
+### 65. "Create a new user"
 
 1. route definition
 
@@ -2933,7 +3040,7 @@ type AdminUserSummary struct {
 }
 ```
 
-### 63. "Rotate user credential"
+### 66. "Rotate user credential"
 
 1. route definition
 
@@ -2973,7 +3080,7 @@ type CredentialSummary struct {
 }
 ```
 
-### 64. "Force user logout"
+### 67. "Force user logout"
 
 1. route definition
 
@@ -3003,7 +3110,7 @@ type AdminForceLogoutResponse struct {
 }
 ```
 
-### 65. "Reset user password"
+### 68. "Reset user password"
 
 1. route definition
 
@@ -3034,7 +3141,7 @@ type AdminResetUserPasswordResponse struct {
 }
 ```
 
-### 66. "Update user roles"
+### 69. "Update user roles"
 
 1. route definition
 
@@ -3079,7 +3186,7 @@ type AdminUserSummary struct {
 }
 ```
 
-### 67. "Update user status (active/disabled)"
+### 70. "Update user status (active/disabled)"
 
 1. route definition
 
@@ -3124,7 +3231,7 @@ type AdminUserSummary struct {
 }
 ```
 
-### 68. "Request password reset code"
+### 71. "Request password reset code"
 
 1. route definition
 
@@ -3154,7 +3261,7 @@ type AuthForgotPasswordResponse struct {
 }
 ```
 
-### 69. "Authenticate user and issue token"
+### 72. "Authenticate user and issue token"
 
 1. route definition
 
@@ -3199,7 +3306,7 @@ type AuthenticatedUser struct {
 }
 ```
 
-### 70. "Refresh access token"
+### 73. "Refresh access token"
 
 1. route definition
 
@@ -3243,7 +3350,7 @@ type AuthenticatedUser struct {
 }
 ```
 
-### 71. "Register new user account"
+### 74. "Register new user account"
 
 1. route definition
 
@@ -3291,7 +3398,7 @@ type AuthenticatedUser struct {
 }
 ```
 
-### 72. "Reset password using verification code"
+### 75. "Reset password using verification code"
 
 1. route definition
 
@@ -3323,7 +3430,7 @@ type AuthResetPasswordResponse struct {
 }
 ```
 
-### 73. "Verify user email with code"
+### 76. "Verify user email with code"
 
 1. route definition
 
@@ -3368,7 +3475,7 @@ type AuthenticatedUser struct {
 }
 ```
 
-### 74. "Service health check"
+### 77. "Service health check"
 
 1. route definition
 
@@ -3396,7 +3503,7 @@ type PingResponse struct {
 }
 ```
 
-### 75. "Get user balance"
+### 78. "Get user balance"
 
 1. route definition
 
@@ -3441,7 +3548,7 @@ type PaginationMeta struct {
 }
 ```
 
-### 76. "Rotate credential"
+### 79. "Rotate credential"
 
 1. route definition
 
@@ -3479,7 +3586,7 @@ type CredentialSummary struct {
 }
 ```
 
-### 77. "Change email"
+### 80. "Change email"
 
 1. route definition
 
@@ -3521,7 +3628,7 @@ type UserProfile struct {
 }
 ```
 
-### 78. "Send email change code"
+### 81. "Send email change code"
 
 1. route definition
 
@@ -3551,7 +3658,7 @@ type UserEmailChangeCodeResponse struct {
 }
 ```
 
-### 79. "Change password"
+### 82. "Change password"
 
 1. route definition
 
@@ -3582,7 +3689,7 @@ type UserChangePasswordResponse struct {
 }
 ```
 
-### 80. "Get user profile"
+### 83. "Get user profile"
 
 1. route definition
 
@@ -3621,7 +3728,7 @@ type UserProfile struct {
 }
 ```
 
-### 81. "Update user profile"
+### 84. "Update user profile"
 
 1. route definition
 
@@ -3661,7 +3768,7 @@ type UserProfile struct {
 }
 ```
 
-### 82. "List active announcements"
+### 85. "List active announcements"
 
 1. route definition
 
@@ -3692,7 +3799,7 @@ type UserAnnouncementListResponse struct {
 }
 ```
 
-### 83. "List node runtime status (sanitized)"
+### 86. "List node runtime status (sanitized)"
 
 1. route definition
 
@@ -3734,7 +3841,7 @@ type PaginationMeta struct {
 }
 ```
 
-### 84. "Create order from plan"
+### 87. "Create order from plan"
 
 1. route definition
 
@@ -3807,7 +3914,7 @@ type BalanceSnapshot struct {
 }
 ```
 
-### 85. "List user orders"
+### 88. "List user orders"
 
 1. route definition
 
@@ -3853,7 +3960,7 @@ type PaginationMeta struct {
 }
 ```
 
-### 86. "Get user order detail"
+### 89. "Get user order detail"
 
 1. route definition
 
@@ -3919,7 +4026,7 @@ type BalanceSnapshot struct {
 }
 ```
 
-### 87. "Cancel user order"
+### 90. "Cancel user order"
 
 1. route definition
 
@@ -3986,7 +4093,7 @@ type BalanceSnapshot struct {
 }
 ```
 
-### 88. "Get user order payment status"
+### 91. "Get user order payment status"
 
 1. route definition
 
@@ -4028,7 +4135,7 @@ type UserOrderPaymentStatusResponse struct {
 }
 ```
 
-### 89. "List payment channels"
+### 92. "List payment channels"
 
 1. route definition
 
@@ -4058,7 +4165,7 @@ type UserPaymentChannelListResponse struct {
 }
 ```
 
-### 90. "List available plans"
+### 93. "List available plans"
 
 1. route definition
 
@@ -4088,7 +4195,7 @@ type UserPlanListResponse struct {
 }
 ```
 
-### 91. "List user subscriptions"
+### 94. "List user subscriptions"
 
 1. route definition
 
@@ -4132,7 +4239,7 @@ type PaginationMeta struct {
 }
 ```
 
-### 92. "Preview user subscription"
+### 95. "Preview user subscription"
 
 1. route definition
 
@@ -4168,7 +4275,7 @@ type UserSubscriptionPreviewResponse struct {
 }
 ```
 
-### 93. "Update user subscription template"
+### 96. "Update user subscription template"
 
 1. route definition
 
@@ -4201,7 +4308,7 @@ type UserUpdateSubscriptionTemplateResponse struct {
 }
 ```
 
-### 94. "Subscription traffic usage"
+### 97. "Subscription traffic usage"
 
 1. route definition
 

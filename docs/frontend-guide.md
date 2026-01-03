@@ -96,7 +96,7 @@ async function request(url, options = {}) {
 
 - 仪表盘：`GET /api/v1/{adminPrefix}/dashboard`
 - 用户管理：`GET/POST/PATCH /users`、`POST /users/{id}/reset-password`、`POST /users/{id}/force-logout`
-- 节点管理：`GET/POST/PATCH /nodes`、`POST /nodes/{id}/disable`、`GET /nodes/{id}/kernels`、`POST /nodes/{id}/kernels/sync`
+- 节点管理：`GET/POST/PATCH /nodes`、`POST /nodes/{id}/disable`、`GET /nodes/{id}/kernels`、`POST /nodes/{id}/kernels/sync`、`POST /nodes/status/sync`
 - 订阅模板：`GET/POST/PATCH /subscription-templates`、`POST /subscription-templates/{id}/publish`
 - 订阅管理：`GET/POST/PATCH /subscriptions`、`POST /subscriptions/{id}/disable`、`POST /subscriptions/{id}/extend`
 - 套餐管理：`GET/POST/PATCH /plans`
@@ -128,7 +128,7 @@ async function request(url, options = {}) {
 
 - `POST /api/v1/{adminPrefix}/nodes/{id}/kernels/sync`
 - 请求体（可选）：
-  - `protocol` string（空表示默认协议）
+- `protocol` string（可选，空表示默认协议；当前仅支持 `http`）
 
 示例：
 
@@ -136,7 +136,7 @@ async function request(url, options = {}) {
 POST /api/v1/admin/nodes/42/kernels/sync
 Content-Type: application/json
 
-{"protocol":"http"}
+{}
 ```
 
 响应字段：
@@ -152,6 +152,31 @@ Content-Type: application/json
 - `400`：协议不支持或参数非法
 - `404`：节点不存在
 - `500`：内核同步失败（检查 Kernel 地址/令牌）
+
+**节点状态同步**
+
+- 状态自动同步：服务按 `Kernel.StatusPollInterval` 定时拉取内核 `/v1/status`，更新节点 `online/offline`。
+
+- `POST /api/v1/{adminPrefix}/nodes/status/sync`
+- 请求体：
+  - `node_ids` []uint64（必填）
+
+响应示例：
+
+```json
+{
+  "results": [
+    {"node_id":3,"status":"online","message":"ok","synced_at":1719766500},
+    {"node_id":4,"status":"offline","message":"kernel control: 401 Unauthorized","synced_at":1719766500}
+  ]
+}
+```
+
+状态约定：
+
+- `status=online|offline` 表示节点状态同步完成
+- `status=skipped` 表示节点已 `disabled`
+- `status=error` 表示节点不存在或控制面地址缺失
 
 ### 6.2 管理端协议绑定下发
 
@@ -187,6 +212,35 @@ Content-Type: application/json
 
 - `status=synced` 表示下发成功
 - `status=error` 表示失败（`message` 描述原因）
+- 创建协议绑定时必须提供 `kernel_id`（字符串），应与内核侧协议 ID 保持一致
+- 节点必须配置 `control_endpoint`，下发仅使用节点控制面地址
+- 鉴权优先级：`control_access_key` + `control_secret_key` → `control_token`（无全局兜底）
+- 兼容字段：`ak`/`sk` 等价于 `control_access_key`/`control_secret_key`
+- 可选字段：`status_sync_enabled`（是否允许节点状态自动同步，默认 true）
+- `control_token` 可直接填 `Basic <base64(ak:sk)>` 或 `Bearer <token>`，无前缀按 `Bearer` 处理
+
+**手动协议健康同步**
+
+- `POST /api/v1/{adminPrefix}/protocol-bindings/status/sync`
+- 请求体：
+  - `node_ids` []uint64（必填）
+
+响应示例：
+
+```json
+{
+  "results": [
+    {"node_id":3,"status":"synced","message":"ok","synced_at":1719766500,"updated":8},
+    {"node_id":4,"status":"error","message":"kernel control: 401 Unauthorized","synced_at":1719766500,"updated":0}
+  ]
+}
+```
+
+状态约定：
+
+- `status=synced` 表示反向同步成功
+- `status=error` 表示反向同步失败
+- `status=skipped` 表示节点已 `disabled`
 
 ### 6.3 用户侧节点状态
 
@@ -195,7 +249,8 @@ Content-Type: application/json
 
 关键字段说明：
 
-- `nodes[].status`：节点状态（`online`/`offline`/`maintenance`/`disabled`）
+- `nodes[].status`：管理端状态（手动禁用为 `disabled`）；运行态健康度请看 `protocol_statuses[].health_status`
+- 当 `status_sync_enabled=true` 时，后端会定时更新 `nodes[].status` 为 `online`/`offline`
 - `kernel_statuses[]`：节点同步摘要（来自最近一次同步记录）
 - `protocol_statuses[]`：协议绑定健康状态
   - `health_status`：`healthy`/`degraded`/`unhealthy`/`offline`/`unknown`
@@ -231,6 +286,8 @@ Content-Type: application/json
 当订阅 `status = active` 时：
 
 - `nodes`/`protocol_bindings` 仅包含套餐绑定的协议
+  - `nodes[].access_address` / `nodes[].access_port` 作为客户端入口地址优先使用
+  - 为空时回退到 `listen`/`connect`
 
 模板变量中的套餐快照字段：
 

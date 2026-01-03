@@ -78,11 +78,6 @@ func (l *UpdateLogic) Update(req *types.AdminUpdateNodeRequest) (*types.AdminNod
 		input.Tags = &tags
 		metadata["tags"] = tags
 	}
-	if req.Protocols != nil {
-		protocols := normalizeProtocols(req.Protocols)
-		input.Protocols = &protocols
-		metadata["protocols"] = protocols
-	}
 	if req.CapacityMbps != nil {
 		if *req.CapacityMbps < 0 {
 			return nil, repository.ErrInvalidArgument
@@ -94,6 +89,41 @@ func (l *UpdateLogic) Update(req *types.AdminUpdateNodeRequest) (*types.AdminNod
 		desc := strings.TrimSpace(*req.Description)
 		input.Description = &desc
 		metadata["description"] = desc
+	}
+	if req.AccessAddress != nil {
+		address := strings.TrimSpace(*req.AccessAddress)
+		input.AccessAddress = &address
+		metadata["access_address"] = address
+	}
+	if req.ControlEndpoint != nil {
+		endpoint := strings.TrimSpace(*req.ControlEndpoint)
+		if endpoint == "" {
+			return nil, fmt.Errorf("%w: node control endpoint required", repository.ErrInvalidArgument)
+		}
+		input.ControlEndpoint = &endpoint
+		metadata["control_endpoint"] = endpoint
+	}
+	if req.ControlAccessKey != nil {
+		accessKey := strings.TrimSpace(*req.ControlAccessKey)
+		input.ControlAccessKey = &accessKey
+	} else if req.AK != nil {
+		accessKey := strings.TrimSpace(*req.AK)
+		input.ControlAccessKey = &accessKey
+	}
+	if req.ControlSecretKey != nil {
+		secretKey := strings.TrimSpace(*req.ControlSecretKey)
+		input.ControlSecretKey = &secretKey
+	} else if req.SK != nil {
+		secretKey := strings.TrimSpace(*req.SK)
+		input.ControlSecretKey = &secretKey
+	}
+	if req.ControlToken != nil {
+		token := strings.TrimSpace(*req.ControlToken)
+		input.ControlToken = &token
+	}
+	if req.StatusSyncEnabled != nil {
+		input.StatusSyncEnabled = req.StatusSyncEnabled
+		metadata["status_sync_enabled"] = *req.StatusSyncEnabled
 	}
 
 	var updated repository.Node

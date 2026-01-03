@@ -13,6 +13,12 @@ import (
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 )
 
+type nodeProtocolsSchema struct {
+	Protocols []string `gorm:"serializer:json"`
+}
+
+func (nodeProtocolsSchema) TableName() string { return "nodes" }
+
 // SchemaMigration stores executed migration metadata.
 type SchemaMigration struct {
 	Version   uint64    `gorm:"primaryKey"`
@@ -533,6 +539,123 @@ var migrationRegistry = []Migration{
 				if err := migrator.DropColumn(&repository.Node{}, "deleted_at"); err != nil {
 					return err
 				}
+			}
+			return nil
+		},
+	},
+	{
+		Version: 2025052401,
+		Name:    "node-access-control",
+		Up: func(ctx context.Context, db *gorm.DB) error {
+			if err := db.WithContext(ctx).AutoMigrate(&repository.Node{}); err != nil {
+				return err
+			}
+			return db.WithContext(ctx).AutoMigrate(&repository.ProtocolBinding{})
+		},
+		Down: func(ctx context.Context, db *gorm.DB) error {
+			migrator := db.WithContext(ctx).Migrator()
+			columns := []string{"access_address", "control_endpoint"}
+			for _, column := range columns {
+				if migrator.HasColumn(&repository.Node{}, column) {
+					if err := migrator.DropColumn(&repository.Node{}, column); err != nil {
+						return err
+					}
+				}
+			}
+			if migrator.HasColumn(&repository.ProtocolBinding{}, "access_port") {
+				if err := migrator.DropColumn(&repository.ProtocolBinding{}, "access_port"); err != nil {
+					return err
+				}
+			}
+			return nil
+		},
+	},
+	{
+		Version: 2025052402,
+		Name:    "node-control-token",
+		Up: func(ctx context.Context, db *gorm.DB) error {
+			return db.WithContext(ctx).AutoMigrate(&repository.Node{})
+		},
+		Down: func(ctx context.Context, db *gorm.DB) error {
+			migrator := db.WithContext(ctx).Migrator()
+			if migrator.HasColumn(&repository.Node{}, "control_token") {
+				if err := migrator.DropColumn(&repository.Node{}, "control_token"); err != nil {
+					return err
+				}
+			}
+			return nil
+		},
+	},
+	{
+		Version: 2025060401,
+		Name:    "node-control-credentials",
+		Up: func(ctx context.Context, db *gorm.DB) error {
+			return db.WithContext(ctx).AutoMigrate(&repository.Node{})
+		},
+		Down: func(ctx context.Context, db *gorm.DB) error {
+			migrator := db.WithContext(ctx).Migrator()
+			columns := []string{"control_access_key", "control_secret_key"}
+			for _, column := range columns {
+				if migrator.HasColumn(&repository.Node{}, column) {
+					if err := migrator.DropColumn(&repository.Node{}, column); err != nil {
+						return err
+					}
+				}
+			}
+			return nil
+		},
+	},
+	{
+		Version: 2025060701,
+		Name:    "node-drop-protocols",
+		Up: func(ctx context.Context, db *gorm.DB) error {
+			migrator := db.WithContext(ctx).Migrator()
+			if migrator.HasColumn(&repository.Node{}, "protocols") {
+				if err := migrator.DropColumn(&repository.Node{}, "protocols"); err != nil {
+					return err
+				}
+			}
+			return nil
+		},
+		Down: func(ctx context.Context, db *gorm.DB) error {
+			migrator := db.WithContext(ctx).Migrator()
+			if !migrator.HasColumn(&nodeProtocolsSchema{}, "protocols") {
+				return migrator.AddColumn(&nodeProtocolsSchema{}, "protocols")
+			}
+			return nil
+		},
+	},
+	{
+		Version: 2025060901,
+		Name:    "node-remove-invalid-control-endpoints",
+		Up: func(ctx context.Context, db *gorm.DB) error {
+			return db.WithContext(ctx).
+				Where("deleted_at IS NULL").
+				Where("control_endpoint IS NULL OR TRIM(control_endpoint) = '' OR LOWER(control_endpoint) LIKE ? OR LOWER(control_endpoint) LIKE ?",
+					"http://kernel.local%", "https://kernel.local%").
+				Delete(&repository.Node{}).
+				Error
+		},
+		Down: func(ctx context.Context, db *gorm.DB) error {
+			return nil
+		},
+	},
+	{
+		Version: 2025060902,
+		Name:    "node-status-sync-enabled",
+		Up: func(ctx context.Context, db *gorm.DB) error {
+			if err := db.WithContext(ctx).AutoMigrate(&repository.Node{}); err != nil {
+				return err
+			}
+			return db.WithContext(ctx).
+				Model(&repository.Node{}).
+				Where("status_sync_enabled IS NULL OR status_sync_enabled = 0").
+				Update("status_sync_enabled", true).Error
+		},
+		Down: func(ctx context.Context, db *gorm.DB) error {
+			migrator := db.WithContext(ctx).Migrator()
+			if migrator.HasColumn(&repository.Node{}, "status_sync_enabled") {
+				return migrator.DropColumn(&repository.Node{}, "status_sync_enabled")
 			}
 			return nil
 		},

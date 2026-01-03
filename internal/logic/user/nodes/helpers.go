@@ -49,7 +49,6 @@ func mapUserNodeStatus(node repository.Node, kernels []repository.NodeKernel, bi
 		ISP:              node.ISP,
 		Status:           node.Status,
 		Tags:             append([]string(nil), node.Tags...),
-		Protocols:        append([]string(nil), node.Protocols...),
 		CapacityMbps:     node.CapacityMbps,
 		Description:      node.Description,
 		LastSyncedAt:     toUnixOrZero(node.LastSyncedAt),

@@ -160,18 +160,20 @@ type AdminListNodesRequest struct {
 
 // NodeSummary 节点摘要信息。
 type NodeSummary struct {
-	ID           uint64   `json:"id"`
-	Name         string   `json:"name"`
-	Region       string   `json:"region"`
-	Country      string   `json:"country"`
-	ISP          string   `json:"isp"`
-	Status       string   `json:"status"`
-	Tags         []string `json:"tags"`
-	Protocols    []string `json:"protocols"`
-	CapacityMbps int      `json:"capacity_mbps"`
-	Description  string   `json:"description"`
-	LastSyncedAt int64    `json:"last_synced_at"`
-	UpdatedAt    int64    `json:"updated_at"`
+	ID                uint64   `json:"id"`
+	Name              string   `json:"name"`
+	Region            string   `json:"region"`
+	Country           string   `json:"country"`
+	ISP               string   `json:"isp"`
+	Status            string   `json:"status"`
+	Tags              []string `json:"tags"`
+	CapacityMbps      int      `json:"capacity_mbps"`
+	Description       string   `json:"description"`
+	AccessAddress     string   `json:"access_address"`
+	ControlEndpoint   string   `json:"control_endpoint"`
+	StatusSyncEnabled bool     `json:"status_sync_enabled"`
+	LastSyncedAt      int64    `json:"last_synced_at"`
+	UpdatedAt         int64    `json:"updated_at"`
 }
 
 // AdminNodeResponse 节点详情响应。
@@ -181,29 +183,43 @@ type AdminNodeResponse struct {
 
 // AdminCreateNodeRequest 管理端创建节点请求。
 type AdminCreateNodeRequest struct {
-	Name         string   `json:"name"`
-	Region       string   `json:"region"`
-	Country      string   `json:"country"`
-	ISP          string   `json:"isp"`
-	Status       string   `json:"status"`
-	Tags         []string `json:"tags"`
-	Protocols    []string `json:"protocols"`
-	CapacityMbps int      `json:"capacity_mbps"`
-	Description  string   `json:"description"`
+	Name              string   `json:"name"`
+	Region            string   `json:"region,optional"`
+	Country           string   `json:"country,optional"`
+	ISP               string   `json:"isp,optional"`
+	Status            string   `json:"status,optional"`
+	Tags              []string `json:"tags,optional"`
+	CapacityMbps      int      `json:"capacity_mbps,optional"`
+	Description       string   `json:"description,optional"`
+	AccessAddress     string   `json:"access_address,optional"`
+	ControlEndpoint   string   `json:"control_endpoint"`
+	ControlAccessKey  string   `json:"control_access_key,optional"`
+	ControlSecretKey  string   `json:"control_secret_key,optional"`
+	AK                string   `json:"ak,optional"`
+	SK                string   `json:"sk,optional"`
+	ControlToken      string   `json:"control_token,optional"`
+	StatusSyncEnabled *bool    `json:"status_sync_enabled,optional"`
 }
 
 // AdminUpdateNodeRequest 管理端更新节点请求。
 type AdminUpdateNodeRequest struct {
-	NodeID       uint64   `path:"id"`
-	Name         *string  `json:"name,optional"`
-	Region       *string  `json:"region,optional"`
-	Country      *string  `json:"country,optional"`
-	ISP          *string  `json:"isp,optional"`
-	Status       *string  `json:"status,optional"`
-	Tags         []string `json:"tags,optional"`
-	Protocols    []string `json:"protocols,optional"`
-	CapacityMbps *int     `json:"capacity_mbps,optional"`
-	Description  *string  `json:"description,optional"`
+	NodeID            uint64   `path:"id"`
+	Name              *string  `json:"name,optional"`
+	Region            *string  `json:"region,optional"`
+	Country           *string  `json:"country,optional"`
+	ISP               *string  `json:"isp,optional"`
+	Status            *string  `json:"status,optional"`
+	Tags              []string `json:"tags,optional"`
+	CapacityMbps      *int     `json:"capacity_mbps,optional"`
+	Description       *string  `json:"description,optional"`
+	AccessAddress     *string  `json:"access_address,optional"`
+	ControlEndpoint   *string  `json:"control_endpoint,optional"`
+	ControlAccessKey  *string  `json:"control_access_key,optional"`
+	ControlSecretKey  *string  `json:"control_secret_key,optional"`
+	AK                *string  `json:"ak,optional"`
+	SK                *string  `json:"sk,optional"`
+	ControlToken      *string  `json:"control_token,optional"`
+	StatusSyncEnabled *bool    `json:"status_sync_enabled,optional"`
 }
 
 // AdminDisableNodeRequest 管理端禁用节点请求。
@@ -263,7 +279,7 @@ type AdminNodeKernelUpsertResponse struct {
 // AdminSyncNodeKernelRequest 触发节点同步请求。
 type AdminSyncNodeKernelRequest struct {
 	NodeID   uint64 `path:"id"`
-	Protocol string `json:"protocol"`
+	Protocol string `form:"protocol,optional" json:"protocol,optional"`
 }
 
 // AdminSyncNodeKernelResponse 返回最新同步信息。
@@ -273,6 +289,24 @@ type AdminSyncNodeKernelResponse struct {
 	Revision string `json:"revision"`
 	SyncedAt int64  `json:"synced_at"`
 	Message  string `json:"message"`
+}
+
+// NodeStatusSyncResult 节点状态同步结果。
+type NodeStatusSyncResult struct {
+	NodeID   uint64 `json:"node_id"`
+	Status   string `json:"status"`
+	Message  string `json:"message"`
+	SyncedAt int64  `json:"synced_at"`
+}
+
+// AdminSyncNodeStatusRequest 触发节点状态同步请求。
+type AdminSyncNodeStatusRequest struct {
+	NodeIDs []uint64 `json:"node_ids"`
+}
+
+// AdminSyncNodeStatusResponse 节点状态同步响应。
+type AdminSyncNodeStatusResponse struct {
+	Results []NodeStatusSyncResult `json:"results"`
 }
 
 // AdminListProtocolConfigsRequest 管理端协议配置列表请求。
@@ -355,6 +389,7 @@ type ProtocolBindingSummary struct {
 	Role             string         `json:"role"`
 	Listen           string         `json:"listen"`
 	Connect          string         `json:"connect"`
+	AccessPort       int            `json:"access_port"`
 	Status           string         `json:"status"`
 	KernelID         string         `json:"kernel_id"`
 	SyncStatus       string         `json:"sync_status"`
@@ -385,6 +420,7 @@ type AdminCreateProtocolBindingRequest struct {
 	Role             string         `json:"role"`
 	Listen           string         `json:"listen"`
 	Connect          string         `json:"connect"`
+	AccessPort       int            `json:"access_port"`
 	Status           string         `json:"status"`
 	KernelID         string         `json:"kernel_id"`
 	Tags             []string       `json:"tags"`
@@ -403,6 +439,7 @@ type AdminUpdateProtocolBindingRequest struct {
 	Role             *string        `json:"role,optional"`
 	Listen           *string        `json:"listen,optional"`
 	Connect          *string        `json:"connect,optional"`
+	AccessPort       *int           `json:"access_port,optional"`
 	Status           *string        `json:"status,optional"`
 	KernelID         *string        `json:"kernel_id,optional"`
 	SyncStatus       *string        `json:"sync_status,optional"`
@@ -443,6 +480,25 @@ type AdminSyncProtocolBindingsRequest struct {
 // AdminSyncProtocolBindingsResponse 批量协议下发响应。
 type AdminSyncProtocolBindingsResponse struct {
 	Results []ProtocolBindingSyncResult `json:"results"`
+}
+
+// ProtocolBindingStatusSyncResult 协议健康状态同步结果。
+type ProtocolBindingStatusSyncResult struct {
+	NodeID   uint64 `json:"node_id"`
+	Status   string `json:"status"`
+	Message  string `json:"message"`
+	SyncedAt int64  `json:"synced_at"`
+	Updated  int    `json:"updated"`
+}
+
+// AdminSyncProtocolBindingStatusRequest 手动同步协议健康状态请求。
+type AdminSyncProtocolBindingStatusRequest struct {
+	NodeIDs []uint64 `json:"node_ids"`
+}
+
+// AdminSyncProtocolBindingStatusResponse 手动同步协议健康状态响应。
+type AdminSyncProtocolBindingStatusResponse struct {
+	Results []ProtocolBindingStatusSyncResult `json:"results"`
 }
 
 // AdminListSubscriptionTemplatesRequest 管理端模板列表查询。
@@ -862,7 +918,6 @@ type UserNodeStatusSummary struct {
 	ISP              string                          `json:"isp"`
 	Status           string                          `json:"status"`
 	Tags             []string                        `json:"tags"`
-	Protocols        []string                        `json:"protocols"`
 	CapacityMbps     int                             `json:"capacity_mbps"`
 	Description      string                          `json:"description"`
 	LastSyncedAt     int64                           `json:"last_synced_at"`

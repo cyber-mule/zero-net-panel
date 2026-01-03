@@ -130,3 +130,23 @@ func AdminSyncProtocolBindingsHandler(svcCtx *svc.ServiceContext) http.HandlerFu
 		httpx.OkJsonCtx(r.Context(), w, resp)
 	}
 }
+
+// AdminSyncProtocolBindingStatusHandler triggers reverse status sync from kernel.
+func AdminSyncProtocolBindingStatusHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req types.AdminSyncProtocolBindingStatusRequest
+		if err := httpx.Parse(r, &req); err != nil {
+			handlercommon.RespondError(w, r, repository.ErrInvalidArgument)
+			return
+		}
+
+		logic := adminbindings.NewStatusSyncLogic(r.Context(), svcCtx)
+		resp, err := logic.Sync(&req)
+		if err != nil {
+			handlercommon.RespondError(w, r, err)
+			return
+		}
+
+		httpx.OkJsonCtx(r.Context(), w, resp)
+	}
+}

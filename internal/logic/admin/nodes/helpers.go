@@ -11,18 +11,20 @@ import (
 
 func mapNodeSummary(node repository.Node) types.NodeSummary {
 	return types.NodeSummary{
-		ID:           node.ID,
-		Name:         node.Name,
-		Region:       node.Region,
-		Country:      node.Country,
-		ISP:          node.ISP,
-		Status:       node.Status,
-		Tags:         append([]string(nil), node.Tags...),
-		Protocols:    append([]string(nil), node.Protocols...),
-		CapacityMbps: node.CapacityMbps,
-		Description:  node.Description,
-		LastSyncedAt: toUnixOrZero(node.LastSyncedAt),
-		UpdatedAt:    toUnixOrZero(node.UpdatedAt),
+		ID:                node.ID,
+		Name:              node.Name,
+		Region:            node.Region,
+		Country:           node.Country,
+		ISP:               node.ISP,
+		Status:            node.Status,
+		Tags:              append([]string(nil), node.Tags...),
+		CapacityMbps:      node.CapacityMbps,
+		Description:       node.Description,
+		AccessAddress:     node.AccessAddress,
+		ControlEndpoint:   node.ControlEndpoint,
+		StatusSyncEnabled: node.StatusSyncEnabled,
+		LastSyncedAt:      toUnixOrZero(node.LastSyncedAt),
+		UpdatedAt:         toUnixOrZero(node.UpdatedAt),
 	}
 }
 
@@ -52,10 +54,6 @@ func normalizeNodeStatus(status string) (string, error) {
 
 func normalizeTags(tags []string) []string {
 	return normalizeStringSet(tags, false)
-}
-
-func normalizeProtocols(protocols []string) []string {
-	return normalizeStringSet(protocols, true)
 }
 
 func normalizeStringSet(values []string, lower bool) []string {

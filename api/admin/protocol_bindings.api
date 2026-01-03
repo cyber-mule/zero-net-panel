@@ -31,6 +31,10 @@ service znp {
 	@doc "Sync protocol bindings"
 	@handler AdminSyncProtocolBindings
 	post /admin/protocol-bindings/sync (AdminSyncProtocolBindingsRequest) returns (AdminSyncProtocolBindingsResponse)
+
+	@doc "Sync protocol binding status"
+	@handler AdminSyncProtocolBindingStatus
+	post /admin/protocol-bindings/status/sync (AdminSyncProtocolBindingStatusRequest) returns (AdminSyncProtocolBindingStatusResponse)
 }
 
 type AdminListProtocolBindingsRequest {
@@ -55,6 +59,7 @@ type ProtocolBindingSummary {
 	role               string
 	listen             string
 	connect            string
+	access_port        int
 	status             string
 	kernel_id          string
 	sync_status        string
@@ -84,8 +89,9 @@ type AdminCreateProtocolBindingRequest {
 	role               string
 	listen             string                 `form:"listen,optional" json:"listen,optional"`
 	connect            string                 `form:"connect,optional" json:"connect,optional"`
+	access_port        int                    `form:"access_port,optional" json:"access_port,optional"`
 	status             string                 `form:"status,optional" json:"status,optional"`
-	kernel_id          string                 `form:"kernel_id,optional" json:"kernel_id,optional"`
+	kernel_id          string                 `form:"kernel_id" json:"kernel_id"`
 	tags               []string               `form:"tags,optional" json:"tags,optional"`
 	description        string                 `form:"description,optional" json:"description,optional"`
 	metadata           map[string]interface{} `form:"metadata,optional" json:"metadata,optional"`
@@ -100,6 +106,7 @@ type AdminUpdateProtocolBindingRequest {
 	role               string                 `form:"role,optional" json:"role,optional"`
 	listen             string                 `form:"listen,optional" json:"listen,optional"`
 	connect            string                 `form:"connect,optional" json:"connect,optional"`
+	access_port        int                    `form:"access_port,optional" json:"access_port,optional"`
 	status             string                 `form:"status,optional" json:"status,optional"`
 	kernel_id          string                 `form:"kernel_id,optional" json:"kernel_id,optional"`
 	sync_status        string                 `form:"sync_status,optional" json:"sync_status,optional"`
@@ -137,3 +144,18 @@ type AdminSyncProtocolBindingsResponse {
 	results []ProtocolBindingSyncResult
 }
 
+type ProtocolBindingStatusSyncResult {
+	node_id   uint64
+	status    string
+	message   string
+	synced_at int64
+	updated   int
+}
+
+type AdminSyncProtocolBindingStatusRequest {
+	node_ids []uint64 `form:"node_ids,optional" json:"node_ids,optional"`
+}
+
+type AdminSyncProtocolBindingStatusResponse {
+	results []ProtocolBindingStatusSyncResult
+}

@@ -8,7 +8,7 @@
 | ---- | ---- | ---- |
 | 仪表盘 | `/api/v1/{admin}/dashboard` | 展示模块导航、权限控制 |
 | 用户管理 | `/api/v1/{admin}/users` | 用户列表、创建、禁用、角色调整、重置密码、强制下线 |
-| 节点管理 | `/api/v1/{admin}/nodes` | 节点查询、创建、更新、禁用、删除（软删除）、协议内核同步 |
+| 节点管理 | `/api/v1/{admin}/nodes` | 节点查询、创建、更新、禁用、删除（软删除）、协议内核同步、状态同步 |
 | 订阅模板 | `/api/v1/{admin}/subscription-templates` | 模板 CRUD、发布、历史追溯 |
 | 订阅管理 | `/api/v1/{admin}/subscriptions` | 订阅列表、创建、调整、禁用、延长有效期 |
 | 套餐管理 | `/api/v1/{admin}/plans` | 套餐列表、创建、更新，字段涵盖价格、时长、流量限制等 |
@@ -76,18 +76,40 @@
 
 ### 节点管理能力
 
-- `POST /api/v1/{admin}/nodes`：创建节点基础信息与可选协议能力。
-- `PATCH /api/v1/{admin}/nodes/{id}`：更新节点元数据、状态与标签。
+- `POST /api/v1/{admin}/nodes`：创建节点基础信息与控制面信息（`control_endpoint`/AK-SK/`control_token`）。
+- `PATCH /api/v1/{admin}/nodes/{id}`：更新节点元数据、控制面地址与标签（节点控制面必填，不再回退全局）。
+- `status_sync_enabled`：控制是否允许节点状态自动同步（默认 true）。
+- 启用后，服务会定时调用内核 `GET /v1/status`，将节点 `status` 更新为 `online`/`offline`。
 - `POST /api/v1/{admin}/nodes/{id}/disable`：下线/禁用节点（替代物理删除）。
-- `POST /api/v1/{admin}/nodes/{id}/kernels/sync`：触发节点协议配置同步。
+- `POST /api/v1/{admin}/nodes/{id}/kernels/sync`：触发节点内核配置同步（`protocol` 可选）。
+- `POST /api/v1/{admin}/nodes/status/sync`：手动同步节点状态（仅处理指定 `node_ids`）。
+- `POST /api/v1/{admin}/protocol-bindings/status/sync`：手动反向同步协议健康状态（仅处理指定 `node_ids`）。
 - `GET /api/v1/user/nodes`：用户侧查看节点运行状态，隐藏内核端点与配置等敏感信息。
+
+创建节点字段提示：
+
+- 必填：`name`
+- 必填：`control_endpoint`（节点控制面地址）
+- 常用：`control_access_key`/`control_secret_key` 或 `control_token`
 
 ### 节点同步流程
 
-1. 管理端列表接口 `GET /api/v1/{admin}/nodes` 返回节点详情与协议能力。
-2. 运维人员选择目标节点，调用 `POST /api/v1/{admin}/nodes/{id}/kernels/sync` 触发与内核的即时同步。
-3. 服务端同步拉取内核配置并更新记录，立即返回 `revision` 与 `synced_at` 等结果字段。
+1. 管理端列表接口 `GET /api/v1/{admin}/nodes` 返回节点详情与最新同步时间。
+2. 运维人员选择目标节点，调用 `POST /api/v1/{admin}/nodes/{id}/kernels/sync` 触发与内核的即时同步（`protocol` 可选，空表示默认协议）。
+3. 服务端拉取内核配置并更新记录，立即返回 `revision` 与 `synced_at` 等结果字段。
 4. 若开启 Prometheus，观察 `znp_node_sync_operations_total` 与 `znp_node_sync_duration_seconds` 判断成功率与耗时。
+
+### 节点状态同步流程
+
+1. 定时任务按 `Kernel.StatusPollInterval` 轮询 `/v1/status`，成功则更新节点 `status=online`，失败更新为 `offline`。
+2. 需要即时更新时，可调用 `POST /api/v1/{admin}/nodes/status/sync` 并传入 `node_ids`。
+3. 响应中返回每个节点的 `status` 与 `message`，便于定位控制面鉴权或地址问题。
+
+### 协议健康反向同步流程
+
+1. 调用 `POST /api/v1/{admin}/protocol-bindings/status/sync` 并传入 `node_ids`。
+2. 服务端按节点控制面分组拉取 `/v1/status`，将协议绑定 `health_status` 更新为 `healthy/degraded/unhealthy/offline/unknown`。
+3. 响应中返回每个节点的同步结果与更新数量。
 
 | 接口 | HTTP 状态码 | 说明 | 排障建议 |
 | ---- | ----------- | ---- | -------- |
@@ -95,6 +117,12 @@
 | `POST /api/v1/{admin}/nodes/{id}/kernels/sync` | `400` | 协议不支持 | 确认 `protocol` 参数与内核 Provider 配置一致。 |
 | 同上 | `404` | 节点不存在 | 检查节点是否被删除，确认 `Admin.RoutePrefix` 与 URL 中的 `{id}` 是否正确。 |
 | 同上 | `500` | 内核同步失败 | 检查内核服务地址、令牌是否正确，必要时查看 `Kernel` 配置或抓取 gRPC/HTTP 日志。 |
+
+### 协议配置与绑定流程
+
+1. 创建协议配置 `POST /api/v1/{admin}/protocol-configs`：必填 `name`、`protocol`；`profile` 可选（未填时需在绑定阶段提供）。
+2. 创建协议绑定 `POST /api/v1/{admin}/protocol-bindings`：必填 `node_id`、`protocol`、`role`（`listener`/`connector`）、`kernel_id`（字符串，需与内核协议 ID 对齐）；当未指定 `protocol_config_id` 时，`profile` 必填；常用字段 `listen`、`connect`、`access_port`。
+3. 更新绑定（可选）`PATCH /api/v1/{admin}/protocol-bindings/{id}`：调整状态、端口、标签或健康字段。
 
 ### 协议绑定同步流程
 
@@ -110,21 +138,27 @@
 
 ### 套餐发布流程
 
-1. 管理端 `GET /api/v1/{admin}/subscription-templates` 列表展示模板与版本号。
-2. 调用 `POST /api/v1/{admin}/subscription-templates/{id}/publish` 生成新的渲染版本。
-3. 使用 `POST /api/v1/{admin}/plans` 创建套餐或 `PATCH` 更新既有套餐，关联最新模板版本、价格与流量限制。
-4. 前端或第三方调用 `GET /api/v1/user/plans` 验证套餐是否对终端可见。
-5. 订单创建时，`POST /api/v1/user/orders` 会读取套餐快照、扣减余额并返回结果。
+1. 管理端 `POST /api/v1/{admin}/plans` 创建套餐：必填 `name`、`price_cents`、`currency`、`duration_days`；可选 `binding_ids`、`traffic_limit_bytes`、`devices_limit`。
+2. （可选）为套餐添加计费选项 `POST /api/v1/{admin}/plans/{plan_id}/billing-options`。
+3. 前端或第三方调用 `GET /api/v1/user/plans` 验证套餐是否对终端可见（需 `status=active` 且 `visible=true`）。
+4. 订单创建时，`POST /api/v1/user/orders` 会读取套餐快照、扣减余额并返回结果。
+
+### 订阅创建与交付流程
+
+1. 管理端准备订阅模板：`POST /api/v1/{admin}/subscription-templates` 创建，`POST /api/v1/{admin}/subscription-templates/{id}/publish` 发布。
+2. 创建订阅 `POST /api/v1/{admin}/subscriptions`：必填 `user_id`、`name`、`plan_id`、`template_id`、`expires_at`、`traffic_total_bytes`、`devices_limit`；可选 `available_template_ids`、`token`。
+3. 用户侧拉取与预览：`GET /api/v1/user/subscriptions`、`GET /api/v1/user/subscriptions/{id}/preview`；切换模板 `POST /api/v1/user/subscriptions/{id}/template`。
+4. 公开订阅（免登录）：`GET /api/v1/subscriptions/{token}`。
 
 | 接口 | 错误码 | 说明 | 排障建议 |
 | ---- | ------ | ---- | -------- |
 | `POST /api/v1/{admin}/subscription-templates/{id}/publish` | `404010` | 模板不存在或无权限 | 校验模板 ID 与管理员角色；检查是否已归档。 |
 | 同上 | `409001` | 模板存在未发布草稿 | 先保存最新草稿，再重新发起发布或删除旧草稿。 |
-| `POST /api/v1/{admin}/plans` | `400201` | 套餐字段缺失或价格非法 | 核对必填字段（`name`、`price`、`durationDays`、`templateId`），确保价格 > 0。 |
+| `POST /api/v1/{admin}/plans` | `400201` | 套餐字段缺失或价格非法 | 核对必填字段（`name`、`price_cents`、`currency`、`duration_days`），确保价格 > 0。 |
 | 同上 | `409201` | 套餐名称已存在 | 更换名称或在更新接口中使用已有套餐 ID。 |
 | `GET /api/v1/user/plans` | `503001` | 套餐缓存构建失败 | 查看缓存服务状态，必要时执行 `znp cache purge`（后续计划）或重启服务。 |
 | `POST /api/v1/user/orders` | `402001` | 余额不足 | 提示用户充值或调整套餐价格。 |
-| 同上 | `409301` | 套餐不可用 | 确认套餐状态为 `published` 且未过期，或检查权限配置。 |
+| 同上 | `409301` | 套餐不可用 | 确认套餐状态为 `active` 且 `visible=true`，或检查权限配置。 |
 
 ## 第三方认证与加密
 

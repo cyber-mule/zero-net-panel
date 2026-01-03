@@ -20,6 +20,7 @@ type ProtocolBinding struct {
 	Role             string         `gorm:"size:32"`
 	Listen           string         `gorm:"size:512"`
 	Connect          string         `gorm:"size:512"`
+	AccessPort       int            `gorm:"column:access_port"`
 	Status           string         `gorm:"size:32"`
 	KernelID         string         `gorm:"size:128;index"`
 	SyncStatus       string         `gorm:"size:32"`
@@ -63,6 +64,7 @@ type UpdateProtocolBindingInput struct {
 	Role             *string
 	Listen           *string
 	Connect          *string
+	AccessPort       *int
 	Status           *string
 	KernelID         *string
 	SyncStatus       *string
@@ -87,6 +89,7 @@ type ProtocolBindingRepository interface {
 	Update(ctx context.Context, id uint64, input UpdateProtocolBindingInput) (ProtocolBinding, error)
 	UpdateSyncState(ctx context.Context, id uint64, input UpdateProtocolBindingInput) (ProtocolBinding, error)
 	UpdateHealthByKernelID(ctx context.Context, kernelID string, status string, observedAt time.Time, message string) (ProtocolBinding, error)
+	UpdateHealthByKernelIDForNodes(ctx context.Context, kernelID string, nodeIDs []uint64, status string, observedAt time.Time, message string) (ProtocolBinding, error)
 	Delete(ctx context.Context, id uint64) error
 }
 
@@ -161,6 +164,7 @@ func (r *protocolBindingRepository) ListByNodeIDs(ctx context.Context, nodeIDs [
 	if err := r.db.WithContext(ctx).
 		Where("node_id IN ?", nodeIDs).
 		Order("node_id ASC, updated_at DESC").
+		Preload("Node").
 		Preload("ProtocolConfig").
 		Find(&bindings).Error; err != nil {
 		return nil, err
@@ -262,18 +266,6 @@ func (r *protocolBindingRepository) Create(ctx context.Context, binding Protocol
 		return ProtocolBinding{}, translateError(err)
 	}
 
-	if binding.KernelID == "" {
-		kernelID := fmt.Sprintf("binding-%d", binding.ID)
-		if err := r.db.WithContext(ctx).
-			Model(&ProtocolBinding{}).
-			Where("id = ?", binding.ID).
-			Updates(map[string]any{"kernel_id": kernelID, "updated_at": time.Now().UTC()}).
-			Error; err != nil {
-			return ProtocolBinding{}, translateError(err)
-		}
-		binding.KernelID = kernelID
-	}
-
 	return r.Get(ctx, binding.ID)
 }
 
@@ -347,16 +339,69 @@ func (r *protocolBindingRepository) UpdateHealthByKernelID(ctx context.Context, 
 		updates["last_sync_error"] = strings.TrimSpace(message)
 	}
 
-	if err := r.db.WithContext(ctx).
+	nodeFilter := r.db.WithContext(ctx).Model(&Node{}).Select("id").Where("status_sync_enabled = ?", true)
+	result := r.db.WithContext(ctx).
 		Model(&ProtocolBinding{}).
 		Where("kernel_id = ?", kernelID).
-		Updates(updates).Error; err != nil {
-		return ProtocolBinding{}, translateError(err)
+		Where("node_id IN (?)", nodeFilter).
+		Updates(updates)
+	if result.Error != nil {
+		return ProtocolBinding{}, translateError(result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return ProtocolBinding{}, ErrNotFound
 	}
 
 	var binding ProtocolBinding
 	if err := r.db.WithContext(ctx).Preload("Node").Preload("ProtocolConfig").
 		Where("kernel_id = ?", kernelID).
+		Where("node_id IN (?)", nodeFilter).
+		First(&binding).Error; err != nil {
+		return ProtocolBinding{}, translateError(err)
+	}
+	return binding, nil
+}
+
+func (r *protocolBindingRepository) UpdateHealthByKernelIDForNodes(ctx context.Context, kernelID string, nodeIDs []uint64, status string, observedAt time.Time, message string) (ProtocolBinding, error) {
+	if err := ctx.Err(); err != nil {
+		return ProtocolBinding{}, err
+	}
+	kernelID = strings.TrimSpace(kernelID)
+	if kernelID == "" || len(nodeIDs) == 0 {
+		return ProtocolBinding{}, ErrInvalidArgument
+	}
+	status = strings.TrimSpace(status)
+	if status == "" {
+		status = "unknown"
+	}
+
+	updates := map[string]any{
+		"health_status": status,
+		"updated_at":    time.Now().UTC(),
+	}
+	if !observedAt.IsZero() {
+		updates["last_heartbeat_at"] = observedAt.UTC()
+	}
+	if message != "" {
+		updates["last_sync_error"] = strings.TrimSpace(message)
+	}
+
+	result := r.db.WithContext(ctx).
+		Model(&ProtocolBinding{}).
+		Where("kernel_id = ?", kernelID).
+		Where("node_id IN ?", nodeIDs).
+		Updates(updates)
+	if result.Error != nil {
+		return ProtocolBinding{}, translateError(result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return ProtocolBinding{}, ErrNotFound
+	}
+
+	var binding ProtocolBinding
+	if err := r.db.WithContext(ctx).Preload("Node").Preload("ProtocolConfig").
+		Where("kernel_id = ?", kernelID).
+		Where("node_id IN ?", nodeIDs).
 		First(&binding).Error; err != nil {
 		return ProtocolBinding{}, translateError(err)
 	}
@@ -395,6 +440,9 @@ func (r *protocolBindingRepository) buildBindingUpdates(input UpdateProtocolBind
 	}
 	if input.Connect != nil {
 		updates["connect"] = strings.TrimSpace(*input.Connect)
+	}
+	if input.AccessPort != nil {
+		updates["access_port"] = *input.AccessPort
 	}
 	if input.Status != nil {
 		updates["status"] = strings.TrimSpace(*input.Status)

@@ -44,6 +44,22 @@ func (l *CreateLogic) Create(req *types.AdminCreateNodeRequest) (*types.AdminNod
 	if name == "" {
 		return nil, repository.ErrInvalidArgument
 	}
+	endpoint := strings.TrimSpace(req.ControlEndpoint)
+	if endpoint == "" {
+		return nil, fmt.Errorf("%w: node control endpoint required", repository.ErrInvalidArgument)
+	}
+	accessKey := strings.TrimSpace(req.ControlAccessKey)
+	if accessKey == "" {
+		accessKey = strings.TrimSpace(req.AK)
+	}
+	secretKey := strings.TrimSpace(req.ControlSecretKey)
+	if secretKey == "" {
+		secretKey = strings.TrimSpace(req.SK)
+	}
+	statusSyncEnabled := true
+	if req.StatusSyncEnabled != nil {
+		statusSyncEnabled = *req.StatusSyncEnabled
+	}
 
 	status := "offline"
 	if strings.TrimSpace(req.Status) != "" {
@@ -55,24 +71,28 @@ func (l *CreateLogic) Create(req *types.AdminCreateNodeRequest) (*types.AdminNod
 	}
 
 	tags := normalizeTags(req.Tags)
-	protocols := normalizeProtocols(req.Protocols)
 	if req.CapacityMbps < 0 {
 		return nil, repository.ErrInvalidArgument
 	}
 
 	now := time.Now().UTC()
 	node := repository.Node{
-		Name:         name,
-		Region:       strings.TrimSpace(req.Region),
-		Country:      strings.TrimSpace(req.Country),
-		ISP:          strings.TrimSpace(req.ISP),
-		Status:       status,
-		Tags:         tags,
-		Protocols:    protocols,
-		CapacityMbps: req.CapacityMbps,
-		Description:  strings.TrimSpace(req.Description),
-		CreatedAt:    now,
-		UpdatedAt:    now,
+		Name:              name,
+		Region:            strings.TrimSpace(req.Region),
+		Country:           strings.TrimSpace(req.Country),
+		ISP:               strings.TrimSpace(req.ISP),
+		Status:            status,
+		Tags:              tags,
+		CapacityMbps:      req.CapacityMbps,
+		Description:       strings.TrimSpace(req.Description),
+		AccessAddress:     strings.TrimSpace(req.AccessAddress),
+		ControlEndpoint:   endpoint,
+		ControlAccessKey:  accessKey,
+		ControlSecretKey:  secretKey,
+		ControlToken:      strings.TrimSpace(req.ControlToken),
+		StatusSyncEnabled: statusSyncEnabled,
+		CreatedAt:         now,
+		UpdatedAt:         now,
 	}
 
 	var created repository.Node
@@ -91,9 +111,8 @@ func (l *CreateLogic) Create(req *types.AdminCreateNodeRequest) (*types.AdminNod
 			ResourceType: "node",
 			ResourceID:   fmt.Sprintf("%d", created.ID),
 			Metadata: map[string]any{
-				"name":      created.Name,
-				"status":    created.Status,
-				"protocols": created.Protocols,
+				"name":   created.Name,
+				"status": created.Status,
 			},
 		})
 		return err

@@ -140,23 +140,28 @@ func (r *planRepository) Update(ctx context.Context, id uint64, updates Plan) (P
 	updates.Slug = normalizeSlug(updates.Slug, updates.Name)
 	updates.UpdatedAt = time.Now().UTC()
 
-	if err := r.db.WithContext(ctx).Model(&Plan{}).Where("id = ?", id).Updates(map[string]any{
-		"name":                updates.Name,
-		"slug":                updates.Slug,
-		"description":         updates.Description,
-		"tags":                updates.Tags,
-		"features":            updates.Features,
-		"price_cents":         updates.PriceCents,
-		"currency":            updates.Currency,
-		"duration_days":       updates.DurationDays,
-		"traffic_limit_bytes": updates.TrafficLimitBytes,
-		"traffic_multipliers": updates.TrafficMultipliers,
-		"devices_limit":       updates.DevicesLimit,
-		"sort_order":          updates.SortOrder,
-		"status":              updates.Status,
-		"is_visible":          updates.Visible,
-		"updated_at":          updates.UpdatedAt,
-	}).Error; err != nil {
+	fields := []string{
+		"name",
+		"slug",
+		"description",
+		"tags",
+		"features",
+		"price_cents",
+		"currency",
+		"duration_days",
+		"traffic_limit_bytes",
+		"traffic_multipliers",
+		"devices_limit",
+		"sort_order",
+		"status",
+		"is_visible",
+		"updated_at",
+	}
+	if err := r.db.WithContext(ctx).
+		Model(&Plan{}).
+		Where("id = ?", id).
+		Select(fields).
+		Updates(&updates).Error; err != nil {
 		return Plan{}, translateError(err)
 	}
 

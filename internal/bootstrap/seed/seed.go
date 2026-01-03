@@ -199,18 +199,20 @@ func seedNodes(tx *gorm.DB) error {
 	now := time.Now().UTC()
 
 	hkNode := repository.Node{
-		Name:         "edge-hk-1",
-		Region:       "Hong Kong",
-		Country:      "HK",
-		ISP:          "HKIX",
-		Status:       "online",
-		Tags:         []string{"premium", "asia"},
-		Protocols:    []string{"http", "grpc"},
-		CapacityMbps: 1000,
-		Description:  "香港高带宽边缘节点示例",
-		CreatedAt:    now.Add(-36 * time.Hour),
-		UpdatedAt:    now.Add(-30 * time.Minute),
-		LastSyncedAt: now.Add(-30 * time.Minute),
+		Name:              "edge-hk-1",
+		Region:            "Hong Kong",
+		Country:           "HK",
+		ISP:               "HKIX",
+		Status:            "online",
+		Tags:              []string{"premium", "asia"},
+		CapacityMbps:      1000,
+		Description:       "香港高带宽边缘节点示例",
+		AccessAddress:     "hk.example.com",
+		ControlEndpoint:   "https://kernel-hk.example.com/api",
+		StatusSyncEnabled: true,
+		CreatedAt:         now.Add(-36 * time.Hour),
+		UpdatedAt:         now.Add(-30 * time.Minute),
+		LastSyncedAt:      now.Add(-30 * time.Minute),
 	}
 	if err := tx.Create(&hkNode).Error; err != nil {
 		return err
@@ -245,18 +247,20 @@ func seedNodes(tx *gorm.DB) error {
 	}
 
 	laNode := repository.Node{
-		Name:         "edge-la-1",
-		Region:       "Los Angeles",
-		Country:      "US",
-		ISP:          "NTT",
-		Status:       "maintenance",
-		Tags:         []string{"standard", "america"},
-		Protocols:    []string{"http"},
-		CapacityMbps: 600,
-		Description:  "北美标准线路示例节点",
-		CreatedAt:    now.Add(-72 * time.Hour),
-		UpdatedAt:    now.Add(-6 * time.Hour),
-		LastSyncedAt: now.Add(-12 * time.Hour),
+		Name:              "edge-la-1",
+		Region:            "Los Angeles",
+		Country:           "US",
+		ISP:               "NTT",
+		Status:            "maintenance",
+		Tags:              []string{"standard", "america"},
+		CapacityMbps:      600,
+		Description:       "北美标准线路示例节点",
+		AccessAddress:     "la.example.com",
+		ControlEndpoint:   "https://kernel-la.example.com/api",
+		StatusSyncEnabled: true,
+		CreatedAt:         now.Add(-72 * time.Hour),
+		UpdatedAt:         now.Add(-6 * time.Hour),
+		LastSyncedAt:      now.Add(-12 * time.Hour),
 	}
 	if err := tx.Create(&laNode).Error; err != nil {
 		return err
@@ -369,6 +373,7 @@ func seedProtocolBindings(tx *gorm.DB) error {
 			Protocol:         vlessCfg.Protocol,
 			Role:             "listener",
 			Listen:           "hk.example.com:443",
+			AccessPort:       443,
 			Status:           "active",
 			KernelID:         "edge-hk-1-vless",
 			SyncStatus:       "synced",
@@ -388,6 +393,7 @@ func seedProtocolBindings(tx *gorm.DB) error {
 			Protocol:         ssCfg.Protocol,
 			Role:             "listener",
 			Listen:           "la.example.com:443",
+			AccessPort:       443,
 			Status:           "active",
 			KernelID:         "edge-la-1-ss",
 			SyncStatus:       "synced",

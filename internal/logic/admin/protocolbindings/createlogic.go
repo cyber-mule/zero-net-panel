@@ -41,6 +41,13 @@ func (l *CreateLogic) Create(req *types.AdminCreateProtocolBindingRequest) (*typ
 	if protocol == "" {
 		return nil, repository.ErrInvalidArgument
 	}
+	kernelID := strings.TrimSpace(req.KernelID)
+	if kernelID == "" {
+		return nil, repository.ErrInvalidArgument
+	}
+	if req.AccessPort < 0 {
+		return nil, repository.ErrInvalidArgument
+	}
 
 	var template repository.ProtocolConfig
 	if req.ProtocolConfigID != nil && *req.ProtocolConfigID > 0 {
@@ -78,8 +85,9 @@ func (l *CreateLogic) Create(req *types.AdminCreateProtocolBindingRequest) (*typ
 		Role:             role,
 		Listen:           strings.TrimSpace(req.Listen),
 		Connect:          strings.TrimSpace(req.Connect),
+		AccessPort:       req.AccessPort,
 		Status:           status,
-		KernelID:         strings.TrimSpace(req.KernelID),
+		KernelID:         kernelID,
 		Tags:             append([]string(nil), req.Tags...),
 		Description:      strings.TrimSpace(req.Description),
 		Profile:          cloneBindingProfile(profile),

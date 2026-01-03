@@ -2,6 +2,7 @@ package protocolbindings
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"strings"
 	"time"
@@ -109,8 +110,9 @@ func (l *SyncLogic) syncBinding(binding repository.ProtocolBinding) types.Protoc
 		SyncedAt:  time.Now().UTC().Unix(),
 	}
 
-	if l.svcCtx.KernelControl == nil {
-		result.Message = "kernel control not configured"
+	control, err := l.resolveControlClient(binding)
+	if err != nil {
+		result.Message = err.Error()
 		_, _ = l.updateSyncState(binding, result.Status, result.Message)
 		return result
 	}
@@ -131,7 +133,9 @@ func (l *SyncLogic) syncBinding(binding repository.ProtocolBinding) types.Protoc
 	}
 
 	if profile.ID == "" {
-		profile.ID = fmt.Sprintf("binding-%d", binding.ID)
+		result.Message = "kernel_id is required"
+		_, _ = l.updateSyncState(binding, result.Status, result.Message)
+		return result
 	}
 
 	req := kernel.ProtocolUpsertRequest{
@@ -140,7 +144,7 @@ func (l *SyncLogic) syncBinding(binding repository.ProtocolBinding) types.Protoc
 		Profile: profile,
 	}
 
-	_, err := l.svcCtx.KernelControl.UpsertProtocol(l.ctx, req)
+	_, err = control.UpsertProtocol(l.ctx, req)
 	if err != nil {
 		result.Message = err.Error()
 		_, _ = l.updateSyncState(binding, result.Status, result.Message)
@@ -153,16 +157,41 @@ func (l *SyncLogic) syncBinding(binding repository.ProtocolBinding) types.Protoc
 	return result
 }
 
+func (l *SyncLogic) resolveControlClient(binding repository.ProtocolBinding) (*kernel.ControlClient, error) {
+	endpoint := strings.TrimSpace(binding.Node.ControlEndpoint)
+	token := resolveControlToken(binding.Node)
+	if endpoint == "" {
+		return nil, fmt.Errorf("node control endpoint not configured")
+	}
+
+	opts := kernel.HTTPOptions{
+		BaseURL: endpoint,
+		Token:   token,
+		Timeout: l.svcCtx.Config.Kernel.HTTP.Timeout,
+	}
+	return kernel.NewControlClient(opts)
+}
+
+func resolveControlToken(node repository.Node) string {
+	accessKey := strings.TrimSpace(node.ControlAccessKey)
+	secretKey := strings.TrimSpace(node.ControlSecretKey)
+	if accessKey != "" && secretKey != "" {
+		encoded := base64.StdEncoding.EncodeToString([]byte(accessKey + ":" + secretKey))
+		return "Basic " + encoded
+	}
+	token := strings.TrimSpace(node.ControlToken)
+	if token != "" {
+		return token
+	}
+	return ""
+}
+
 func (l *SyncLogic) updateSyncState(binding repository.ProtocolBinding, status string, message string) (repository.ProtocolBinding, error) {
 	ts := time.Now().UTC()
 	input := repository.UpdateProtocolBindingInput{
 		SyncStatus:    &status,
 		LastSyncedAt:  &ts,
 		LastSyncError: &message,
-	}
-	if binding.KernelID == "" {
-		kernelID := fmt.Sprintf("binding-%d", binding.ID)
-		input.KernelID = &kernelID
 	}
 	return l.svcCtx.Repositories.ProtocolBinding.UpdateSyncState(l.ctx, binding.ID, input)
 }

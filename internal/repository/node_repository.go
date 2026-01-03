@@ -2,9 +2,9 @@ package repository
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
-	"sort"
 	"strings"
 	"time"
 
@@ -14,20 +14,25 @@ import (
 
 // Node 表示节点元信息。
 type Node struct {
-	ID           uint64         `gorm:"primaryKey"`
-	Name         string         `gorm:"size:255;uniqueIndex"`
-	Region       string         `gorm:"size:128"`
-	Country      string         `gorm:"size:8"`
-	ISP          string         `gorm:"size:128"`
-	Status       string         `gorm:"size:32"`
-	Tags         []string       `gorm:"serializer:json"`
-	Protocols    []string       `gorm:"serializer:json"`
-	CapacityMbps int            `gorm:"column:capacity_mbps"`
-	Description  string         `gorm:"type:text"`
-	LastSyncedAt time.Time      `gorm:"column:last_synced_at"`
-	DeletedAt    gorm.DeletedAt `gorm:"index"`
-	UpdatedAt    time.Time
-	CreatedAt    time.Time
+	ID                uint64         `gorm:"primaryKey"`
+	Name              string         `gorm:"size:255;uniqueIndex"`
+	Region            string         `gorm:"size:128"`
+	Country           string         `gorm:"size:8"`
+	ISP               string         `gorm:"size:128"`
+	Status            string         `gorm:"size:32"`
+	Tags              []string       `gorm:"serializer:json"`
+	CapacityMbps      int            `gorm:"column:capacity_mbps"`
+	Description       string         `gorm:"type:text"`
+	AccessAddress     string         `gorm:"size:512"`
+	ControlEndpoint   string         `gorm:"size:512"`
+	ControlAccessKey  string         `gorm:"size:255"`
+	ControlSecretKey  string         `gorm:"size:512"`
+	ControlToken      string         `gorm:"size:512"`
+	StatusSyncEnabled bool           `gorm:"column:status_sync_enabled;default:true"`
+	LastSyncedAt      time.Time      `gorm:"column:last_synced_at"`
+	DeletedAt         gorm.DeletedAt `gorm:"index"`
+	UpdatedAt         time.Time
+	CreatedAt         time.Time
 }
 
 // TableName 自定义节点表名。
@@ -64,9 +69,11 @@ type ListNodesOptions struct {
 // NodeRepository 定义节点仓储接口。
 type NodeRepository interface {
 	List(ctx context.Context, opts ListNodesOptions) ([]Node, int64, error)
+	ListAll(ctx context.Context) ([]Node, error)
 	Get(ctx context.Context, nodeID uint64) (Node, error)
 	Create(ctx context.Context, node Node) (Node, error)
 	Update(ctx context.Context, nodeID uint64, input UpdateNodeInput) (Node, error)
+	UpdateStatusByIDs(ctx context.Context, nodeIDs []uint64, status string) error
 	Delete(ctx context.Context, nodeID uint64) error
 	GetKernels(ctx context.Context, nodeID uint64) ([]NodeKernel, error)
 	RecordKernelSync(ctx context.Context, nodeID uint64, kernel NodeKernel) (NodeKernel, error)
@@ -129,6 +136,20 @@ func (r *nodeRepository) List(ctx context.Context, opts ListNodesOptions) ([]Nod
 	return nodes, total, nil
 }
 
+func (r *nodeRepository) ListAll(ctx context.Context) ([]Node, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
+	var nodes []Node
+	if err := r.db.WithContext(ctx).
+		Order("updated_at DESC").
+		Find(&nodes).Error; err != nil {
+		return nil, err
+	}
+	return nodes, nil
+}
+
 func (r *nodeRepository) Get(ctx context.Context, nodeID uint64) (Node, error) {
 	if err := ctx.Err(); err != nil {
 		return Node{}, err
@@ -156,11 +177,11 @@ func (r *nodeRepository) Create(ctx context.Context, node Node) (Node, error) {
 	node.ISP = strings.TrimSpace(node.ISP)
 	node.Status = strings.TrimSpace(node.Status)
 	node.Description = strings.TrimSpace(node.Description)
+	node.AccessAddress = strings.TrimSpace(node.AccessAddress)
+	node.ControlEndpoint = strings.TrimSpace(node.ControlEndpoint)
+	node.ControlToken = strings.TrimSpace(node.ControlToken)
 	if node.Tags == nil {
 		node.Tags = []string{}
-	}
-	if node.Protocols == nil {
-		node.Protocols = []string{}
 	}
 
 	now := time.Now().UTC()
@@ -197,16 +218,35 @@ func (r *nodeRepository) Update(ctx context.Context, nodeID uint64, input Update
 		updates["status"] = strings.TrimSpace(*input.Status)
 	}
 	if input.Tags != nil {
-		updates["tags"] = append([]string(nil), (*input.Tags)...)
-	}
-	if input.Protocols != nil {
-		updates["protocols"] = append([]string(nil), (*input.Protocols)...)
+		serialized, err := serializeTags(*input.Tags)
+		if err != nil {
+			return Node{}, ErrInvalidArgument
+		}
+		updates["tags"] = serialized
 	}
 	if input.CapacityMbps != nil {
 		updates["capacity_mbps"] = *input.CapacityMbps
 	}
 	if input.Description != nil {
 		updates["description"] = strings.TrimSpace(*input.Description)
+	}
+	if input.AccessAddress != nil {
+		updates["access_address"] = strings.TrimSpace(*input.AccessAddress)
+	}
+	if input.ControlEndpoint != nil {
+		updates["control_endpoint"] = strings.TrimSpace(*input.ControlEndpoint)
+	}
+	if input.ControlAccessKey != nil {
+		updates["control_access_key"] = strings.TrimSpace(*input.ControlAccessKey)
+	}
+	if input.ControlSecretKey != nil {
+		updates["control_secret_key"] = strings.TrimSpace(*input.ControlSecretKey)
+	}
+	if input.ControlToken != nil {
+		updates["control_token"] = strings.TrimSpace(*input.ControlToken)
+	}
+	if input.StatusSyncEnabled != nil {
+		updates["status_sync_enabled"] = *input.StatusSyncEnabled
 	}
 	if input.LastSyncedAt != nil {
 		updates["last_synced_at"] = input.LastSyncedAt.UTC()
@@ -222,6 +262,39 @@ func (r *nodeRepository) Update(ctx context.Context, nodeID uint64, input Update
 	}
 
 	return r.Get(ctx, nodeID)
+}
+
+func (r *nodeRepository) UpdateStatusByIDs(ctx context.Context, nodeIDs []uint64, status string) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if len(nodeIDs) == 0 {
+		return nil
+	}
+	status = strings.TrimSpace(status)
+	if status == "" {
+		return ErrInvalidArgument
+	}
+	return r.db.WithContext(ctx).
+		Model(&Node{}).
+		Where("id IN ?", nodeIDs).
+		Where("status_sync_enabled = ?", true).
+		Where("LOWER(status) != ?", "disabled").
+		Updates(map[string]any{
+			"status":     status,
+			"updated_at": time.Now().UTC(),
+		}).Error
+}
+
+func serializeTags(tags []string) (string, error) {
+	if tags == nil {
+		tags = []string{}
+	}
+	raw, err := json.Marshal(tags)
+	if err != nil {
+		return "", err
+	}
+	return string(raw), nil
 }
 
 func (r *nodeRepository) Delete(ctx context.Context, nodeID uint64) error {
@@ -245,16 +318,21 @@ func (r *nodeRepository) Delete(ctx context.Context, nodeID uint64) error {
 
 // UpdateNodeInput defines mutable node fields.
 type UpdateNodeInput struct {
-	Name         *string
-	Region       *string
-	Country      *string
-	ISP          *string
-	Status       *string
-	Tags         *[]string
-	Protocols    *[]string
-	CapacityMbps *int
-	Description  *string
-	LastSyncedAt *time.Time
+	Name              *string
+	Region            *string
+	Country           *string
+	ISP               *string
+	Status            *string
+	Tags              *[]string
+	CapacityMbps      *int
+	Description       *string
+	AccessAddress     *string
+	ControlEndpoint   *string
+	ControlAccessKey  *string
+	ControlSecretKey  *string
+	ControlToken      *string
+	StatusSyncEnabled *bool
+	LastSyncedAt      *time.Time
 }
 
 // UpsertNodeKernelInput defines node kernel configuration updates.
@@ -335,10 +413,6 @@ func (r *nodeRepository) RecordKernelSync(ctx context.Context, nodeID uint64, ke
 			kernel = existing
 		}
 
-		if !containsIgnoreCase(node.Protocols, proto) {
-			node.Protocols = append(node.Protocols, proto)
-			sort.Strings(node.Protocols)
-		}
 		if kernel.LastSyncedAt.After(node.LastSyncedAt) {
 			node.LastSyncedAt = kernel.LastSyncedAt
 		}
@@ -432,10 +506,6 @@ func (r *nodeRepository) UpsertKernel(ctx context.Context, nodeID uint64, input 
 			kernel = existing
 		}
 
-		if !containsIgnoreCase(node.Protocols, proto) {
-			node.Protocols = append(node.Protocols, proto)
-			sort.Strings(node.Protocols)
-		}
 		if input.LastSyncedAt != nil && kernel.LastSyncedAt.After(node.LastSyncedAt) {
 			node.LastSyncedAt = kernel.LastSyncedAt
 		}
@@ -489,16 +559,6 @@ func buildNodeOrderClause(field, direction string) string {
 	}
 
 	return fmt.Sprintf("%s %s", column, dir)
-}
-
-func containsIgnoreCase(items []string, target string) bool {
-	target = strings.ToLower(strings.TrimSpace(target))
-	for _, item := range items {
-		if strings.ToLower(item) == target {
-			return true
-		}
-	}
-	return false
 }
 
 func normalizeProtocol(protocol string) string {

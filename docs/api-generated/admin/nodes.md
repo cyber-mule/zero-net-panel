@@ -64,9 +64,16 @@ type AdminCreateNodeRequest struct {
 	Isp string `form:"isp,optional" json:"isp,optional"`
 	Status string `form:"status,optional" json:"status,optional"`
 	Tags []string `form:"tags,optional" json:"tags,optional"`
-	Protocols []string `form:"protocols,optional" json:"protocols,optional"`
 	Capacity_mbps int `form:"capacity_mbps,optional" json:"capacity_mbps,optional"`
 	Description string `form:"description,optional" json:"description,optional"`
+	Access_address string `form:"access_address,optional" json:"access_address,optional"`
+	Control_endpoint string `form:"control_endpoint" json:"control_endpoint"`
+	Control_access_key string `form:"control_access_key,optional" json:"control_access_key,optional"`
+	Control_secret_key string `form:"control_secret_key,optional" json:"control_secret_key,optional"`
+	Ak string `form:"ak,optional" json:"ak,optional"`
+	Sk string `form:"sk,optional" json:"sk,optional"`
+	Control_token string `form:"control_token,optional" json:"control_token,optional"`
+	Status_sync_enabled bool `form:"status_sync_enabled,optional" json:"status_sync_enabled,optional"`
 }
 ```
 
@@ -88,9 +95,11 @@ type NodeSummary struct {
 	Isp string 
 	Status string 
 	Tags []string 
-	Protocols []string 
 	Capacity_mbps int 
 	Description string 
+	Access_address string 
+	Control_endpoint string 
+	Status_sync_enabled bool 
 	Last_synced_at int64 
 	Updated_at int64 
 }
@@ -118,9 +127,16 @@ type AdminUpdateNodeRequest struct {
 	Isp string `form:"isp,optional" json:"isp,optional"`
 	Status string `form:"status,optional" json:"status,optional"`
 	Tags []string `form:"tags,optional" json:"tags,optional"`
-	Protocols []string `form:"protocols,optional" json:"protocols,optional"`
 	Capacity_mbps int `form:"capacity_mbps,optional" json:"capacity_mbps,optional"`
 	Description string `form:"description,optional" json:"description,optional"`
+	Access_address string `form:"access_address,optional" json:"access_address,optional"`
+	Control_endpoint string `form:"control_endpoint,optional" json:"control_endpoint,optional"`
+	Control_access_key string `form:"control_access_key,optional" json:"control_access_key,optional"`
+	Control_secret_key string `form:"control_secret_key,optional" json:"control_secret_key,optional"`
+	Ak string `form:"ak,optional" json:"ak,optional"`
+	Sk string `form:"sk,optional" json:"sk,optional"`
+	Control_token string `form:"control_token,optional" json:"control_token,optional"`
+	Status_sync_enabled bool `form:"status_sync_enabled,optional" json:"status_sync_enabled,optional"`
 }
 ```
 
@@ -142,15 +158,40 @@ type NodeSummary struct {
 	Isp string 
 	Status string 
 	Tags []string 
-	Protocols []string 
 	Capacity_mbps int 
 	Description string 
+	Access_address string 
+	Control_endpoint string 
+	Status_sync_enabled bool 
 	Last_synced_at int64 
 	Updated_at int64 
 }
 ```
 
-### 4. "Disable node"
+### 4. "Delete node (soft delete)"
+
+1. route definition
+
+- Url: /api/v1/admin/nodes/:id
+- Method: DELETE
+- Request: `AdminDeleteNodeRequest`
+- Response: `-`
+
+2. request definition
+
+
+
+```golang
+type AdminDeleteNodeRequest struct {
+	Id uint64 
+}
+```
+
+
+3. response definition
+
+
+### 5. "Disable node"
 
 1. route definition
 
@@ -187,15 +228,17 @@ type NodeSummary struct {
 	Isp string 
 	Status string 
 	Tags []string 
-	Protocols []string 
 	Capacity_mbps int 
 	Description string 
+	Access_address string 
+	Control_endpoint string 
+	Status_sync_enabled bool 
 	Last_synced_at int64 
 	Updated_at int64 
 }
 ```
 
-### 5. "Get node kernel endpoints"
+### 6. "Get node kernel endpoints"
 
 1. route definition
 
@@ -226,7 +269,7 @@ type AdminNodeKernelResponse struct {
 }
 ```
 
-### 6. "Upsert node kernel endpoint"
+### 7. "Upsert node kernel endpoint"
 
 1. route definition
 
@@ -272,7 +315,7 @@ type NodeKernelSummary struct {
 }
 ```
 
-### 7. "Sync node kernel configuration"
+### 8. "Sync node kernel configuration"
 
 1. route definition
 
@@ -304,6 +347,36 @@ type AdminSyncNodeKernelResponse struct {
 	Revision string 
 	Synced_at int64 
 	Message string 
+}
+```
+
+### 9. "Sync node status"
+
+1. route definition
+
+- Url: /api/v1/admin/nodes/status/sync
+- Method: POST
+- Request: `AdminSyncNodeStatusRequest`
+- Response: `AdminSyncNodeStatusResponse`
+
+2. request definition
+
+
+
+```golang
+type AdminSyncNodeStatusRequest struct {
+	Node_ids []uint64 `form:"node_ids,optional" json:"node_ids,optional"`
+}
+```
+
+
+3. response definition
+
+
+
+```golang
+type AdminSyncNodeStatusResponse struct {
+	Results []NodeStatusSyncResult 
 }
 ```
 

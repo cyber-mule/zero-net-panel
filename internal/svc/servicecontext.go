@@ -54,7 +54,7 @@ func NewServiceContext(c config.Config) (*ServiceContext, error) {
 		DefaultProtocol: c.Kernel.DefaultProtocol,
 		HTTP: kernel.HTTPOptions{
 			BaseURL: c.Kernel.HTTP.BaseURL,
-			Token:   c.Kernel.HTTP.Token,
+			Token:   c.Kernel.HTTP.AuthToken(),
 			Timeout: c.Kernel.HTTP.Timeout,
 		},
 		GRPC: kernel.GRPCOptions{

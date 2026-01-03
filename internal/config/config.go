@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding/base64"
 	"strings"
 	"time"
 
@@ -47,9 +48,11 @@ type KernelConfig struct {
 }
 
 type KernelHTTPConfig struct {
-	BaseURL string        `json:"baseUrl" yaml:"BaseURL"`
-	Token   string        `json:"token" yaml:"Token"`
-	Timeout time.Duration `json:"timeout" yaml:"Timeout"`
+	BaseURL      string        `json:"baseUrl" yaml:"BaseURL"`
+	Token        string        `json:"token" yaml:"Token"`
+	AccessKey    string        `json:"accessKey" yaml:"AccessKey"`
+	AccessSecret string        `json:"accessSecret" yaml:"AccessSecret"`
+	Timeout      time.Duration `json:"timeout" yaml:"Timeout"`
 }
 
 type KernelGRPCConfig struct {
@@ -61,10 +64,28 @@ type KernelGRPCConfig struct {
 // Normalize applies defaults for kernel configuration.
 func (k *KernelConfig) Normalize() {
 	k.DefaultProtocol = strings.TrimSpace(k.DefaultProtocol)
+	k.HTTP.Normalize()
 	if k.StatusPollInterval < 0 {
 		k.StatusPollInterval = 0
 	}
 	k.StatusPollBackoff.Normalize(k.StatusPollInterval)
+}
+
+// Normalize applies defaults for kernel HTTP config.
+func (h *KernelHTTPConfig) Normalize() {
+	h.BaseURL = strings.TrimSpace(h.BaseURL)
+	h.Token = strings.TrimSpace(h.Token)
+	h.AccessKey = strings.TrimSpace(h.AccessKey)
+	h.AccessSecret = strings.TrimSpace(h.AccessSecret)
+}
+
+// AuthToken resolves the Authorization token, preferring access key/secret.
+func (h KernelHTTPConfig) AuthToken() string {
+	if h.AccessKey != "" && h.AccessSecret != "" {
+		encoded := base64.StdEncoding.EncodeToString([]byte(h.AccessKey + ":" + h.AccessSecret))
+		return "Basic " + encoded
+	}
+	return strings.TrimSpace(h.Token)
 }
 
 // CORSConfig configures cross-origin access for the HTTP API.

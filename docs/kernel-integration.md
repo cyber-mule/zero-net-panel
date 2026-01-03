@@ -7,14 +7,21 @@
 ## 使用方式
 
 - 将 `core.yaml` 导入 Postman/Insomnia 或其他 OpenAPI 工具进行调试与对接。
-- 将 `servers` 中的 `url` 替换为实际内核 HTTP 地址（应与 `Kernel.HTTP.BaseURL` 对齐）。
+- 将 `servers` 中的 `url` 替换为实际内核 HTTP 地址（应与节点 `control_endpoint` 对齐）。
 - 默认使用 Basic 鉴权；若内核配置 `api.auth.allow_insecure=true`，可不携带 Authorization。
+
+面板侧鉴权配置说明：
+
+- 节点控制面必须配置 `control_endpoint`，面板不再回退全局 `Kernel.HTTP.BaseURL`。
+- 在节点上配置 `control_access_key` + `control_secret_key` 时，面板会自动发送 Basic。
+- 鉴权优先级：`control_access_key` + `control_secret_key` → `control_token`（无全局兜底）。
 
 ## 与面板对接关系
 
 - 面板通过 `POST /api/v1/{admin}/nodes/{id}/kernels/sync` 触发节点与内核同步。
 - 内核侧应实现 `core.yaml` 中的控制面接口（如 `/v1/status`、`/v1/traffic` 等），
   具体字段与错误码以 `core.yaml` 为准。
+- `GET /v1/status` 返回的节点 `id` 为字符串；面板侧需将协议绑定的 `kernel_id` 与该 `id` 对齐。
 
 ## 运行状态检查
 
@@ -54,6 +61,8 @@
 - `POST /api/v1/kernel/events`：节点状态事件回调。
 - `POST /api/v1/kernel/traffic`：用户流量观测回调。
 
+当前节点事件回调仅用于记录，不会自动更新协议健康状态；需要时请手动触发协议健康反向同步。
+
 节点事件示例（`id` 或 `node_id` 至少一个）：
 
 ```json
@@ -85,8 +94,16 @@
 }
 ```
 
-若内核无法推送事件，可通过 `Kernel.StatusPollInterval` 启用状态轮询，面板会定期调用
-`GET /v1/status` 同步协议节点健康度。
+当内核无法推送事件时，可通过 `Kernel.StatusPollInterval` 启用状态轮询，面板会定期调用
+`GET /v1/status` 判断节点控制面可达性，并将节点 `status` 更新为 `online`/`offline`。
+
+如需即时刷新某些节点的在线状态，可调用管理端：
+
+- `POST /api/v1/{admin}/nodes/status/sync`（请求体传 `node_ids`）
+
+协议健康度不会自动反向同步，需手动触发：
+
+- `POST /api/v1/{admin}/protocol-bindings/status/sync`（请求体传 `node_ids`）
 
 为了避免内核不可用时刷屏，支持失败退避：
 

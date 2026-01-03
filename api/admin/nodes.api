@@ -39,6 +39,10 @@ service znp {
 	@doc "Sync node kernel configuration"
 	@handler AdminSyncNodeKernel
 	post /admin/nodes/:id/kernels/sync (AdminSyncNodeKernelRequest) returns (AdminSyncNodeKernelResponse)
+
+	@doc "Sync node status"
+	@handler AdminSyncNodeStatus
+	post /admin/nodes/status/sync (AdminSyncNodeStatusRequest) returns (AdminSyncNodeStatusResponse)
 }
 
 type AdminListNodesRequest {
@@ -59,9 +63,11 @@ type NodeSummary {
 	isp            string
 	status         string
 	tags           []string
-	protocols      []string
 	capacity_mbps  int
 	description    string
+	access_address string
+	control_endpoint string
+	status_sync_enabled bool
 	last_synced_at int64
 	updated_at     int64
 }
@@ -77,9 +83,16 @@ type AdminCreateNodeRequest {
 	isp           string   `form:"isp,optional" json:"isp,optional"`
 	status        string   `form:"status,optional" json:"status,optional"`
 	tags          []string `form:"tags,optional" json:"tags,optional"`
-	protocols     []string `form:"protocols,optional" json:"protocols,optional"`
 	capacity_mbps int      `form:"capacity_mbps,optional" json:"capacity_mbps,optional"`
 	description   string   `form:"description,optional" json:"description,optional"`
+	access_address   string   `form:"access_address,optional" json:"access_address,optional"`
+	control_endpoint string   `form:"control_endpoint" json:"control_endpoint"`
+	control_access_key string   `form:"control_access_key,optional" json:"control_access_key,optional"`
+	control_secret_key string   `form:"control_secret_key,optional" json:"control_secret_key,optional"`
+	ak               string   `form:"ak,optional" json:"ak,optional"`
+	sk               string   `form:"sk,optional" json:"sk,optional"`
+	control_token    string   `form:"control_token,optional" json:"control_token,optional"`
+	status_sync_enabled bool   `form:"status_sync_enabled,optional" json:"status_sync_enabled,optional"`
 }
 
 type AdminUpdateNodeRequest {
@@ -90,9 +103,16 @@ type AdminUpdateNodeRequest {
 	isp           string   `form:"isp,optional" json:"isp,optional"`
 	status        string   `form:"status,optional" json:"status,optional"`
 	tags          []string `form:"tags,optional" json:"tags,optional"`
-	protocols     []string `form:"protocols,optional" json:"protocols,optional"`
 	capacity_mbps int      `form:"capacity_mbps,optional" json:"capacity_mbps,optional"`
 	description   string   `form:"description,optional" json:"description,optional"`
+	access_address   string   `form:"access_address,optional" json:"access_address,optional"`
+	control_endpoint string   `form:"control_endpoint,optional" json:"control_endpoint,optional"`
+	control_access_key string   `form:"control_access_key,optional" json:"control_access_key,optional"`
+	control_secret_key string   `form:"control_secret_key,optional" json:"control_secret_key,optional"`
+	ak               string   `form:"ak,optional" json:"ak,optional"`
+	sk               string   `form:"sk,optional" json:"sk,optional"`
+	control_token    string   `form:"control_token,optional" json:"control_token,optional"`
+	status_sync_enabled bool   `form:"status_sync_enabled,optional" json:"status_sync_enabled,optional"`
 }
 
 type AdminDisableNodeRequest {
@@ -152,4 +172,19 @@ type AdminSyncNodeKernelResponse {
 	revision  string
 	synced_at int64
 	message   string
+}
+
+type NodeStatusSyncResult {
+	node_id   uint64
+	status    string
+	message   string
+	synced_at int64
+}
+
+type AdminSyncNodeStatusRequest {
+	node_ids []uint64 `form:"node_ids,optional" json:"node_ids,optional"`
+}
+
+type AdminSyncNodeStatusResponse {
+	results []NodeStatusSyncResult
 }
