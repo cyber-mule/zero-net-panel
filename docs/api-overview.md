@@ -118,15 +118,20 @@
 | 同上 | `404` | 节点不存在 | 检查节点是否被删除，确认 `Admin.RoutePrefix` 与 URL 中的 `{id}` 是否正确。 |
 | 同上 | `500` | 内核同步失败 | 检查内核服务地址、令牌是否正确，必要时查看 `Kernel` 配置或抓取 gRPC/HTTP 日志。 |
 
-### 协议配置与绑定流程
+### 协议绑定与发布流程
 
-1. 创建协议配置 `POST /api/v1/{admin}/protocol-configs`：必填 `name`、`protocol`；`profile` 可选（未填时需在绑定阶段提供）。
-2. 创建协议绑定 `POST /api/v1/{admin}/protocol-bindings`：必填 `node_id`、`protocol`、`role`（`listener`/`connector`）、`kernel_id`（字符串，需与内核协议 ID 对齐）；当未指定 `protocol_config_id` 时，`profile` 必填；常用字段 `listen`、`connect`、`access_port`。
-3. 更新绑定（可选）`PATCH /api/v1/{admin}/protocol-bindings/{id}`：调整状态、端口、标签或健康字段。
+1. 创建协议绑定 `POST /api/v1/{admin}/protocol-bindings`：必填 `node_id`、`protocol`、`role`（`listener`/`connector`）、`kernel_id`（字符串，需与内核协议 ID 对齐）、`profile`（内核实际配置）；常用字段 `listen`、`connect`、`access_port`。
+2. 创建协议发布 `POST /api/v1/{admin}/protocol-entries`：必填 `binding_id`、`entry_address`、`entry_port`；`profile` 填写对外公开配置（如 reality 公钥、short_id 等）。
+3. 更新绑定或发布（可选）：`PATCH /api/v1/{admin}/protocol-bindings/{id}` / `PATCH /api/v1/{admin}/protocol-entries/{id}`。
+
+补充说明：
+- `entry_address/entry_port` 为对外入口地址，可与绑定的 `listen/access_port` 不一致，用于中转或分流场景。
+- 协议发布 `status` 仅影响用户可见性；健康状态以协议绑定 `health_status` 为准。
+- 绑定 `listen` 为空或仅端口时，会用 `access_port` 归一化为 `0.0.0.0:<port>` 供内核使用。
 
 ### 协议绑定同步流程
 
-1. 管理端创建协议配置与绑定（`/protocol-configs`、`/protocol-bindings`）。
+1. 管理端创建协议绑定与发布（`/protocol-bindings`、`/protocol-entries`）。
 2. 触发单条或批量下发：`POST /api/v1/{admin}/protocol-bindings/{id}/sync` 或 `/protocol-bindings/sync`。
 3. 同步结果直接返回，包含 `binding_id`、`status`、`message`、`synced_at`。
 4. 若未配置内核控制面，返回 `status=error` 且 `message` 提示配置缺失。

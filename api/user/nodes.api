@@ -55,3 +55,4 @@ type UserNodeStatusListResponse {
 	nodes      []UserNodeStatusSummary
 	pagination PaginationMeta
 }
+

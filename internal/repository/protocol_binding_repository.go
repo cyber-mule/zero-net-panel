@@ -12,31 +12,29 @@ import (
 
 // ProtocolBinding binds a protocol configuration to a node instance.
 type ProtocolBinding struct {
-	ID               uint64         `gorm:"primaryKey"`
-	Name             string         `gorm:"size:255"`
-	NodeID           uint64         `gorm:"index"`
-	ProtocolConfigID uint64         `gorm:"index"`
-	Protocol         string         `gorm:"size:32;index"`
-	Role             string         `gorm:"size:32"`
-	Listen           string         `gorm:"size:512"`
-	Connect          string         `gorm:"size:512"`
-	AccessPort       int            `gorm:"column:access_port"`
-	Status           string         `gorm:"size:32"`
-	KernelID         string         `gorm:"size:128;index"`
-	SyncStatus       string         `gorm:"size:32"`
-	HealthStatus     string         `gorm:"size:32"`
-	LastSyncedAt     time.Time      `gorm:"column:last_synced_at"`
-	LastHeartbeatAt  time.Time      `gorm:"column:last_heartbeat_at"`
-	LastSyncError    string         `gorm:"type:text"`
-	Tags             []string       `gorm:"serializer:json"`
-	Description      string         `gorm:"type:text"`
-	Profile          map[string]any `gorm:"serializer:json"`
-	Metadata         map[string]any `gorm:"serializer:json"`
-	UpdatedAt        time.Time
-	CreatedAt        time.Time
+	ID              uint64         `gorm:"primaryKey"`
+	Name            string         `gorm:"size:255"`
+	NodeID          uint64         `gorm:"index"`
+	Protocol        string         `gorm:"size:32;index"`
+	Role            string         `gorm:"size:32"`
+	Listen          string         `gorm:"size:512"`
+	Connect         string         `gorm:"size:512"`
+	AccessPort      int            `gorm:"column:access_port"`
+	Status          string         `gorm:"size:32"`
+	KernelID        string         `gorm:"size:128;index"`
+	SyncStatus      string         `gorm:"size:32"`
+	HealthStatus    string         `gorm:"size:32"`
+	LastSyncedAt    time.Time      `gorm:"column:last_synced_at"`
+	LastHeartbeatAt time.Time      `gorm:"column:last_heartbeat_at"`
+	LastSyncError   string         `gorm:"type:text"`
+	Tags            []string       `gorm:"serializer:json"`
+	Description     string         `gorm:"type:text"`
+	Profile         map[string]any `gorm:"serializer:json"`
+	Metadata        map[string]any `gorm:"serializer:json"`
+	UpdatedAt       time.Time
+	CreatedAt       time.Time
 
-	Node           Node           `gorm:"foreignKey:NodeID;references:ID"`
-	ProtocolConfig ProtocolConfig `gorm:"foreignKey:ProtocolConfigID;references:ID"`
+	Node Node `gorm:"foreignKey:NodeID;references:ID"`
 }
 
 // TableName binds the protocol binding table name.
@@ -52,30 +50,28 @@ type ListProtocolBindingsOptions struct {
 	Status    string
 	Protocol  string
 	NodeID    *uint64
-	ConfigID  *uint64
 }
 
 // UpdateProtocolBindingInput defines mutable binding fields.
 type UpdateProtocolBindingInput struct {
-	Name             *string
-	NodeID           *uint64
-	ProtocolConfigID *uint64
-	Protocol         *string
-	Role             *string
-	Listen           *string
-	Connect          *string
-	AccessPort       *int
-	Status           *string
-	KernelID         *string
-	SyncStatus       *string
-	HealthStatus     *string
-	LastSyncedAt     *time.Time
-	LastHeartbeatAt  *time.Time
-	LastSyncError    *string
-	Tags             *[]string
-	Description      *string
-	Profile          *map[string]any
-	Metadata         *map[string]any
+	Name            *string
+	NodeID          *uint64
+	Protocol        *string
+	Role            *string
+	Listen          *string
+	Connect         *string
+	AccessPort      *int
+	Status          *string
+	KernelID        *string
+	SyncStatus      *string
+	HealthStatus    *string
+	LastSyncedAt    *time.Time
+	LastHeartbeatAt *time.Time
+	LastSyncError   *string
+	Tags            *[]string
+	Description     *string
+	Profile         *map[string]any
+	Metadata        *map[string]any
 }
 
 // ProtocolBindingRepository manages protocol binding persistence.
@@ -123,9 +119,6 @@ func (r *protocolBindingRepository) List(ctx context.Context, opts ListProtocolB
 	if opts.NodeID != nil {
 		base = base.Where("node_id = ?", *opts.NodeID)
 	}
-	if opts.ConfigID != nil {
-		base = base.Where("protocol_config_id = ?", *opts.ConfigID)
-	}
 	if protocol := strings.TrimSpace(strings.ToLower(opts.Protocol)); protocol != "" {
 		base = base.Where("LOWER(protocol) = ?", protocol)
 	}
@@ -142,7 +135,7 @@ func (r *protocolBindingRepository) List(ctx context.Context, opts ListProtocolB
 	orderClause := buildProtocolBindingOrderClause(opts.Sort, opts.Direction)
 	offset := (opts.Page - 1) * opts.PerPage
 	listQuery := base.Session(&gorm.Session{}).Order(orderClause).Limit(opts.PerPage).Offset(offset).
-		Preload("Node").Preload("ProtocolConfig")
+		Preload("Node")
 
 	var bindings []ProtocolBinding
 	if err := listQuery.Find(&bindings).Error; err != nil {
@@ -165,7 +158,6 @@ func (r *protocolBindingRepository) ListByNodeIDs(ctx context.Context, nodeIDs [
 		Where("node_id IN ?", nodeIDs).
 		Order("node_id ASC, updated_at DESC").
 		Preload("Node").
-		Preload("ProtocolConfig").
 		Find(&bindings).Error; err != nil {
 		return nil, err
 	}
@@ -184,7 +176,6 @@ func (r *protocolBindingRepository) ListByIDs(ctx context.Context, ids []uint64)
 	if err := r.db.WithContext(ctx).
 		Where("id IN ?", ids).
 		Preload("Node").
-		Preload("ProtocolConfig").
 		Find(&bindings).Error; err != nil {
 		return nil, err
 	}
@@ -200,7 +191,6 @@ func (r *protocolBindingRepository) ListAll(ctx context.Context) ([]ProtocolBind
 	if err := r.db.WithContext(ctx).
 		Order("updated_at DESC").
 		Preload("Node").
-		Preload("ProtocolConfig").
 		Find(&bindings).Error; err != nil {
 		return nil, err
 	}
@@ -213,7 +203,7 @@ func (r *protocolBindingRepository) Get(ctx context.Context, id uint64) (Protoco
 	}
 
 	var binding ProtocolBinding
-	if err := r.db.WithContext(ctx).Preload("Node").Preload("ProtocolConfig").First(&binding, id).Error; err != nil {
+	if err := r.db.WithContext(ctx).Preload("Node").First(&binding, id).Error; err != nil {
 		return ProtocolBinding{}, translateError(err)
 	}
 	return binding, nil
@@ -353,7 +343,7 @@ func (r *protocolBindingRepository) UpdateHealthByKernelID(ctx context.Context, 
 	}
 
 	var binding ProtocolBinding
-	if err := r.db.WithContext(ctx).Preload("Node").Preload("ProtocolConfig").
+	if err := r.db.WithContext(ctx).Preload("Node").
 		Where("kernel_id = ?", kernelID).
 		Where("node_id IN (?)", nodeFilter).
 		First(&binding).Error; err != nil {
@@ -399,7 +389,7 @@ func (r *protocolBindingRepository) UpdateHealthByKernelIDForNodes(ctx context.C
 	}
 
 	var binding ProtocolBinding
-	if err := r.db.WithContext(ctx).Preload("Node").Preload("ProtocolConfig").
+	if err := r.db.WithContext(ctx).Preload("Node").
 		Where("kernel_id = ?", kernelID).
 		Where("node_id IN ?", nodeIDs).
 		First(&binding).Error; err != nil {
@@ -425,9 +415,6 @@ func (r *protocolBindingRepository) buildBindingUpdates(input UpdateProtocolBind
 	}
 	if input.NodeID != nil {
 		updates["node_id"] = *input.NodeID
-	}
-	if input.ProtocolConfigID != nil {
-		updates["protocol_config_id"] = *input.ProtocolConfigID
 	}
 	if input.Protocol != nil {
 		updates["protocol"] = strings.ToLower(strings.TrimSpace(*input.Protocol))

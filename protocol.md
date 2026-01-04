@@ -1,21 +1,27 @@
 # 协议与节点设计总览（面板侧）
 
 ## 背景与目标
-- 节点与协议配置解耦：节点仅描述机房/线路等资源，协议配置描述具体协议参数。
-- 协议绑定（节点 + 协议配置）作为可下发的最小单元，支持中转/非入口节点等场景。
-- 订阅输出基于协议绑定组装，支持模板化订阅内容。
+- 节点与协议解耦：节点仅描述机房/线路等资源，协议绑定描述内核实际配置，协议发布描述对外入口。
+- 协议绑定（节点 + 实际协议配置）作为内核下发的最小单元，支持中转/非入口节点等场景。
+- 订阅输出基于协议发布组装，支持模板化订阅内容。
 - 下发协议为手动触发能力；节点注册仅建立面板与内核的 API 通讯关系。
 
 ## 数据模型
 - 节点 `nodes`：节点元信息、状态、标签等（`internal/repository/node_repository.go`）。
-- 协议模板 `protocol_configs`：协议类型 + profile 模板（`internal/repository/protocol_config_repository.go`）。
 - 协议绑定 `protocol_bindings`：绑定节点 + 实际协议配置（profile）+ 监听/中转信息 + 同步/健康状态（`internal/repository/protocol_binding_repository.go`）。
+- 协议发布 `protocol_entries`：对外入口（域名/IP + 端口 + 公共 profile），仅控制用户可见状态，健康状态共享自绑定（`internal/repository/protocol_entry_repository.go`）。
 - 流量记录 `traffic_usage_records`：原始与倍数计费流量（`internal/repository/traffic_usage_repository.go`）。
 - 套餐倍数 `plans.traffic_multipliers`：协议 -> 倍数（`internal/repository/plan_repository.go`）。
 
+## 分层规则
+- 协议绑定仅用于内核下发；协议发布仅用于订阅交付与用户可见入口。
+- 协议发布 `entry_address/entry_port` 为对外入口，可与绑定 `listen/access_port` 不一致，用于中转或分流场景。
+- 协议发布 `status` 为虚拟状态，仅影响用户可见；绑定 `health_status` 代表真实健康并在发布列表共享展示。
+- 绑定 `listen` 为空或仅端口时，会用 `access_port` 归一化为 `0.0.0.0:<port>` 供内核使用。
+
 ## 管理能力
-- 协议配置管理（增删改查）：`/api/v1/{admin}/protocol-configs`
 - 协议绑定管理（增删改查）：`/api/v1/{admin}/protocol-bindings`
+- 协议发布管理（增删改查）：`/api/v1/{admin}/protocol-entries`
 - 协议下发（手动同步）：`/api/v1/{admin}/protocol-bindings/:id/sync` 与批量 `/sync`
 - 节点内核端点维护与同步（原有能力保留）：`/api/v1/{admin}/nodes/:id/kernels`
 
@@ -28,8 +34,8 @@
 - 状态轮询：`Kernel.StatusPollInterval` 触发 `GET /v1/status` 轮询（`internal/logic/kernel/statussync.go`）。
 
 ## 订阅与展示
-- 订阅渲染改为基于协议绑定上下文输出 `hostname/port` 等（`internal/logic/user/subscription/previewlogic.go`）。
-- 用户侧节点状态：增加 `protocol_statuses`（协议绑定健康）与 `kernel_statuses`（同步摘要）（`/api/v1/user/nodes`）。
+- 订阅渲染基于协议发布上下文输出 `entry_address/entry_port` 与公开 profile（`internal/logic/user/subscription/previewlogic.go`）。
+- 用户侧节点状态：按协议发布可见状态 + 协议绑定健康过滤后展示，响应仍以绑定健康与内核同步摘要为主（`/api/v1/user/nodes`）。
 - 用户侧流量查询：`/api/v1/user/subscriptions/:id/traffic`，返回原始/倍数流量与倍数系数。
 
 ## 流量计费与倍数
@@ -44,8 +50,8 @@
 - 身份信息加密存储并保留指纹与时间轴，用于延迟上报审计追溯。
 
 ## 实现进度（对照清单）
-- [x] 协议配置/协议绑定/流量记录数据模型 + 迁移
-- [x] 管理端协议配置/协议绑定 CRUD + 手动下发
+- [x] 协议发布/协议绑定/流量记录数据模型 + 迁移
+- [x] 管理端协议发布/协议绑定 CRUD + 手动下发
 - [x] 内核控制面下发协议能力
 - [x] 节点事件回调接入 + 状态轮询能力
 - [x] 流量回调接入 + 倍数核算 + 用户查询
@@ -54,7 +60,7 @@
 
 ## 相关文件索引
 - 数据模型与迁移：`internal/repository/*.go`，`internal/bootstrap/migrations/registry.go`
-- 管理端 API：`api/admin/protocol_configs.api`，`api/admin/protocol_bindings.api`
+- 管理端 API：`api/admin/protocol_entries.api`，`api/admin/protocol_bindings.api`
 - 用户端 API：`api/user/nodes.api`，`api/user/subscriptions.api`
 - 内核对接文档：`docs/kernel-integration.md`，`core.yaml`
 - 配置示例：`etc/znp-api.yaml`，`etc/znp-sqlite.yaml`，`etc/znp-prod.example.yaml`

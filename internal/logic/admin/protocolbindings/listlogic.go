@@ -40,9 +40,6 @@ func (l *ListLogic) List(req *types.AdminListProtocolBindingsRequest) (*types.Ad
 	if req.NodeID != nil && *req.NodeID > 0 {
 		opts.NodeID = req.NodeID
 	}
-	if req.ProtocolConfigID != nil && *req.ProtocolConfigID > 0 {
-		opts.ConfigID = req.ProtocolConfigID
-	}
 
 	bindings, total, err := l.svcCtx.Repositories.ProtocolBinding.List(l.ctx, opts)
 	if err != nil {

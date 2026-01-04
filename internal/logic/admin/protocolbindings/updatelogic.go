@@ -42,14 +42,6 @@ func (l *UpdateLogic) Update(req *types.AdminUpdateProtocolBindingRequest) (*typ
 		}
 		input.NodeID = req.NodeID
 	}
-	if req.ProtocolConfigID != nil {
-		if *req.ProtocolConfigID > 0 {
-			if _, err := l.svcCtx.Repositories.ProtocolConfig.Get(l.ctx, *req.ProtocolConfigID); err != nil {
-				return nil, err
-			}
-		}
-		input.ProtocolConfigID = req.ProtocolConfigID
-	}
 	if req.Protocol != nil {
 		protocol := strings.ToLower(strings.TrimSpace(*req.Protocol))
 		if protocol == "" {

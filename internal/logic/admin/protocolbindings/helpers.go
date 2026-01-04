@@ -26,29 +26,28 @@ func normalizeRole(role string) (string, bool) {
 
 func mapProtocolBindingSummary(binding repository.ProtocolBinding) types.ProtocolBindingSummary {
 	return types.ProtocolBindingSummary{
-		ID:               binding.ID,
-		Name:             binding.Name,
-		NodeID:           binding.NodeID,
-		NodeName:         binding.Node.Name,
-		ProtocolConfigID: binding.ProtocolConfigID,
-		Protocol:         normalizeBindingProtocol(binding),
-		Role:             binding.Role,
-		Listen:           binding.Listen,
-		Connect:          binding.Connect,
-		AccessPort:       binding.AccessPort,
-		Status:           binding.Status,
-		KernelID:         binding.KernelID,
-		SyncStatus:       binding.SyncStatus,
-		HealthStatus:     binding.HealthStatus,
-		LastSyncedAt:     toUnixOrZero(binding.LastSyncedAt),
-		LastHeartbeatAt:  toUnixOrZero(binding.LastHeartbeatAt),
-		LastSyncError:    binding.LastSyncError,
-		Tags:             append([]string(nil), binding.Tags...),
-		Description:      binding.Description,
-		Profile:          cloneBindingProfile(binding.Profile),
-		Metadata:         binding.Metadata,
-		CreatedAt:        toUnixOrZero(binding.CreatedAt),
-		UpdatedAt:        toUnixOrZero(binding.UpdatedAt),
+		ID:              binding.ID,
+		Name:            binding.Name,
+		NodeID:          binding.NodeID,
+		NodeName:        binding.Node.Name,
+		Protocol:        normalizeBindingProtocol(binding),
+		Role:            binding.Role,
+		Listen:          binding.Listen,
+		Connect:         binding.Connect,
+		AccessPort:      binding.AccessPort,
+		Status:          binding.Status,
+		KernelID:        binding.KernelID,
+		SyncStatus:      binding.SyncStatus,
+		HealthStatus:    binding.HealthStatus,
+		LastSyncedAt:    toUnixOrZero(binding.LastSyncedAt),
+		LastHeartbeatAt: toUnixOrZero(binding.LastHeartbeatAt),
+		LastSyncError:   binding.LastSyncError,
+		Tags:            append([]string(nil), binding.Tags...),
+		Description:     binding.Description,
+		Profile:         cloneBindingProfile(binding.Profile),
+		Metadata:        binding.Metadata,
+		CreatedAt:       toUnixOrZero(binding.CreatedAt),
+		UpdatedAt:       toUnixOrZero(binding.UpdatedAt),
 	}
 }
 
@@ -73,8 +72,5 @@ func extractHostPort(address string) (string, int) {
 }
 
 func normalizeBindingProtocol(binding repository.ProtocolBinding) string {
-	if value := strings.ToLower(strings.TrimSpace(binding.Protocol)); value != "" {
-		return value
-	}
-	return strings.ToLower(strings.TrimSpace(binding.ProtocolConfig.Protocol))
+	return strings.ToLower(strings.TrimSpace(binding.Protocol))
 }

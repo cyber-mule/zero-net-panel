@@ -25,10 +25,10 @@ func Run(ctx context.Context, db *gorm.DB) error {
 		if err := seedNodes(tx); err != nil {
 			return err
 		}
-		if err := seedProtocolConfigs(tx); err != nil {
+		if err := seedProtocolBindings(tx); err != nil {
 			return err
 		}
-		if err := seedProtocolBindings(tx); err != nil {
+		if err := seedProtocolEntries(tx); err != nil {
 			return err
 		}
 		if err := seedPlans(tx); err != nil {
@@ -280,42 +280,6 @@ func seedNodes(tx *gorm.DB) error {
 	return tx.Create(&laKernel).Error
 }
 
-func seedProtocolConfigs(tx *gorm.DB) error {
-	var count int64
-	if err := tx.Model(&repository.ProtocolConfig{}).Count(&count).Error; err != nil {
-		return err
-	}
-	if count > 0 {
-		return nil
-	}
-
-	now := time.Now().UTC()
-	configs := []repository.ProtocolConfig{
-		{
-			Name:        "vless-basic",
-			Protocol:    "vless",
-			Status:      "active",
-			Tags:        []string{"edge"},
-			Description: "VLESS 基础配置示例",
-			Profile:     map[string]any{"security": "none"},
-			CreatedAt:   now.Add(-24 * time.Hour),
-			UpdatedAt:   now.Add(-12 * time.Hour),
-		},
-		{
-			Name:        "ss-basic",
-			Protocol:    "ss",
-			Status:      "active",
-			Tags:        []string{"standard"},
-			Description: "Shadowsocks 基础配置示例",
-			Profile:     map[string]any{"cipher": "aes-128-gcm"},
-			CreatedAt:   now.Add(-24 * time.Hour),
-			UpdatedAt:   now.Add(-12 * time.Hour),
-		},
-	}
-
-	return tx.Create(&configs).Error
-}
-
 func seedProtocolBindings(tx *gorm.DB) error {
 	var count int64
 	if err := tx.Model(&repository.ProtocolBinding{}).Count(&count).Error; err != nil {
@@ -325,19 +289,9 @@ func seedProtocolBindings(tx *gorm.DB) error {
 		return nil
 	}
 
-	var configs []repository.ProtocolConfig
-	if err := tx.Find(&configs).Error; err != nil {
-		return err
-	}
-
 	var nodes []repository.Node
 	if err := tx.Find(&nodes).Error; err != nil {
 		return err
-	}
-
-	cfgMap := map[string]repository.ProtocolConfig{}
-	for _, cfg := range configs {
-		cfgMap[cfg.Protocol] = cfg
 	}
 
 	nodeMap := map[string]repository.Node{}
@@ -356,59 +310,96 @@ func seedProtocolBindings(tx *gorm.DB) error {
 		return errors.New("seed: missing node edge-la-1")
 	}
 
-	vlessCfg, ok := cfgMap["vless"]
-	if !ok {
-		return errors.New("seed: missing vless protocol config")
-	}
-	ssCfg, ok := cfgMap["ss"]
-	if !ok {
-		return errors.New("seed: missing ss protocol config")
-	}
-
 	bindings := []repository.ProtocolBinding{
 		{
-			Name:             "hk-vless",
-			NodeID:           hkNode.ID,
-			ProtocolConfigID: vlessCfg.ID,
-			Protocol:         vlessCfg.Protocol,
-			Role:             "listener",
-			Listen:           "hk.example.com:443",
-			AccessPort:       443,
-			Status:           "active",
-			KernelID:         "edge-hk-1-vless",
-			SyncStatus:       "synced",
-			HealthStatus:     "healthy",
-			Tags:             []string{"edge", "hk"},
-			Description:      "香港入口示例",
-			Profile:          vlessCfg.Profile,
-			CreatedAt:        now.Add(-12 * time.Hour),
-			UpdatedAt:        now.Add(-30 * time.Minute),
-			LastSyncedAt:     now.Add(-30 * time.Minute),
-			LastHeartbeatAt:  now.Add(-5 * time.Minute),
+			Name:            "hk-vless",
+			NodeID:          hkNode.ID,
+			Protocol:        "vless",
+			Role:            "listener",
+			Listen:          "0.0.0.0:443",
+			AccessPort:      443,
+			Status:          "active",
+			KernelID:        "edge-hk-1-vless",
+			SyncStatus:      "synced",
+			HealthStatus:    "healthy",
+			Tags:            []string{"edge", "hk"},
+			Description:     "香港入口示例",
+			Profile:         map[string]any{"security": "none"},
+			CreatedAt:       now.Add(-12 * time.Hour),
+			UpdatedAt:       now.Add(-30 * time.Minute),
+			LastSyncedAt:    now.Add(-30 * time.Minute),
+			LastHeartbeatAt: now.Add(-5 * time.Minute),
 		},
 		{
-			Name:             "la-ss",
-			NodeID:           laNode.ID,
-			ProtocolConfigID: ssCfg.ID,
-			Protocol:         ssCfg.Protocol,
-			Role:             "listener",
-			Listen:           "la.example.com:443",
-			AccessPort:       443,
-			Status:           "active",
-			KernelID:         "edge-la-1-ss",
-			SyncStatus:       "synced",
-			HealthStatus:     "degraded",
-			Tags:             []string{"edge", "us"},
-			Description:      "洛杉矶入口示例",
-			Profile:          ssCfg.Profile,
-			CreatedAt:        now.Add(-18 * time.Hour),
-			UpdatedAt:        now.Add(-2 * time.Hour),
-			LastSyncedAt:     now.Add(-2 * time.Hour),
-			LastHeartbeatAt:  now.Add(-15 * time.Minute),
+			Name:            "la-ss",
+			NodeID:          laNode.ID,
+			Protocol:        "ss",
+			Role:            "listener",
+			Listen:          "0.0.0.0:443",
+			AccessPort:      443,
+			Status:          "active",
+			KernelID:        "edge-la-1-ss",
+			SyncStatus:      "synced",
+			HealthStatus:    "degraded",
+			Tags:            []string{"edge", "us"},
+			Description:     "洛杉矶入口示例",
+			Profile:         map[string]any{"cipher": "aes-128-gcm"},
+			CreatedAt:       now.Add(-18 * time.Hour),
+			UpdatedAt:       now.Add(-2 * time.Hour),
+			LastSyncedAt:    now.Add(-2 * time.Hour),
+			LastHeartbeatAt: now.Add(-15 * time.Minute),
 		},
 	}
 
 	return tx.Create(&bindings).Error
+}
+
+func seedProtocolEntries(tx *gorm.DB) error {
+	var count int64
+	if err := tx.Model(&repository.ProtocolEntry{}).Count(&count).Error; err != nil {
+		return err
+	}
+	if count > 0 {
+		return nil
+	}
+
+	var bindings []repository.ProtocolBinding
+	if err := tx.Preload("Node").Find(&bindings).Error; err != nil {
+		return err
+	}
+	if len(bindings) == 0 {
+		return nil
+	}
+
+	now := time.Now().UTC()
+	entries := make([]repository.ProtocolEntry, 0, len(bindings))
+	for _, binding := range bindings {
+		entryAddress := strings.TrimSpace(binding.Node.AccessAddress)
+		if entryAddress == "" {
+			continue
+		}
+		entryPort := binding.AccessPort
+		if entryPort <= 0 {
+			entryPort = 443
+		}
+		entries = append(entries, repository.ProtocolEntry{
+			Name:         fmt.Sprintf("%s-entry", binding.Name),
+			BindingID:    binding.ID,
+			Protocol:     binding.Protocol,
+			Status:       "active",
+			EntryAddress: entryAddress,
+			EntryPort:    entryPort,
+			Tags:         []string{"public"},
+			Description:  fmt.Sprintf("%s 对外入口", binding.Name),
+			Profile:      map[string]any{},
+			CreatedAt:    now.Add(-6 * time.Hour),
+			UpdatedAt:    now.Add(-2 * time.Hour),
+		})
+	}
+	if len(entries) == 0 {
+		return nil
+	}
+	return tx.Create(&entries).Error
 }
 
 func seedTemplates(tx *gorm.DB) error {

@@ -28,8 +28,8 @@ type Repositories struct {
 	PaymentChannel       PaymentChannelRepository
 	Order                OrderRepository
 	AuditLog             AuditLogRepository
-	ProtocolConfig       ProtocolConfigRepository
 	ProtocolBinding      ProtocolBindingRepository
+	ProtocolEntry        ProtocolEntryRepository
 	TrafficUsage         TrafficUsageRepository
 }
 
@@ -124,12 +124,12 @@ func NewRepositories(db *gorm.DB) (*Repositories, error) {
 		return nil, err
 	}
 
-	protocolConfigRepo, err := NewProtocolConfigRepository(db)
+	protocolBindingRepo, err := NewProtocolBindingRepository(db)
 	if err != nil {
 		return nil, err
 	}
 
-	protocolBindingRepo, err := NewProtocolBindingRepository(db)
+	protocolEntryRepo, err := NewProtocolEntryRepository(db)
 	if err != nil {
 		return nil, err
 	}
@@ -158,8 +158,8 @@ func NewRepositories(db *gorm.DB) (*Repositories, error) {
 		PaymentChannel:       channelRepo,
 		Order:                orderRepo,
 		AuditLog:             auditRepo,
-		ProtocolConfig:       protocolConfigRepo,
 		ProtocolBinding:      protocolBindingRepo,
+		ProtocolEntry:        protocolEntryRepo,
 		TrafficUsage:         trafficRepo,
 	}, nil
 }

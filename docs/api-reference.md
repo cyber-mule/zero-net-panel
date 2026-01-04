@@ -503,73 +503,85 @@ NodeStatusSyncResult 字段：
 - `skipped` 表示节点已 `disabled`
 - `error` 表示节点不存在或控制面地址缺失
 
-#### GET /api/v1/{adminPrefix}/protocol-configs
+#### GET /api/v1/{adminPrefix}/protocol-entries
 
-- 说明：协议配置列表
-- 查询参数：`page`、`per_page`、`sort`、`direction`、`q`、`protocol`、`status`
+- 说明：协议发布列表（对外入口）
+- 查询参数：`page`、`per_page`、`sort`、`direction`、`q`、`protocol`、`status`、`binding_id`
 - 响应：
-  - `configs` []ProtocolConfigSummary
+  - `entries` []ProtocolEntrySummary
   - `pagination` PaginationMeta
 
-ProtocolConfigSummary 字段：
+ProtocolEntrySummary 字段：
 
-- `id`、`name`、`protocol`、`status`、`tags`、`description`
-- `profile`、`created_at`、`updated_at`
+- `id`、`name`、`binding_id`、`binding_name`、`node_id`、`node_name`
+- `protocol`、`status`、`binding_status`、`health_status`
+- `entry_address`、`entry_port`、`tags`、`description`、`profile`
+- `created_at`、`updated_at`
 
-#### POST /api/v1/{adminPrefix}/protocol-configs
+说明：
+- `entry_address/entry_port` 为对外入口地址，可与绑定监听不一致。
+- `status` 仅影响用户可见性；`binding_status`/`health_status` 来自绑定健康状态。
 
-- 说明：创建协议配置
+#### POST /api/v1/{adminPrefix}/protocol-entries
+
+- 说明：创建协议发布
 - 请求体：
-  - `name` string
-  - `protocol` string
+  - `binding_id` uint64
+  - `entry_address` string
+  - `entry_port` int
+  - `protocol` string（可选，默认继承绑定协议）
   - `status` string（可选）
   - `tags` []string（可选）
   - `description` string（可选）
-  - `profile` map（可选）
+  - `profile` map（可选，对外公开配置）
 - 响应：
-  - ProtocolConfigSummary
+  - ProtocolEntrySummary
 
-#### PATCH /api/v1/{adminPrefix}/protocol-configs/{id}
+#### PATCH /api/v1/{adminPrefix}/protocol-entries/{id}
 
-- 说明：更新协议配置
+- 说明：更新协议发布
 - 路径参数：`id` uint64
 - 请求体：同创建（均可选）
 - 响应：
-  - ProtocolConfigSummary
+  - ProtocolEntrySummary
 
-#### DELETE /api/v1/{adminPrefix}/protocol-configs/{id}
+#### DELETE /api/v1/{adminPrefix}/protocol-entries/{id}
 
-- 说明：删除协议配置
+- 说明：删除协议发布
 - 路径参数：`id` uint64
 - 响应：204
 
 #### GET /api/v1/{adminPrefix}/protocol-bindings
 
 - 说明：协议绑定列表
-- 查询参数：`page`、`per_page`、`sort`、`direction`、`q`、`status`、`protocol`、`node_id`、`protocol_config_id`
+- 查询参数：`page`、`per_page`、`sort`、`direction`、`q`、`status`、`protocol`、`node_id`
 - 响应：
   - `bindings` []ProtocolBindingSummary
   - `pagination` PaginationMeta
 
 ProtocolBindingSummary 字段：
 
-- `id`、`name`、`node_id`、`node_name`、`protocol_config_id`、`protocol`
+- `id`、`name`、`node_id`、`node_name`、`protocol`
 - `role`、`listen`、`connect`、`access_port`、`status`、`kernel_id`（字符串）
 - `kernel_id` 需与内核侧协议 ID 一致，通常不是数字
 - `sync_status`、`health_status`、`last_synced_at`、`last_heartbeat_at`、`last_sync_error`
-- `tags`、`description`、`metadata`
+- `tags`、`description`、`profile`、`metadata`
 - `created_at`、`updated_at`
+
+说明：
+- `listen` 为空或仅端口时，会用 `access_port` 归一化为 `0.0.0.0:<port>` 供内核使用。
 
 #### POST /api/v1/{adminPrefix}/protocol-bindings
 
 - 说明：创建协议绑定
 - 请求体：
   - `node_id` uint64
-  - `protocol_config_id` uint64
+  - `protocol` string
   - `role` string
+  - `profile` map（必填，内核实际配置）
   - `listen` string（可选）
   - `connect` string（可选）
-  - `access_port` int（可选，客户端入口端口）
+  - `access_port` int（可选，内核监听端口）
   - `status` string（可选）
   - `kernel_id` string（必填，内核协议标识，通常为字符串）
   - `tags` []string（可选）

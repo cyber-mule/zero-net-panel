@@ -45,17 +45,26 @@ func (l *ListLogic) List(req *types.UserNodeStatusListRequest) (*types.UserNodeS
 		return nil, err
 	}
 
-	bindings, err := subscriptionutil.LoadSubscriptionBindings(l.ctx, l.svcCtx.Repositories, sub)
+	entries, err := subscriptionutil.LoadSubscriptionEntries(l.ctx, l.svcCtx.Repositories, sub)
 	if err != nil {
 		return nil, err
 	}
 
 	filterProtocol := strings.ToLower(strings.TrimSpace(req.Protocol))
 	bindingsByNode := make(map[uint64][]repository.ProtocolBinding)
-	for _, binding := range bindings {
+	seen := make(map[uint64]struct{})
+	for _, entry := range entries {
+		if strings.ToLower(entry.Status) != "active" || strings.ToLower(entry.Binding.Status) != "active" {
+			continue
+		}
+		binding := entry.Binding
 		if filterProtocol != "" && !strings.EqualFold(binding.Protocol, filterProtocol) {
 			continue
 		}
+		if _, ok := seen[binding.ID]; ok {
+			continue
+		}
+		seen[binding.ID] = struct{}{}
 		bindingsByNode[binding.NodeID] = append(bindingsByNode[binding.NodeID], binding)
 	}
 

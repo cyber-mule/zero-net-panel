@@ -300,8 +300,8 @@ var migrationRegistry = []Migration{
 		Up: func(ctx context.Context, db *gorm.DB) error {
 			return db.WithContext(ctx).AutoMigrate(
 				&repository.Plan{},
-				&repository.ProtocolConfig{},
 				&repository.ProtocolBinding{},
+				&repository.ProtocolEntry{},
 				&repository.TrafficUsageRecord{},
 			)
 		},
@@ -312,13 +312,13 @@ var migrationRegistry = []Migration{
 					return err
 				}
 			}
-			if migrator.HasTable(&repository.ProtocolBinding{}) {
-				if err := migrator.DropTable(&repository.ProtocolBinding{}); err != nil {
+			if migrator.HasTable(&repository.ProtocolEntry{}) {
+				if err := migrator.DropTable(&repository.ProtocolEntry{}); err != nil {
 					return err
 				}
 			}
-			if migrator.HasTable(&repository.ProtocolConfig{}) {
-				if err := migrator.DropTable(&repository.ProtocolConfig{}); err != nil {
+			if migrator.HasTable(&repository.ProtocolBinding{}) {
+				if err := migrator.DropTable(&repository.ProtocolBinding{}); err != nil {
 					return err
 				}
 			}
@@ -436,53 +436,7 @@ var migrationRegistry = []Migration{
 		Version: 2025051201,
 		Name:    "protocol-binding-profile",
 		Up: func(ctx context.Context, db *gorm.DB) error {
-			return db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-				if err := tx.WithContext(ctx).AutoMigrate(&repository.ProtocolBinding{}); err != nil {
-					return err
-				}
-
-				var bindings []repository.ProtocolBinding
-				if err := tx.WithContext(ctx).Find(&bindings).Error; err != nil {
-					return err
-				}
-				if len(bindings) == 0 {
-					return nil
-				}
-
-				var configs []repository.ProtocolConfig
-				if err := tx.WithContext(ctx).Find(&configs).Error; err != nil {
-					return err
-				}
-				configMap := make(map[uint64]repository.ProtocolConfig, len(configs))
-				for _, cfg := range configs {
-					configMap[cfg.ID] = cfg
-				}
-
-				for _, binding := range bindings {
-					updates := map[string]any{}
-					if strings.TrimSpace(binding.Protocol) == "" {
-						if cfg, ok := configMap[binding.ProtocolConfigID]; ok && strings.TrimSpace(cfg.Protocol) != "" {
-							updates["protocol"] = strings.TrimSpace(cfg.Protocol)
-						}
-					}
-					if binding.Profile == nil || len(binding.Profile) == 0 {
-						if cfg, ok := configMap[binding.ProtocolConfigID]; ok && cfg.Profile != nil {
-							updates["profile"] = cfg.Profile
-						}
-					}
-					if len(updates) == 0 {
-						continue
-					}
-					if err := tx.WithContext(ctx).
-						Model(&repository.ProtocolBinding{}).
-						Where("id = ?", binding.ID).
-						Updates(updates).Error; err != nil {
-						return err
-					}
-				}
-
-				return nil
-			})
+			return db.WithContext(ctx).AutoMigrate(&repository.ProtocolBinding{})
 		},
 		Down: func(ctx context.Context, db *gorm.DB) error {
 			migrator := db.WithContext(ctx).Migrator()
@@ -657,6 +611,30 @@ var migrationRegistry = []Migration{
 			if migrator.HasColumn(&repository.Node{}, "status_sync_enabled") {
 				return migrator.DropColumn(&repository.Node{}, "status_sync_enabled")
 			}
+			return nil
+		},
+	},
+	{
+		Version: 2026010501,
+		Name:    "protocol-entry-split",
+		Up: func(ctx context.Context, db *gorm.DB) error {
+			migrator := db.WithContext(ctx).Migrator()
+			if err := db.WithContext(ctx).AutoMigrate(&repository.ProtocolBinding{}, &repository.ProtocolEntry{}); err != nil {
+				return err
+			}
+			if migrator.HasColumn(&repository.ProtocolBinding{}, "protocol_config_id") {
+				if err := migrator.DropColumn(&repository.ProtocolBinding{}, "protocol_config_id"); err != nil {
+					return err
+				}
+			}
+			if migrator.HasTable("protocol_configs") {
+				if err := migrator.DropTable("protocol_configs"); err != nil {
+					return err
+				}
+			}
+			return nil
+		},
+		Down: func(ctx context.Context, db *gorm.DB) error {
 			return nil
 		},
 	},

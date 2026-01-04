@@ -56,20 +56,20 @@ type AdminListNodesRequest {
 }
 
 type NodeSummary {
-	id             uint64
-	name           string
-	region         string
-	country        string
-	isp            string
-	status         string
-	tags           []string
-	capacity_mbps  int
-	description    string
-	access_address string
-	control_endpoint string
+	id                  uint64
+	name                string
+	region              string
+	country             string
+	isp                 string
+	status              string
+	tags                []string
+	capacity_mbps       int
+	description         string
+	access_address      string
+	control_endpoint    string
 	status_sync_enabled bool
-	last_synced_at int64
-	updated_at     int64
+	last_synced_at      int64
+	updated_at          int64
 }
 
 type AdminNodeResponse {
@@ -77,42 +77,42 @@ type AdminNodeResponse {
 }
 
 type AdminCreateNodeRequest {
-	name          string
-	region        string   `form:"region,optional" json:"region,optional"`
-	country       string   `form:"country,optional" json:"country,optional"`
-	isp           string   `form:"isp,optional" json:"isp,optional"`
-	status        string   `form:"status,optional" json:"status,optional"`
-	tags          []string `form:"tags,optional" json:"tags,optional"`
-	capacity_mbps int      `form:"capacity_mbps,optional" json:"capacity_mbps,optional"`
-	description   string   `form:"description,optional" json:"description,optional"`
-	access_address   string   `form:"access_address,optional" json:"access_address,optional"`
-	control_endpoint string   `form:"control_endpoint" json:"control_endpoint"`
-	control_access_key string   `form:"control_access_key,optional" json:"control_access_key,optional"`
-	control_secret_key string   `form:"control_secret_key,optional" json:"control_secret_key,optional"`
-	ak               string   `form:"ak,optional" json:"ak,optional"`
-	sk               string   `form:"sk,optional" json:"sk,optional"`
-	control_token    string   `form:"control_token,optional" json:"control_token,optional"`
-	status_sync_enabled bool   `form:"status_sync_enabled,optional" json:"status_sync_enabled,optional"`
+	name                string
+	region              string   `form:"region,optional" json:"region,optional"`
+	country             string   `form:"country,optional" json:"country,optional"`
+	isp                 string   `form:"isp,optional" json:"isp,optional"`
+	status              string   `form:"status,optional" json:"status,optional"`
+	tags                []string `form:"tags,optional" json:"tags,optional"`
+	capacity_mbps       int      `form:"capacity_mbps,optional" json:"capacity_mbps,optional"`
+	description         string   `form:"description,optional" json:"description,optional"`
+	access_address      string   `form:"access_address,optional" json:"access_address,optional"`
+	control_endpoint    string   `form:"control_endpoint" json:"control_endpoint"`
+	control_access_key  string   `form:"control_access_key,optional" json:"control_access_key,optional"`
+	control_secret_key  string   `form:"control_secret_key,optional" json:"control_secret_key,optional"`
+	ak                  string   `form:"ak,optional" json:"ak,optional"`
+	sk                  string   `form:"sk,optional" json:"sk,optional"`
+	control_token       string   `form:"control_token,optional" json:"control_token,optional"`
+	status_sync_enabled bool     `form:"status_sync_enabled,optional" json:"status_sync_enabled,optional"`
 }
 
 type AdminUpdateNodeRequest {
-	id            uint64
-	name          string   `form:"name,optional" json:"name,optional"`
-	region        string   `form:"region,optional" json:"region,optional"`
-	country       string   `form:"country,optional" json:"country,optional"`
-	isp           string   `form:"isp,optional" json:"isp,optional"`
-	status        string   `form:"status,optional" json:"status,optional"`
-	tags          []string `form:"tags,optional" json:"tags,optional"`
-	capacity_mbps int      `form:"capacity_mbps,optional" json:"capacity_mbps,optional"`
-	description   string   `form:"description,optional" json:"description,optional"`
-	access_address   string   `form:"access_address,optional" json:"access_address,optional"`
-	control_endpoint string   `form:"control_endpoint,optional" json:"control_endpoint,optional"`
-	control_access_key string   `form:"control_access_key,optional" json:"control_access_key,optional"`
-	control_secret_key string   `form:"control_secret_key,optional" json:"control_secret_key,optional"`
-	ak               string   `form:"ak,optional" json:"ak,optional"`
-	sk               string   `form:"sk,optional" json:"sk,optional"`
-	control_token    string   `form:"control_token,optional" json:"control_token,optional"`
-	status_sync_enabled bool   `form:"status_sync_enabled,optional" json:"status_sync_enabled,optional"`
+	id                  uint64
+	name                string   `form:"name,optional" json:"name,optional"`
+	region              string   `form:"region,optional" json:"region,optional"`
+	country             string   `form:"country,optional" json:"country,optional"`
+	isp                 string   `form:"isp,optional" json:"isp,optional"`
+	status              string   `form:"status,optional" json:"status,optional"`
+	tags                []string `form:"tags,optional" json:"tags,optional"`
+	capacity_mbps       int      `form:"capacity_mbps,optional" json:"capacity_mbps,optional"`
+	description         string   `form:"description,optional" json:"description,optional"`
+	access_address      string   `form:"access_address,optional" json:"access_address,optional"`
+	control_endpoint    string   `form:"control_endpoint,optional" json:"control_endpoint,optional"`
+	control_access_key  string   `form:"control_access_key,optional" json:"control_access_key,optional"`
+	control_secret_key  string   `form:"control_secret_key,optional" json:"control_secret_key,optional"`
+	ak                  string   `form:"ak,optional" json:"ak,optional"`
+	sk                  string   `form:"sk,optional" json:"sk,optional"`
+	control_token       string   `form:"control_token,optional" json:"control_token,optional"`
+	status_sync_enabled bool     `form:"status_sync_enabled,optional" json:"status_sync_enabled,optional"`
 }
 
 type AdminDisableNodeRequest {
@@ -188,3 +188,4 @@ type AdminSyncNodeStatusRequest {
 type AdminSyncNodeStatusResponse {
 	results []NodeStatusSyncResult
 }
+

@@ -1,4 +1,4 @@
-package protocolconfigs
+package protocolentries
 
 import (
 	"net/http"
@@ -6,22 +6,22 @@ import (
 	"github.com/zeromicro/go-zero/rest/httpx"
 
 	handlercommon "github.com/zero-net-panel/zero-net-panel/internal/handler/common"
-	adminconfigs "github.com/zero-net-panel/zero-net-panel/internal/logic/admin/protocolconfigs"
+	adminentries "github.com/zero-net-panel/zero-net-panel/internal/logic/admin/protocolentries"
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
 )
 
-// AdminListProtocolConfigsHandler lists protocol configs.
-func AdminListProtocolConfigsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+// AdminListProtocolEntriesHandler lists protocol entries.
+func AdminListProtocolEntriesHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req types.AdminListProtocolConfigsRequest
+		var req types.AdminListProtocolEntriesRequest
 		if err := httpx.Parse(r, &req); err != nil {
 			handlercommon.RespondError(w, r, repository.ErrInvalidArgument)
 			return
 		}
 
-		logic := adminconfigs.NewListLogic(r.Context(), svcCtx)
+		logic := adminentries.NewListLogic(r.Context(), svcCtx)
 		resp, err := logic.List(&req)
 		if err != nil {
 			handlercommon.RespondError(w, r, err)
@@ -32,16 +32,16 @@ func AdminListProtocolConfigsHandler(svcCtx *svc.ServiceContext) http.HandlerFun
 	}
 }
 
-// AdminCreateProtocolConfigHandler creates protocol config.
-func AdminCreateProtocolConfigHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+// AdminCreateProtocolEntryHandler creates protocol entry.
+func AdminCreateProtocolEntryHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req types.AdminCreateProtocolConfigRequest
+		var req types.AdminCreateProtocolEntryRequest
 		if err := httpx.Parse(r, &req); err != nil {
 			handlercommon.RespondError(w, r, repository.ErrInvalidArgument)
 			return
 		}
 
-		logic := adminconfigs.NewCreateLogic(r.Context(), svcCtx)
+		logic := adminentries.NewCreateLogic(r.Context(), svcCtx)
 		resp, err := logic.Create(&req)
 		if err != nil {
 			handlercommon.RespondError(w, r, err)
@@ -52,16 +52,16 @@ func AdminCreateProtocolConfigHandler(svcCtx *svc.ServiceContext) http.HandlerFu
 	}
 }
 
-// AdminUpdateProtocolConfigHandler updates protocol config.
-func AdminUpdateProtocolConfigHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+// AdminUpdateProtocolEntryHandler updates protocol entry.
+func AdminUpdateProtocolEntryHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req types.AdminUpdateProtocolConfigRequest
+		var req types.AdminUpdateProtocolEntryRequest
 		if err := httpx.Parse(r, &req); err != nil {
 			handlercommon.RespondError(w, r, repository.ErrInvalidArgument)
 			return
 		}
 
-		logic := adminconfigs.NewUpdateLogic(r.Context(), svcCtx)
+		logic := adminentries.NewUpdateLogic(r.Context(), svcCtx)
 		resp, err := logic.Update(&req)
 		if err != nil {
 			handlercommon.RespondError(w, r, err)
@@ -72,16 +72,16 @@ func AdminUpdateProtocolConfigHandler(svcCtx *svc.ServiceContext) http.HandlerFu
 	}
 }
 
-// AdminDeleteProtocolConfigHandler deletes protocol config.
-func AdminDeleteProtocolConfigHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+// AdminDeleteProtocolEntryHandler deletes protocol entry.
+func AdminDeleteProtocolEntryHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req types.AdminDeleteProtocolConfigRequest
+		var req types.AdminDeleteProtocolEntryRequest
 		if err := httpx.Parse(r, &req); err != nil {
 			handlercommon.RespondError(w, r, repository.ErrInvalidArgument)
 			return
 		}
 
-		logic := adminconfigs.NewDeleteLogic(r.Context(), svcCtx)
+		logic := adminentries.NewDeleteLogic(r.Context(), svcCtx)
 		if err := logic.Delete(&req); err != nil {
 			handlercommon.RespondError(w, r, err)
 			return

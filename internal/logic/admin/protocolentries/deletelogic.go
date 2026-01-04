@@ -1,15 +1,16 @@
-package protocolconfigs
+package protocolentries
 
 import (
 	"context"
 
 	"github.com/zeromicro/go-zero/core/logx"
 
+	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
 )
 
-// DeleteLogic handles protocol config deletion.
+// DeleteLogic handles protocol entry deletions.
 type DeleteLogic struct {
 	logx.Logger
 	ctx    context.Context
@@ -25,7 +26,10 @@ func NewDeleteLogic(ctx context.Context, svcCtx *svc.ServiceContext) *DeleteLogi
 	}
 }
 
-// Delete removes a protocol config.
-func (l *DeleteLogic) Delete(req *types.AdminDeleteProtocolConfigRequest) error {
-	return l.svcCtx.Repositories.ProtocolConfig.Delete(l.ctx, req.ConfigID)
+// Delete deletes a protocol entry.
+func (l *DeleteLogic) Delete(req *types.AdminDeleteProtocolEntryRequest) error {
+	if req.EntryID == 0 {
+		return repository.ErrInvalidArgument
+	}
+	return l.svcCtx.Repositories.ProtocolEntry.Delete(l.ctx, req.EntryID)
 }

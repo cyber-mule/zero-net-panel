@@ -104,17 +104,17 @@ func (l *PreviewLogic) Preview(req *types.UserSubscriptionPreviewRequest) (*type
 		}
 	}
 
-	bindings := []repository.ProtocolBinding{}
+	entries := []repository.ProtocolEntry{}
 	if isActive {
-		bindings, err = subscriptionutil.LoadSubscriptionBindings(l.ctx, l.svcCtx.Repositories, sub)
+		entries, err = subscriptionutil.LoadSubscriptionEntries(l.ctx, l.svcCtx.Repositories, sub)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	bindingContext := normalizeBindingContext(bindings)
+	entryContext := normalizeEntryContext(entries)
 	if !isActive {
-		bindingContext = []map[string]any{}
+		entryContext = []map[string]any{}
 	}
 	data := map[string]any{
 		"subscription": map[string]any{
@@ -132,8 +132,8 @@ func (l *PreviewLogic) Preview(req *types.UserSubscriptionPreviewRequest) (*type
 			"devices_limit":           sub.DevicesLimit,
 			"available_template_ids":  sub.AvailableTemplateIDs,
 		},
-		"nodes":             bindingContext,
-		"protocol_bindings": bindingContext,
+		"nodes":             entryContext,
+		"protocol_bindings": entryContext,
 		"user_identity":     identityData,
 		"template": map[string]any{
 			"id":      tpl.ID,
@@ -168,17 +168,20 @@ func (l *PreviewLogic) Preview(req *types.UserSubscriptionPreviewRequest) (*type
 	}, nil
 }
 
-func normalizeBindingContext(bindings []repository.ProtocolBinding) []map[string]any {
-	result := make([]map[string]any, 0, len(bindings))
-	for _, binding := range bindings {
-		if strings.ToLower(binding.Status) != "active" {
+func normalizeEntryContext(entries []repository.ProtocolEntry) []map[string]any {
+	result := make([]map[string]any, 0, len(entries))
+	for _, entry := range entries {
+		if !entryVisible(entry) {
 			continue
 		}
-		address := selectBindingAddress(binding)
+		binding := entry.Binding
+		node := binding.Node
+		address := selectEntryAddress(entry)
 		host, port := splitHostPort(address)
 		result = append(result, map[string]any{
 			"id":             binding.ID,
 			"binding_id":     binding.ID,
+			"entry_id":       entry.ID,
 			"kernel_id":      binding.KernelID,
 			"protocol":       binding.Protocol,
 			"role":           binding.Role,
@@ -186,15 +189,19 @@ func normalizeBindingContext(bindings []repository.ProtocolBinding) []map[string
 			"port":           port,
 			"listen":         binding.Listen,
 			"connect":        binding.Connect,
-			"access_address": binding.Node.AccessAddress,
-			"access_port":    binding.AccessPort,
+			"access_address": entry.EntryAddress,
+			"access_port":    entry.EntryPort,
+			"entry_address":  entry.EntryAddress,
+			"entry_port":     entry.EntryPort,
 			"node_id":        binding.NodeID,
-			"node_name":      binding.Node.Name,
-			"region":         binding.Node.Region,
-			"country":        binding.Node.Country,
-			"status":         binding.Status,
+			"node_name":      node.Name,
+			"region":         node.Region,
+			"country":        node.Country,
+			"status":         entry.Status,
+			"binding_status": binding.Status,
 			"health_status":  binding.HealthStatus,
-			"updated_at":     binding.UpdatedAt.Format(time.RFC3339),
+			"profile":        cloneEntryProfile(entry.Profile),
+			"updated_at":     entry.UpdatedAt.Format(time.RFC3339),
 		})
 	}
 	return result
@@ -219,17 +226,29 @@ func maxInt64(a, b int64) int64 {
 	return b
 }
 
-func selectBindingAddress(binding repository.ProtocolBinding) string {
-	if address := strings.TrimSpace(binding.Node.AccessAddress); address != "" && binding.AccessPort > 0 {
-		return net.JoinHostPort(address, strconv.Itoa(binding.AccessPort))
+func entryVisible(entry repository.ProtocolEntry) bool {
+	if strings.ToLower(entry.Status) != "active" {
+		return false
 	}
-	if strings.ToLower(binding.Role) == "listener" && binding.Listen != "" {
-		return binding.Listen
+	if strings.ToLower(entry.Binding.Status) != "active" {
+		return false
 	}
-	if binding.Connect != "" {
-		return binding.Connect
+	return true
+}
+
+func selectEntryAddress(entry repository.ProtocolEntry) string {
+	address := strings.TrimSpace(entry.EntryAddress)
+	if address != "" && entry.EntryPort > 0 {
+		return net.JoinHostPort(address, strconv.Itoa(entry.EntryPort))
 	}
-	return binding.Listen
+	if address != "" {
+		return address
+	}
+	nodeAddress := strings.TrimSpace(entry.Binding.Node.AccessAddress)
+	if nodeAddress != "" && entry.EntryPort > 0 {
+		return net.JoinHostPort(nodeAddress, strconv.Itoa(entry.EntryPort))
+	}
+	return nodeAddress
 }
 
 func splitHostPort(address string) (string, int) {
@@ -243,4 +262,15 @@ func splitHostPort(address string) (string, int) {
 	}
 	value, _ := strconv.Atoi(port)
 	return host, value
+}
+
+func cloneEntryProfile(profile map[string]any) map[string]any {
+	if profile == nil {
+		return nil
+	}
+	cloned := make(map[string]any, len(profile))
+	for key, value := range profile {
+		cloned[key] = value
+	}
+	return cloned
 }

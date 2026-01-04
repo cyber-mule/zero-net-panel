@@ -1,4 +1,4 @@
-package protocolconfigs
+package protocolentries
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
 )
 
-// ListLogic handles protocol config listing.
+// ListLogic handles protocol entry listing.
 type ListLogic struct {
 	logx.Logger
 	ctx    context.Context
@@ -26,26 +26,29 @@ func NewListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *ListLogic {
 	}
 }
 
-// List returns protocol config summaries.
-func (l *ListLogic) List(req *types.AdminListProtocolConfigsRequest) (*types.AdminProtocolConfigListResponse, error) {
-	opts := repository.ListProtocolConfigsOptions{
+// List returns entry summaries.
+func (l *ListLogic) List(req *types.AdminListProtocolEntriesRequest) (*types.AdminProtocolEntryListResponse, error) {
+	opts := repository.ListProtocolEntriesOptions{
 		Page:      req.Page,
 		PerPage:   req.PerPage,
 		Sort:      req.Sort,
 		Direction: req.Direction,
 		Query:     req.Query,
-		Protocol:  req.Protocol,
 		Status:    req.Status,
+		Protocol:  req.Protocol,
+	}
+	if req.BindingID != nil && *req.BindingID > 0 {
+		opts.BindingID = req.BindingID
 	}
 
-	configs, total, err := l.svcCtx.Repositories.ProtocolConfig.List(l.ctx, opts)
+	entries, total, err := l.svcCtx.Repositories.ProtocolEntry.List(l.ctx, opts)
 	if err != nil {
 		return nil, err
 	}
 
-	summaries := make([]types.ProtocolConfigSummary, 0, len(configs))
-	for _, cfg := range configs {
-		summaries = append(summaries, mapProtocolConfigSummary(cfg))
+	summaries := make([]types.ProtocolEntrySummary, 0, len(entries))
+	for _, entry := range entries {
+		summaries = append(summaries, mapProtocolEntrySummary(entry))
 	}
 
 	page, perPage := normalizePage(req.Page, req.PerPage)
@@ -57,8 +60,8 @@ func (l *ListLogic) List(req *types.AdminListProtocolConfigsRequest) (*types.Adm
 		HasPrev:    page > 1,
 	}
 
-	return &types.AdminProtocolConfigListResponse{
-		Configs:    summaries,
+	return &types.AdminProtocolEntryListResponse{
+		Entries:    summaries,
 		Pagination: pagination,
 	}, nil
 }

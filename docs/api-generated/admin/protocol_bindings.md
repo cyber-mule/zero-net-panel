@@ -21,7 +21,6 @@ type AdminListProtocolBindingsRequest struct {
 	Status string `form:"status,optional" json:"status,optional"`
 	Protocol string `form:"protocol,optional" json:"protocol,optional"`
 	Node_id uint64 `form:"node_id,optional" json:"node_id,optional"`
-	Protocol_config_id uint64 `form:"protocol_config_id,optional" json:"protocol_config_id,optional"`
 }
 ```
 
@@ -64,7 +63,6 @@ type AdminCreateProtocolBindingRequest struct {
 	Node_id uint64 
 	Protocol string 
 	Profile map[string]interface{} 
-	Protocol_config_id uint64 `form:"protocol_config_id,optional" json:"protocol_config_id,optional"`
 	Role string 
 	Listen string `form:"listen,optional" json:"listen,optional"`
 	Connect string `form:"connect,optional" json:"connect,optional"`
@@ -88,7 +86,6 @@ type ProtocolBindingSummary struct {
 	Name string 
 	Node_id uint64 
 	Node_name string 
-	Protocol_config_id uint64 
 	Protocol string 
 	Role string 
 	Listen string 
@@ -128,7 +125,6 @@ type AdminUpdateProtocolBindingRequest struct {
 	Id uint64 
 	Name string `form:"name,optional" json:"name,optional"`
 	Node_id uint64 `form:"node_id,optional" json:"node_id,optional"`
-	Protocol_config_id uint64 `form:"protocol_config_id,optional" json:"protocol_config_id,optional"`
 	Protocol string `form:"protocol,optional" json:"protocol,optional"`
 	Role string `form:"role,optional" json:"role,optional"`
 	Listen string `form:"listen,optional" json:"listen,optional"`
@@ -159,7 +155,6 @@ type ProtocolBindingSummary struct {
 	Name string 
 	Node_id uint64 
 	Node_name string 
-	Protocol_config_id uint64 
 	Protocol string 
 	Role string 
 	Listen string 

@@ -49,52 +49,30 @@ func (l *CreateLogic) Create(req *types.AdminCreateProtocolBindingRequest) (*typ
 		return nil, repository.ErrInvalidArgument
 	}
 
-	var template repository.ProtocolConfig
-	if req.ProtocolConfigID != nil && *req.ProtocolConfigID > 0 {
-		cfg, err := l.svcCtx.Repositories.ProtocolConfig.Get(l.ctx, *req.ProtocolConfigID)
-		if err != nil {
-			return nil, err
-		}
-		template = cfg
-	}
-	if template.ID != 0 {
-		templateProtocol := strings.ToLower(strings.TrimSpace(template.Protocol))
-		if templateProtocol != "" && templateProtocol != protocol {
-			return nil, repository.ErrInvalidArgument
-		}
-	}
-
 	status := strings.TrimSpace(req.Status)
 	if status == "" {
 		status = "active"
 	}
 
-	profile := req.Profile
-	if profile == nil {
-		if template.ID == 0 {
-			return nil, repository.ErrInvalidArgument
-		}
-		profile = template.Profile
+	if req.Profile == nil {
+		return nil, repository.ErrInvalidArgument
 	}
+	profile := req.Profile
 
 	binding := repository.ProtocolBinding{
-		Name:             strings.TrimSpace(req.Name),
-		NodeID:           req.NodeID,
-		ProtocolConfigID: 0,
-		Protocol:         protocol,
-		Role:             role,
-		Listen:           strings.TrimSpace(req.Listen),
-		Connect:          strings.TrimSpace(req.Connect),
-		AccessPort:       req.AccessPort,
-		Status:           status,
-		KernelID:         kernelID,
-		Tags:             append([]string(nil), req.Tags...),
-		Description:      strings.TrimSpace(req.Description),
-		Profile:          cloneBindingProfile(profile),
-		Metadata:         req.Metadata,
-	}
-	if req.ProtocolConfigID != nil {
-		binding.ProtocolConfigID = *req.ProtocolConfigID
+		Name:        strings.TrimSpace(req.Name),
+		NodeID:      req.NodeID,
+		Protocol:    protocol,
+		Role:        role,
+		Listen:      strings.TrimSpace(req.Listen),
+		Connect:     strings.TrimSpace(req.Connect),
+		AccessPort:  req.AccessPort,
+		Status:      status,
+		KernelID:    kernelID,
+		Tags:        append([]string(nil), req.Tags...),
+		Description: strings.TrimSpace(req.Description),
+		Profile:     cloneBindingProfile(profile),
+		Metadata:    req.Metadata,
 	}
 
 	created, err := l.svcCtx.Repositories.ProtocolBinding.Create(l.ctx, binding)

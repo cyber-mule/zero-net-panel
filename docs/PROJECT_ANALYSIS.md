@@ -108,22 +108,22 @@ GET  /api/v1/admin/nodes              # 获取节点列表
 POST /api/v1/admin/nodes/{id}/kernels/sync  # 触发节点同步
 ```
 
-### 2. 协议配置与绑定 / Protocol Configuration & Binding
+### 2. 协议绑定与发布 / Protocol Binding & Entry
 
 **文件位置 / Location**: 
-- `internal/logic/admin/protocolconfigs/`
 - `internal/logic/admin/protocolbindings/`
+- `internal/logic/admin/protocolentries/`
 - `internal/logic/kernel/`
 - `internal/handler/kernel/`
 
 **功能特点 / Features**:
-- 协议配置 profile 管理与状态控制
+- 协议绑定（内核实际配置）与发布入口分离
 - 节点协议绑定、手动下发与同步状态跟踪
-- 协议健康状态支持手动反向同步；流量记录通过回调上报
+- 发布入口提供对外可见状态与公开配置（健康状态共享）
 
 **API 端点 / API Endpoints**:
 ```
-GET  /api/v1/admin/protocol-configs
+GET  /api/v1/admin/protocol-entries
 POST /api/v1/admin/protocol-bindings/{id}/sync
 POST /api/v1/admin/protocol-bindings/status/sync
 POST /api/v1/kernel/events

@@ -124,3 +124,4 @@ type AdminExtendSubscriptionRequest {
 	extend_hours int   `form:"extend_hours,optional" json:"extend_hours,optional"`
 	expires_at   int64 `form:"expires_at,optional" json:"expires_at,optional"`
 }
+

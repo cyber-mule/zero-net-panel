@@ -17,7 +17,7 @@
 
 ## 已完成
 - 用户与权限增强：资料维护、自助改密/邮箱、密码策略、审计日志检索/导出已落地。 (Refs: docs/missing-capabilities.md)
-- 多协议内核：协议配置/节点协议绑定管理、手动下发、状态回调/轮询、流量倍数核算与查询、订阅渲染与用户节点状态调整已落地。 (Refs: protocol.md, api/admin/protocol_configs.api, api/admin/protocol_bindings.api, internal/logic/admin/protocolbindings, internal/logic/kernel, docs/kernel-integration.md)
+- 多协议内核：协议发布/节点协议绑定管理、手动下发、状态回调/轮询、流量倍数核算与查询、订阅渲染与用户节点状态调整已落地。 (Refs: protocol.md, api/admin/protocol_entries.api, api/admin/protocol_bindings.api, internal/logic/admin/protocolbindings, internal/logic/kernel, docs/kernel-integration.md)
 - 支付成功后订阅创建/续期与订阅下发链路已补齐（回调/人工标记触发同步到期/流量、更新订阅内容/节点同步并记录流水）。 (Refs: internal/logic/user/order/createlogic.go, internal/logic/admin/orders/paymentcallbacklogic.go, internal/logic/admin/orders/markpaidlogic.go, internal/repository/subscription_repository.go)
 - 节点管理接口已补齐：节点 CRUD + 状态切换，支持维护 HTTP/GRPC 内核端点配置，并与 `core.yaml` 内核 API 文档保持一致。 (Refs: api/admin/nodes.api, internal/handler/routes.go, internal/repository/node_repository.go, pkg/kernel/*, core.yaml)
 - 用户侧支付通道列表接口已补齐。 (Refs: api/user/payment_channels.api, internal/handler/routes.go, internal/logic/user/paymentchannels/listlogic.go)

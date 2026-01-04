@@ -16,7 +16,7 @@ import (
 	adminPlanBillingOptions "github.com/zero-net-panel/zero-net-panel/internal/handler/admin/planbillingoptions"
 	adminplans "github.com/zero-net-panel/zero-net-panel/internal/handler/admin/plans"
 	adminprotocolbindings "github.com/zero-net-panel/zero-net-panel/internal/handler/admin/protocolbindings"
-	adminprotocolconfigs "github.com/zero-net-panel/zero-net-panel/internal/handler/admin/protocolconfigs"
+	adminprotocolentries "github.com/zero-net-panel/zero-net-panel/internal/handler/admin/protocolentries"
 	adminsecurity "github.com/zero-net-panel/zero-net-panel/internal/handler/admin/security"
 	adminsite "github.com/zero-net-panel/zero-net-panel/internal/handler/admin/site"
 	adminsubscriptions "github.com/zero-net-panel/zero-net-panel/internal/handler/admin/subscriptions"
@@ -364,28 +364,28 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 	server.AddRoutes(
 		[]rest.Route{
 			{
-				// List protocol configs
+				// List protocol entries
 				Method:  http.MethodGet,
-				Path:    "/admin/protocol-configs",
-				Handler: adminprotocolconfigs.AdminListProtocolConfigsHandler(serverCtx),
+				Path:    "/admin/protocol-entries",
+				Handler: adminprotocolentries.AdminListProtocolEntriesHandler(serverCtx),
 			},
 			{
-				// Create protocol config
+				// Create protocol entry
 				Method:  http.MethodPost,
-				Path:    "/admin/protocol-configs",
-				Handler: adminprotocolconfigs.AdminCreateProtocolConfigHandler(serverCtx),
+				Path:    "/admin/protocol-entries",
+				Handler: adminprotocolentries.AdminCreateProtocolEntryHandler(serverCtx),
 			},
 			{
-				// Update protocol config
+				// Update protocol entry
 				Method:  http.MethodPatch,
-				Path:    "/admin/protocol-configs/:id",
-				Handler: adminprotocolconfigs.AdminUpdateProtocolConfigHandler(serverCtx),
+				Path:    "/admin/protocol-entries/:id",
+				Handler: adminprotocolentries.AdminUpdateProtocolEntryHandler(serverCtx),
 			},
 			{
-				// Delete protocol config
+				// Delete protocol entry
 				Method:  http.MethodDelete,
-				Path:    "/admin/protocol-configs/:id",
-				Handler: adminprotocolconfigs.AdminDeleteProtocolConfigHandler(serverCtx),
+				Path:    "/admin/protocol-entries/:id",
+				Handler: adminprotocolentries.AdminDeleteProtocolEntryHandler(serverCtx),
 			},
 		},
 		rest.WithPrefix("/api/v1"),

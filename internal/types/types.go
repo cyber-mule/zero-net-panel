@@ -309,100 +309,42 @@ type AdminSyncNodeStatusResponse struct {
 	Results []NodeStatusSyncResult `json:"results"`
 }
 
-// AdminListProtocolConfigsRequest 管理端协议配置列表请求。
-type AdminListProtocolConfigsRequest struct {
-	Page      int    `form:"page,optional" json:"page,optional"`
-	PerPage   int    `form:"per_page,optional" json:"per_page,optional"`
-	Sort      string `form:"sort,optional" json:"sort,optional"`
-	Direction string `form:"direction,optional" json:"direction,optional"`
-	Query     string `form:"q,optional" json:"q,optional"`
-	Protocol  string `form:"protocol,optional" json:"protocol,optional"`
-	Status    string `form:"status,optional" json:"status,optional"`
-}
-
-// ProtocolConfigSummary 协议配置摘要。
-type ProtocolConfigSummary struct {
-	ID          uint64         `json:"id"`
-	Name        string         `json:"name"`
-	Protocol    string         `json:"protocol"`
-	Status      string         `json:"status"`
-	Tags        []string       `json:"tags"`
-	Description string         `json:"description"`
-	Profile     map[string]any `json:"profile"`
-	CreatedAt   int64          `json:"created_at"`
-	UpdatedAt   int64          `json:"updated_at"`
-}
-
-// AdminProtocolConfigListResponse 协议配置列表响应。
-type AdminProtocolConfigListResponse struct {
-	Configs    []ProtocolConfigSummary `json:"configs"`
-	Pagination PaginationMeta          `json:"pagination"`
-}
-
-// AdminCreateProtocolConfigRequest 管理端创建协议配置请求。
-type AdminCreateProtocolConfigRequest struct {
-	Name        string         `json:"name"`
-	Protocol    string         `json:"protocol"`
-	Status      string         `json:"status"`
-	Tags        []string       `json:"tags"`
-	Description string         `json:"description"`
-	Profile     map[string]any `json:"profile"`
-}
-
-// AdminUpdateProtocolConfigRequest 管理端更新协议配置请求。
-type AdminUpdateProtocolConfigRequest struct {
-	ConfigID    uint64         `path:"id"`
-	Name        *string        `json:"name,optional"`
-	Protocol    *string        `json:"protocol,optional"`
-	Status      *string        `json:"status,optional"`
-	Tags        []string       `json:"tags,optional"`
-	Description *string        `json:"description,optional"`
-	Profile     map[string]any `json:"profile,optional"`
-}
-
-// AdminDeleteProtocolConfigRequest 删除协议配置请求。
-type AdminDeleteProtocolConfigRequest struct {
-	ConfigID uint64 `path:"id"`
-}
-
 // AdminListProtocolBindingsRequest 管理端协议绑定列表请求。
 type AdminListProtocolBindingsRequest struct {
-	Page             int     `form:"page,optional" json:"page,optional"`
-	PerPage          int     `form:"per_page,optional" json:"per_page,optional"`
-	Sort             string  `form:"sort,optional" json:"sort,optional"`
-	Direction        string  `form:"direction,optional" json:"direction,optional"`
-	Query            string  `form:"q,optional" json:"q,optional"`
-	Status           string  `form:"status,optional" json:"status,optional"`
-	Protocol         string  `form:"protocol,optional" json:"protocol,optional"`
-	NodeID           *uint64 `form:"node_id,optional" json:"node_id,optional"`
-	ProtocolConfigID *uint64 `form:"protocol_config_id,optional" json:"protocol_config_id,optional"`
+	Page      int     `form:"page,optional" json:"page,optional"`
+	PerPage   int     `form:"per_page,optional" json:"per_page,optional"`
+	Sort      string  `form:"sort,optional" json:"sort,optional"`
+	Direction string  `form:"direction,optional" json:"direction,optional"`
+	Query     string  `form:"q,optional" json:"q,optional"`
+	Status    string  `form:"status,optional" json:"status,optional"`
+	Protocol  string  `form:"protocol,optional" json:"protocol,optional"`
+	NodeID    *uint64 `form:"node_id,optional" json:"node_id,optional"`
 }
 
 // ProtocolBindingSummary 协议绑定摘要。
 type ProtocolBindingSummary struct {
-	ID               uint64         `json:"id"`
-	Name             string         `json:"name"`
-	NodeID           uint64         `json:"node_id"`
-	NodeName         string         `json:"node_name"`
-	ProtocolConfigID uint64         `json:"protocol_config_id"`
-	Protocol         string         `json:"protocol"`
-	Role             string         `json:"role"`
-	Listen           string         `json:"listen"`
-	Connect          string         `json:"connect"`
-	AccessPort       int            `json:"access_port"`
-	Status           string         `json:"status"`
-	KernelID         string         `json:"kernel_id"`
-	SyncStatus       string         `json:"sync_status"`
-	HealthStatus     string         `json:"health_status"`
-	LastSyncedAt     int64          `json:"last_synced_at"`
-	LastHeartbeatAt  int64          `json:"last_heartbeat_at"`
-	LastSyncError    string         `json:"last_sync_error"`
-	Tags             []string       `json:"tags"`
-	Description      string         `json:"description"`
-	Profile          map[string]any `json:"profile"`
-	Metadata         map[string]any `json:"metadata"`
-	CreatedAt        int64          `json:"created_at"`
-	UpdatedAt        int64          `json:"updated_at"`
+	ID              uint64         `json:"id"`
+	Name            string         `json:"name"`
+	NodeID          uint64         `json:"node_id"`
+	NodeName        string         `json:"node_name"`
+	Protocol        string         `json:"protocol"`
+	Role            string         `json:"role"`
+	Listen          string         `json:"listen"`
+	Connect         string         `json:"connect"`
+	AccessPort      int            `json:"access_port"`
+	Status          string         `json:"status"`
+	KernelID        string         `json:"kernel_id"`
+	SyncStatus      string         `json:"sync_status"`
+	HealthStatus    string         `json:"health_status"`
+	LastSyncedAt    int64          `json:"last_synced_at"`
+	LastHeartbeatAt int64          `json:"last_heartbeat_at"`
+	LastSyncError   string         `json:"last_sync_error"`
+	Tags            []string       `json:"tags"`
+	Description     string         `json:"description"`
+	Profile         map[string]any `json:"profile"`
+	Metadata        map[string]any `json:"metadata"`
+	CreatedAt       int64          `json:"created_at"`
+	UpdatedAt       int64          `json:"updated_at"`
 }
 
 // AdminProtocolBindingListResponse 协议绑定列表响应。
@@ -413,49 +355,118 @@ type AdminProtocolBindingListResponse struct {
 
 // AdminCreateProtocolBindingRequest 创建协议绑定请求。
 type AdminCreateProtocolBindingRequest struct {
-	Name             string         `json:"name"`
-	NodeID           uint64         `json:"node_id"`
-	ProtocolConfigID *uint64        `json:"protocol_config_id,optional"`
-	Protocol         string         `json:"protocol"`
-	Role             string         `json:"role"`
-	Listen           string         `json:"listen"`
-	Connect          string         `json:"connect"`
-	AccessPort       int            `json:"access_port"`
-	Status           string         `json:"status"`
-	KernelID         string         `json:"kernel_id"`
-	Tags             []string       `json:"tags"`
-	Description      string         `json:"description"`
-	Profile          map[string]any `json:"profile"`
-	Metadata         map[string]any `json:"metadata"`
+	Name        string         `json:"name"`
+	NodeID      uint64         `json:"node_id"`
+	Protocol    string         `json:"protocol"`
+	Role        string         `json:"role"`
+	Listen      string         `json:"listen"`
+	Connect     string         `json:"connect"`
+	AccessPort  int            `json:"access_port"`
+	Status      string         `json:"status"`
+	KernelID    string         `json:"kernel_id"`
+	Tags        []string       `json:"tags"`
+	Description string         `json:"description"`
+	Profile     map[string]any `json:"profile"`
+	Metadata    map[string]any `json:"metadata"`
 }
 
 // AdminUpdateProtocolBindingRequest 更新协议绑定请求。
 type AdminUpdateProtocolBindingRequest struct {
-	BindingID        uint64         `path:"id"`
-	Name             *string        `json:"name,optional"`
-	NodeID           *uint64        `json:"node_id,optional"`
-	ProtocolConfigID *uint64        `json:"protocol_config_id,optional"`
-	Protocol         *string        `json:"protocol,optional"`
-	Role             *string        `json:"role,optional"`
-	Listen           *string        `json:"listen,optional"`
-	Connect          *string        `json:"connect,optional"`
-	AccessPort       *int           `json:"access_port,optional"`
-	Status           *string        `json:"status,optional"`
-	KernelID         *string        `json:"kernel_id,optional"`
-	SyncStatus       *string        `json:"sync_status,optional"`
-	HealthStatus     *string        `json:"health_status,optional"`
-	LastSyncedAt     *int64         `json:"last_synced_at,omitempty,optional"`
-	LastHeartbeatAt  *int64         `json:"last_heartbeat_at,omitempty,optional"`
-	LastSyncError    *string        `json:"last_sync_error,optional"`
-	Tags             []string       `json:"tags,optional"`
-	Description      *string        `json:"description,optional"`
-	Profile          map[string]any `json:"profile,optional"`
-	Metadata         map[string]any `json:"metadata,optional"`
+	BindingID       uint64         `path:"id"`
+	Name            *string        `json:"name,optional"`
+	NodeID          *uint64        `json:"node_id,optional"`
+	Protocol        *string        `json:"protocol,optional"`
+	Role            *string        `json:"role,optional"`
+	Listen          *string        `json:"listen,optional"`
+	Connect         *string        `json:"connect,optional"`
+	AccessPort      *int           `json:"access_port,optional"`
+	Status          *string        `json:"status,optional"`
+	KernelID        *string        `json:"kernel_id,optional"`
+	SyncStatus      *string        `json:"sync_status,optional"`
+	HealthStatus    *string        `json:"health_status,optional"`
+	LastSyncedAt    *int64         `json:"last_synced_at,omitempty,optional"`
+	LastHeartbeatAt *int64         `json:"last_heartbeat_at,omitempty,optional"`
+	LastSyncError   *string        `json:"last_sync_error,optional"`
+	Tags            []string       `json:"tags,optional"`
+	Description     *string        `json:"description,optional"`
+	Profile         map[string]any `json:"profile,optional"`
+	Metadata        map[string]any `json:"metadata,optional"`
 }
 
 // AdminDeleteProtocolBindingRequest 删除协议绑定请求。
 type AdminDeleteProtocolBindingRequest struct {
 	BindingID uint64 `path:"id"`
+}
+
+// AdminListProtocolEntriesRequest 管理端协议发布列表请求。
+type AdminListProtocolEntriesRequest struct {
+	Page      int     `form:"page,optional" json:"page,optional"`
+	PerPage   int     `form:"per_page,optional" json:"per_page,optional"`
+	Sort      string  `form:"sort,optional" json:"sort,optional"`
+	Direction string  `form:"direction,optional" json:"direction,optional"`
+	Query     string  `form:"q,optional" json:"q,optional"`
+	Status    string  `form:"status,optional" json:"status,optional"`
+	Protocol  string  `form:"protocol,optional" json:"protocol,optional"`
+	BindingID *uint64 `form:"binding_id,optional" json:"binding_id,optional"`
+}
+
+// ProtocolEntrySummary 协议发布摘要。
+type ProtocolEntrySummary struct {
+	ID            uint64         `json:"id"`
+	Name          string         `json:"name"`
+	BindingID     uint64         `json:"binding_id"`
+	BindingName   string         `json:"binding_name"`
+	NodeID        uint64         `json:"node_id"`
+	NodeName      string         `json:"node_name"`
+	Protocol      string         `json:"protocol"`
+	Status        string         `json:"status"`
+	BindingStatus string         `json:"binding_status"`
+	HealthStatus  string         `json:"health_status"`
+	EntryAddress  string         `json:"entry_address"`
+	EntryPort     int            `json:"entry_port"`
+	Tags          []string       `json:"tags"`
+	Description   string         `json:"description"`
+	Profile       map[string]any `json:"profile"`
+	CreatedAt     int64          `json:"created_at"`
+	UpdatedAt     int64          `json:"updated_at"`
+}
+
+// AdminProtocolEntryListResponse 协议发布列表响应。
+type AdminProtocolEntryListResponse struct {
+	Entries    []ProtocolEntrySummary `json:"entries"`
+	Pagination PaginationMeta         `json:"pagination"`
+}
+
+// AdminCreateProtocolEntryRequest 管理端创建协议发布请求。
+type AdminCreateProtocolEntryRequest struct {
+	Name         string         `json:"name"`
+	BindingID    uint64         `json:"binding_id"`
+	Protocol     string         `json:"protocol"`
+	Status       string         `json:"status"`
+	EntryAddress string         `json:"entry_address"`
+	EntryPort    int            `json:"entry_port"`
+	Tags         []string       `json:"tags"`
+	Description  string         `json:"description"`
+	Profile      map[string]any `json:"profile"`
+}
+
+// AdminUpdateProtocolEntryRequest 管理端更新协议发布请求。
+type AdminUpdateProtocolEntryRequest struct {
+	EntryID      uint64         `path:"id"`
+	Name         *string        `json:"name,optional"`
+	BindingID    *uint64        `json:"binding_id,optional"`
+	Protocol     *string        `json:"protocol,optional"`
+	Status       *string        `json:"status,optional"`
+	EntryAddress *string        `json:"entry_address,optional"`
+	EntryPort    *int           `json:"entry_port,optional"`
+	Tags         []string       `json:"tags,optional"`
+	Description  *string        `json:"description,optional"`
+	Profile      map[string]any `json:"profile,optional"`
+}
+
+// AdminDeleteProtocolEntryRequest 删除协议发布请求。
+type AdminDeleteProtocolEntryRequest struct {
+	EntryID uint64 `path:"id"`
 }
 
 // ProtocolBindingSyncResult 单条协议下发结果。

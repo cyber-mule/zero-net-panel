@@ -1,0 +1,92 @@
+syntax = "v1"
+
+import "../shared/types.api"
+
+@server (
+	name:   znp
+	prefix: /api/v1
+	group:  admin/protocolentries
+)
+service znp {
+	@doc "List protocol entries"
+	@handler AdminListProtocolEntries
+	get /admin/protocol-entries (AdminListProtocolEntriesRequest) returns (AdminProtocolEntryListResponse)
+
+	@doc "Create protocol entry"
+	@handler AdminCreateProtocolEntry
+	post /admin/protocol-entries (AdminCreateProtocolEntryRequest) returns (ProtocolEntrySummary)
+
+	@doc "Update protocol entry"
+	@handler AdminUpdateProtocolEntry
+	patch /admin/protocol-entries/:id (AdminUpdateProtocolEntryRequest) returns (ProtocolEntrySummary)
+
+	@doc "Delete protocol entry"
+	@handler AdminDeleteProtocolEntry
+	delete /admin/protocol-entries/:id (AdminDeleteProtocolEntryRequest)
+}
+
+type AdminListProtocolEntriesRequest {
+	page       int    `form:"page,optional" json:"page,optional"`
+	per_page   int    `form:"per_page,optional" json:"per_page,optional"`
+	sort       string `form:"sort,optional" json:"sort,optional"`
+	direction  string `form:"direction,optional" json:"direction,optional"`
+	q          string `form:"q,optional" json:"q,optional"`
+	status     string `form:"status,optional" json:"status,optional"`
+	protocol   string `form:"protocol,optional" json:"protocol,optional"`
+	binding_id uint64 `form:"binding_id,optional" json:"binding_id,optional"`
+}
+
+type ProtocolEntrySummary {
+	id             uint64
+	name           string
+	binding_id     uint64
+	binding_name   string
+	node_id        uint64
+	node_name      string
+	protocol       string
+	status         string
+	binding_status string
+	health_status  string
+	entry_address  string
+	entry_port     int
+	tags           []string
+	description    string
+	profile        map[string]interface{}
+	created_at     int64
+	updated_at     int64
+}
+
+type AdminProtocolEntryListResponse {
+	entries    []ProtocolEntrySummary
+	pagination PaginationMeta
+}
+
+type AdminCreateProtocolEntryRequest {
+	name          string `form:"name,optional" json:"name,optional"`
+	binding_id    uint64
+	protocol      string                 `form:"protocol,optional" json:"protocol,optional"`
+	status        string                 `form:"status,optional" json:"status,optional"`
+	entry_address string                 `form:"entry_address" json:"entry_address"`
+	entry_port    int                    `form:"entry_port" json:"entry_port"`
+	tags          []string               `form:"tags,optional" json:"tags,optional"`
+	description   string                 `form:"description,optional" json:"description,optional"`
+	profile       map[string]interface{} `form:"profile,optional" json:"profile,optional"`
+}
+
+type AdminUpdateProtocolEntryRequest {
+	id            uint64
+	name          string                 `form:"name,optional" json:"name,optional"`
+	binding_id    uint64                 `form:"binding_id,optional" json:"binding_id,optional"`
+	protocol      string                 `form:"protocol,optional" json:"protocol,optional"`
+	status        string                 `form:"status,optional" json:"status,optional"`
+	entry_address string                 `form:"entry_address,optional" json:"entry_address,optional"`
+	entry_port    int                    `form:"entry_port,optional" json:"entry_port,optional"`
+	tags          []string               `form:"tags,optional" json:"tags,optional"`
+	description   string                 `form:"description,optional" json:"description,optional"`
+	profile       map[string]interface{} `form:"profile,optional" json:"profile,optional"`
+}
+
+type AdminDeleteProtocolEntryRequest {
+	id uint64
+}
+

@@ -121,12 +121,9 @@ func (l *SyncLogic) syncBinding(binding repository.ProtocolBinding) types.Protoc
 		ID:          binding.KernelID,
 		Role:        binding.Role,
 		Protocol:    normalizeBindingProtocol(binding),
-		Tags:        mergeTags(binding.ProtocolConfig.Tags, binding.Tags),
-		Description: firstNonEmpty(binding.Description, binding.ProtocolConfig.Description),
+		Tags:        mergeTags(binding.Tags),
+		Description: strings.TrimSpace(binding.Description),
 		Profile:     cloneBindingProfile(binding.Profile),
-	}
-	if len(profile.Profile) == 0 {
-		profile.Profile = cloneBindingProfile(binding.ProtocolConfig.Profile)
 	}
 	if len(profile.Profile) == 0 {
 		profile.Profile = map[string]any{}
@@ -139,7 +136,7 @@ func (l *SyncLogic) syncBinding(binding repository.ProtocolBinding) types.Protoc
 	}
 
 	req := kernel.ProtocolUpsertRequest{
-		Listen:  binding.Listen,
+		Listen:  normalizeListen(binding.Listen, binding.AccessPort),
 		Connect: binding.Connect,
 		Profile: profile,
 	}
@@ -196,7 +193,7 @@ func (l *SyncLogic) updateSyncState(binding repository.ProtocolBinding, status s
 	return l.svcCtx.Repositories.ProtocolBinding.UpdateSyncState(l.ctx, binding.ID, input)
 }
 
-func mergeTags(base []string, extra []string) []string {
+func mergeTags(group ...[]string) []string {
 	seen := make(map[string]struct{})
 	var result []string
 	appendTag := func(tag string) {
@@ -210,20 +207,24 @@ func mergeTags(base []string, extra []string) []string {
 		seen[tag] = struct{}{}
 		result = append(result, tag)
 	}
-	for _, tag := range base {
-		appendTag(tag)
-	}
-	for _, tag := range extra {
-		appendTag(tag)
+	for _, tags := range group {
+		for _, tag := range tags {
+			appendTag(tag)
+		}
 	}
 	return result
 }
 
-func firstNonEmpty(values ...string) string {
-	for _, value := range values {
-		if strings.TrimSpace(value) != "" {
-			return strings.TrimSpace(value)
+func normalizeListen(listen string, accessPort int) string {
+	listen = strings.TrimSpace(listen)
+	if listen == "" {
+		if accessPort > 0 {
+			return fmt.Sprintf("0.0.0.0:%d", accessPort)
 		}
+		return ""
 	}
-	return ""
+	if !strings.Contains(listen, ":") {
+		return fmt.Sprintf("0.0.0.0:%s", listen)
+	}
+	return listen
 }

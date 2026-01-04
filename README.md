@@ -4,7 +4,7 @@ Zero Network Panel 旨在以 xboard 的功能体系为基线，提供面向节�
 
 ## 核心模块
 - **节点发现 (kernel discovery)**：内置 HTTP 与 gRPC Provider 注册表，可在后台一键触发节点配置同步，确保协议资源与内核保持一致。
-- **协议配置与绑定**：支持协议 profile 配置、节点协议绑定与手动下发，结合回调/轮询维护协议健康状态与流量倍数计费。
+- **协议发布与绑定**：发布定义对外入口（地址/端口/公开 profile），绑定承载内核实际配置与健康状态，并支持手动下发。
 - **订阅模板管理**：提供模板 CRUD、版本发布、历史追溯及默认模板切换，变量描述采用 GitHub 风格的分页与字段规范。
 - **用户订阅能力**：支持订阅列表查询、模板预览与定制选择，同时输出渲染后的内容、ETag 及内容类型信息，方便前端或客户端下载。
 - **套餐/公告/余额**：实现 `plans`、`announcements`、`user_balances` 等核心表，对齐 xboard 套餐管理、公告通知与钱包查询能力，并支持第三方加密校验开关。
@@ -30,8 +30,8 @@ Zero Network Panel 旨在以 xboard 的功能体系为基线，提供面向节�
 
 **协议与流量**
 
-- `GET /api/v1/{AdminPrefix}/protocol-configs` / `POST /api/v1/{AdminPrefix}/protocol-configs`：协议配置管理。
 - `GET /api/v1/{AdminPrefix}/protocol-bindings` / `POST /api/v1/{AdminPrefix}/protocol-bindings` / `POST /api/v1/{AdminPrefix}/protocol-bindings/{id}/sync`：协议绑定管理与手动下发。
+- `GET /api/v1/{AdminPrefix}/protocol-entries` / `POST /api/v1/{AdminPrefix}/protocol-entries`：协议发布（对外入口）管理。
 - `POST /api/v1/kernel/events`：内核协议健康事件回调。
 - `POST /api/v1/kernel/traffic`：内核用户流量回调。
 - `GET /api/v1/user/subscriptions/{id}/traffic`：查询订阅原始/倍数流量明细。
