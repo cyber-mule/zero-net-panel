@@ -55,6 +55,7 @@ type ListSubscriptionsOptions struct {
 type SubscriptionRepository interface {
 	List(ctx context.Context, opts ListSubscriptionsOptions) ([]Subscription, int64, error)
 	ListByUser(ctx context.Context, userID uint64, opts ListSubscriptionsOptions) ([]Subscription, int64, error)
+	ListActiveByPlanIDs(ctx context.Context, planIDs []uint64) ([]Subscription, error)
 	Get(ctx context.Context, id uint64) (Subscription, error)
 	GetByToken(ctx context.Context, token string) (Subscription, error)
 	GetActiveByUser(ctx context.Context, userID uint64) (Subscription, error)
@@ -98,6 +99,25 @@ func (r *subscriptionRepository) List(ctx context.Context, opts ListSubscription
 
 	opts = normalizeListSubscriptionsOptions(opts)
 	return r.listWithOptions(ctx, opts)
+}
+
+func (r *subscriptionRepository) ListActiveByPlanIDs(ctx context.Context, planIDs []uint64) ([]Subscription, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if len(planIDs) == 0 {
+		return []Subscription{}, nil
+	}
+
+	var subscriptions []Subscription
+	if err := r.db.WithContext(ctx).
+		Where("plan_id IN ?", planIDs).
+		Where("LOWER(status) = ?", "active").
+		Order("updated_at DESC").
+		Find(&subscriptions).Error; err != nil {
+		return nil, err
+	}
+	return subscriptions, nil
 }
 
 func (r *subscriptionRepository) Get(ctx context.Context, id uint64) (Subscription, error) {

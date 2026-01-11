@@ -51,3 +51,23 @@ func KernelEventHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		httpx.OkJsonCtx(r.Context(), w, resp)
 	}
 }
+
+// KernelServiceEventHandler ingests service event callbacks.
+func KernelServiceEventHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req types.KernelServiceEventRequest
+		if err := httpx.Parse(r, &req); err != nil {
+			handlercommon.RespondError(w, r, repository.ErrInvalidArgument)
+			return
+		}
+
+		logic := kernellogic.NewServiceEventLogic(r.Context(), svcCtx)
+		resp, err := logic.Handle(&req)
+		if err != nil {
+			handlercommon.RespondError(w, r, err)
+			return
+		}
+
+		httpx.OkJsonCtx(r.Context(), w, resp)
+	}
+}

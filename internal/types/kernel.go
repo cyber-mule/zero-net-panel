@@ -1,5 +1,7 @@
 package types
 
+import "encoding/json"
+
 // KernelTrafficReportRequest carries kernel traffic observations.
 type KernelTrafficReportRequest struct {
 	Records []KernelTrafficRecord `json:"records"`
@@ -37,4 +39,20 @@ type KernelNodeEventRequest struct {
 // KernelNodeEventResponse acknowledges event handling.
 type KernelNodeEventResponse struct {
 	Status string `json:"status"`
+}
+
+// KernelServiceEventRequest carries kernel service event callbacks.
+type KernelServiceEventRequest struct {
+	Event        string                `json:"event"`
+	EventID      string                `json:"event_id,omitempty"`
+	OccurredAtMS int64                 `json:"occurred_at_ms,omitempty"`
+	Payload      json.RawMessage       `json:"payload,omitempty"`
+	Records      []KernelTrafficRecord `json:"records,omitempty"`
+}
+
+// KernelServiceEventResponse acknowledges service event handling.
+type KernelServiceEventResponse struct {
+	Status   string `json:"status"`
+	Accepted int    `json:"accepted,omitempty"`
+	Failed   int    `json:"failed,omitempty"`
 }

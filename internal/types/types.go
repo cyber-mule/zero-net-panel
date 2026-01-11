@@ -129,11 +129,12 @@ type AdminAuditLogExportResponse struct {
 
 // SiteSetting 站点品牌配置。
 type SiteSetting struct {
-	ID        uint64 `json:"id"`
-	Name      string `json:"name"`
-	LogoURL   string `json:"logo_url"`
-	CreatedAt int64  `json:"created_at"`
-	UpdatedAt int64  `json:"updated_at"`
+	ID           uint64 `json:"id"`
+	Name         string `json:"name"`
+	LogoURL      string `json:"logo_url"`
+	AccessDomain string `json:"access_domain"`
+	CreatedAt    int64  `json:"created_at"`
+	UpdatedAt    int64  `json:"updated_at"`
 }
 
 // AdminSiteSettingResponse 站点配置响应。
@@ -143,8 +144,9 @@ type AdminSiteSettingResponse struct {
 
 // AdminUpdateSiteSettingRequest 更新站点配置。
 type AdminUpdateSiteSettingRequest struct {
-	Name    *string `json:"name,optional"`
-	LogoURL *string `json:"logo_url,optional"`
+	Name         *string `json:"name,optional"`
+	LogoURL      *string `json:"logo_url,optional"`
+	AccessDomain *string `json:"access_domain,optional"`
 }
 
 // AdminListNodesRequest 管理端节点列表查询参数。

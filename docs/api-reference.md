@@ -1101,7 +1101,7 @@ AnnouncementSummary 字段：
 
 SiteSetting 字段：
 
-- `id`、`name`、`logo_url`
+- `id`、`name`、`logo_url`、`access_domain`
 - `created_at`、`updated_at`
 
 #### PATCH /api/v1/{adminPrefix}/site-settings
@@ -1110,6 +1110,7 @@ SiteSetting 字段：
 - 请求体：
   - `name` string（可选）
   - `logo_url` string（可选）
+  - `access_domain` string（可选）
 - 响应：同 GET
 
 #### GET /api/v1/{adminPrefix}/security-settings
@@ -1260,6 +1261,16 @@ AdminOrderDetail 字段：
 - 请求体：`records` 数组，字段见 `KernelTrafficRecord`
 - 响应：
   - `accepted`、`failed`
+
+#### POST /api/v1/kernel/service-events
+
+- 说明：内核服务事件回调（免登录，Webhook 专用）
+- 认证：`X-ZNP-Webhook-Token`
+- 请求体：`event` + `payload`（如 `user.traffic.reported`，payload 包含 `user_id` 与 `current.used`/`current.remaining`）
+- 备注：面板侧优先使用 `subscription_id`，否则使用 `user_id` 更新订阅已用流量
+- 响应：
+  - `status`
+  - `accepted`、`failed`（当事件为 `user.traffic.reported`）
 
 #### POST /api/v1/kernel/events
 

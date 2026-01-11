@@ -554,7 +554,7 @@ paths:
                   $ref: '#/components/schemas/EventSubscriptionRecord'
               example:
                 - id: 019ab6ff-e5c0-7c93-874a-6224c4bf6fbe
-                  event: user_quota_changed
+                  event: user.quota.changed
                   callback: https://example.com/quota
                   created_at_ms: 1734001002456
         default:
@@ -568,7 +568,7 @@ paths:
             schema:
               $ref: '#/components/schemas/ServiceEventRegistrationRequest'
             example:
-              event: user_quota_changed
+              event: user.quota.changed
               callback: https://example.com/quota
               secret: optional
       responses:
@@ -641,88 +641,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProtocolSummary'
-        default:
-          $ref: '#/components/responses/ApiError'
-  /v1/protocols/registrations:
-    post:
-      summary: 注册协议节点
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ProtocolRegistrationRequest'
-            example:
-              id: edge-hk-1
-              role: listener
-              protocol: vless
-              tags: [edge, hk]
-              description: hk edge
-              listen: 0.0.0.0:443
-              ttl_seconds: 60
-      responses:
-        '200':
-          description: ProtocolRegistrationResponse
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProtocolRegistrationResponse'
-              example:
-                id: edge-hk-1
-                protocol: vless
-                registered_at_ms: 1734001002456
-                expires_at_ms: 1734001062456
-                heartbeat_interval_seconds: 30
-        default:
-          $ref: '#/components/responses/ApiError'
-  /v1/protocols/registrations/{id}:
-    delete:
-      summary: 注销协议节点注册
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-      responses:
-        '204':
-          description: 删除成功
-        default:
-          $ref: '#/components/responses/ApiError'
-  /v1/protocols/registrations/{id}/heartbeat:
-    post:
-      summary: 协议节点心跳
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ProtocolHeartbeatRequest'
-            example:
-              status: Healthy
-              observed_at_ms: 1734001010000
-              message: ok
-      responses:
-        '200':
-          description: ProtocolHeartbeatResponse
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProtocolHeartbeatResponse'
-              example:
-                id: edge-hk-1
-                health:
-                  status: Healthy
-                  consecutive_failures: 0
-                  last_failure_elapsed_ms: null
-                received_at_ms: 1734001010000
-                expires_at_ms: 1734001070000
         default:
           $ref: '#/components/responses/ApiError'
   /v1/protocols/{id}:
@@ -1675,75 +1593,6 @@ components:
             $ref: '#/components/schemas/User'
         profile:
           $ref: '#/components/schemas/NodeProfile'
-    ProtocolRegistrationRequest:
-      type: object
-      required: [id, role, protocol]
-      properties:
-        id:
-          type: string
-        role:
-          $ref: '#/components/schemas/NodeRole'
-        protocol:
-          type: string
-        tags:
-          type: array
-          items:
-            type: string
-        description:
-          type: string
-          nullable: true
-        listen:
-          type: string
-          nullable: true
-        connect:
-          type: string
-          nullable: true
-        profile:
-          type: object
-        metadata:
-          type: object
-          additionalProperties:
-            type: string
-        ttl_seconds:
-          type: integer
-          nullable: true
-    ProtocolRegistrationResponse:
-      type: object
-      properties:
-        id:
-          type: string
-        protocol:
-          type: string
-        registered_at_ms:
-          type: integer
-        expires_at_ms:
-          type: integer
-          nullable: true
-        heartbeat_interval_seconds:
-          type: integer
-          nullable: true
-    ProtocolHeartbeatRequest:
-      type: object
-      properties:
-        status:
-          $ref: '#/components/schemas/HealthStatus'
-        observed_at_ms:
-          type: integer
-        message:
-          type: string
-          nullable: true
-    ProtocolHeartbeatResponse:
-      type: object
-      properties:
-        id:
-          type: string
-        health:
-          $ref: '#/components/schemas/NodeHealthState'
-        received_at_ms:
-          type: integer
-        expires_at_ms:
-          type: integer
-          nullable: true
     NodeRole:
       type: string
       enum: [listener, connector]
@@ -2180,7 +2029,7 @@ components:
       properties:
         event:
           type: string
-          enum: [user_quota_changed]
+          enum: [user.quota.changed, user.traffic.reported]
         callback:
           type: string
         secret:

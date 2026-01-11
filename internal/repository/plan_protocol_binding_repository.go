@@ -21,6 +21,7 @@ func (PlanProtocolBinding) TableName() string { return "plan_protocol_bindings" 
 // PlanProtocolBindingRepository manages plan to binding mappings.
 type PlanProtocolBindingRepository interface {
 	ListBindingIDs(ctx context.Context, planID uint64) ([]uint64, error)
+	ListPlanIDsByBindingID(ctx context.Context, bindingID uint64) ([]uint64, error)
 	ListBindingsByPlanIDs(ctx context.Context, planIDs []uint64) (map[uint64][]uint64, error)
 	Replace(ctx context.Context, planID uint64, bindingIDs []uint64) error
 	DeleteByBindingIDs(ctx context.Context, bindingIDs []uint64) error
@@ -56,6 +57,28 @@ func (r *planProtocolBindingRepository) ListBindingIDs(ctx context.Context, plan
 	result := make([]uint64, 0, len(rows))
 	for _, row := range rows {
 		result = append(result, row.BindingID)
+	}
+	return result, nil
+}
+
+func (r *planProtocolBindingRepository) ListPlanIDsByBindingID(ctx context.Context, bindingID uint64) ([]uint64, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if bindingID == 0 {
+		return nil, ErrInvalidArgument
+	}
+
+	var rows []PlanProtocolBinding
+	if err := r.db.WithContext(ctx).
+		Where("binding_id = ?", bindingID).
+		Find(&rows).Error; err != nil {
+		return nil, err
+	}
+
+	result := make([]uint64, 0, len(rows))
+	for _, row := range rows {
+		result = append(result, row.PlanID)
 	}
 	return result, nil
 }

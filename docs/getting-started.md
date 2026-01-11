@@ -54,12 +54,12 @@ FLUSH PRIVILEGES;
    go run ./cmd/znp migrate --config etc/znp-sqlite.yaml --apply --seed-demo
    ```
    常见参数：
-   - `--to <version>`：仅执行至指定迁移版本号，例如 `--to 2024063001`。
-   - `--rollback`：回滚到较早版本，通常用于演练或问题排查。
-3. 迁移完成后，可在日志中看到如下输出，表示状态同步成功：
+   - `--to <version>`：仅执行至指定迁移版本号；发布版当前基线为 `2026010501`，首次初始化通常无需指定。
+   - `--rollback`：回滚到较早版本，仅建议在测试环境演练使用。
+3. 发布版迁移已重建为初始化基线；如需从旧的预发布库升级，请先备份并重新初始化数据库。
+4. 迁移完成后，可在日志中看到类似输出：
    ```text
-   applying migrations: before=2024063001 target=2024063003 versions=[2024063002 2024063003]
-   seed demo data completed
+   Migrations applied (before=0, after=2026010501, target=2026010501, versions=[2026010501]).
    ```
 
 使用 `--seed-demo` 会创建默认管理员/用户账号供登录；注册/找回流程需在配置中启用（见 `Auth.Registration` 与 `Auth.PasswordReset`）。密码复杂度要求可在 `Auth.PasswordPolicy` 中配置。

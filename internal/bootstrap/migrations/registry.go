@@ -5,19 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"sort"
-	"strings"
 	"time"
 
 	"gorm.io/gorm"
 
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 )
-
-type nodeProtocolsSchema struct {
-	Protocols []string `gorm:"serializer:json"`
-}
-
-func (nodeProtocolsSchema) TableName() string { return "nodes" }
 
 // SchemaMigration stores executed migration metadata.
 type SchemaMigration struct {
@@ -63,37 +56,67 @@ type ApplyResult struct {
 
 var migrationRegistry = []Migration{
 	{
-		Version: 2024060101,
-		Name:    "base-schema",
+		Version: 2026010501,
+		Name:    "release-init",
 		Up: func(ctx context.Context, db *gorm.DB) error {
 			return db.WithContext(ctx).AutoMigrate(
 				&repository.AdminModule{},
 				&repository.User{},
+				&repository.UserCredential{},
+				&repository.AuditLog{},
+				&repository.SiteSetting{},
+				&repository.SecuritySetting{},
+				&repository.Announcement{},
 				&repository.Node{},
 				&repository.NodeKernel{},
+				&repository.ProtocolBinding{},
+				&repository.ProtocolEntry{},
+				&repository.Plan{},
+				&repository.PlanBillingOption{},
+				&repository.PlanProtocolBinding{},
 				&repository.SubscriptionTemplate{},
 				&repository.SubscriptionTemplateHistory{},
 				&repository.Subscription{},
-				&repository.Plan{},
-				&repository.Announcement{},
+				&repository.TrafficUsageRecord{},
+				&repository.PaymentChannel{},
+				&repository.Coupon{},
+				&repository.CouponRedemption{},
 				&repository.UserBalance{},
 				&repository.BalanceTransaction{},
-				&repository.SecuritySetting{},
+				&repository.Order{},
+				&repository.OrderItem{},
+				&repository.OrderRefund{},
+				&repository.OrderPayment{},
 			)
 		},
 		Down: func(ctx context.Context, db *gorm.DB) error {
 			migrator := db.WithContext(ctx).Migrator()
 			tables := []any{
-				&repository.SecuritySetting{},
+				&repository.OrderPayment{},
+				&repository.OrderRefund{},
+				&repository.OrderItem{},
+				&repository.Order{},
 				&repository.BalanceTransaction{},
 				&repository.UserBalance{},
-				&repository.Announcement{},
-				&repository.Plan{},
+				&repository.CouponRedemption{},
+				&repository.Coupon{},
+				&repository.PaymentChannel{},
+				&repository.TrafficUsageRecord{},
 				&repository.Subscription{},
 				&repository.SubscriptionTemplateHistory{},
 				&repository.SubscriptionTemplate{},
+				&repository.PlanProtocolBinding{},
+				&repository.PlanBillingOption{},
+				&repository.Plan{},
+				&repository.ProtocolEntry{},
+				&repository.ProtocolBinding{},
 				&repository.NodeKernel{},
 				&repository.Node{},
+				&repository.Announcement{},
+				&repository.SecuritySetting{},
+				&repository.SiteSetting{},
+				&repository.AuditLog{},
+				&repository.UserCredential{},
 				&repository.User{},
 				&repository.AdminModule{},
 			}
@@ -104,537 +127,6 @@ var migrationRegistry = []Migration{
 				}
 			}
 
-			return nil
-		},
-	},
-	{
-		Version: 2024063001,
-		Name:    "billing-orders",
-		Up: func(ctx context.Context, db *gorm.DB) error {
-			return db.WithContext(ctx).AutoMigrate(
-				&repository.Order{},
-				&repository.OrderItem{},
-			)
-		},
-		Down: func(ctx context.Context, db *gorm.DB) error {
-			migrator := db.WithContext(ctx).Migrator()
-			if err := migrator.DropTable(&repository.OrderItem{}); err != nil {
-				return err
-			}
-			if err := migrator.DropTable(&repository.Order{}); err != nil {
-				return err
-			}
-			return nil
-		},
-	},
-	{
-		Version: 2024100101,
-		Name:    "billing-order-refunds",
-		Up: func(ctx context.Context, db *gorm.DB) error {
-			return db.WithContext(ctx).AutoMigrate(
-				&repository.Order{},
-				&repository.OrderRefund{},
-			)
-		},
-		Down: func(ctx context.Context, db *gorm.DB) error {
-			migrator := db.WithContext(ctx).Migrator()
-			if migrator.HasTable(&repository.OrderRefund{}) {
-				if err := migrator.DropTable(&repository.OrderRefund{}); err != nil {
-					return err
-				}
-			}
-			return nil
-		},
-	},
-	{
-		Version: 2024071501,
-		Name:    "order-refund-tracking",
-		Up: func(ctx context.Context, db *gorm.DB) error {
-			return db.WithContext(ctx).AutoMigrate(
-				&repository.Order{},
-			)
-		},
-		Down: func(ctx context.Context, db *gorm.DB) error {
-			migrator := db.WithContext(ctx).Migrator()
-			columns := []string{"refunded_cents", "refunded_at"}
-			for _, column := range columns {
-				if migrator.HasColumn(&repository.Order{}, column) {
-					if err := migrator.DropColumn(&repository.Order{}, column); err != nil {
-						return err
-					}
-				}
-			}
-			return nil
-		},
-	},
-	{
-		Version: 2024120101,
-		Name:    "order-payment-tracking",
-		Up: func(ctx context.Context, db *gorm.DB) error {
-			return db.WithContext(ctx).AutoMigrate(
-				&repository.Order{},
-				&repository.OrderPayment{},
-			)
-		},
-		Down: func(ctx context.Context, db *gorm.DB) error {
-			migrator := db.WithContext(ctx).Migrator()
-			if migrator.HasTable(&repository.OrderPayment{}) {
-				if err := migrator.DropTable(&repository.OrderPayment{}); err != nil {
-					return err
-				}
-			}
-			columns := []string{
-				"payment_status",
-				"payment_intent_id",
-				"payment_reference",
-				"payment_failure_code",
-				"payment_failure_reason",
-			}
-			for _, column := range columns {
-				if migrator.HasColumn(&repository.Order{}, column) {
-					if err := migrator.DropColumn(&repository.Order{}, column); err != nil {
-						return err
-					}
-				}
-			}
-			return nil
-		},
-	},
-	{
-		Version: 2025022001,
-		Name:    "order-idempotency-key",
-		Up: func(ctx context.Context, db *gorm.DB) error {
-			return db.WithContext(ctx).AutoMigrate(
-				&repository.Order{},
-			)
-		},
-		Down: func(ctx context.Context, db *gorm.DB) error {
-			migrator := db.WithContext(ctx).Migrator()
-			if migrator.HasIndex(&repository.Order{}, "idx_order_user_idempotency") {
-				if err := migrator.DropIndex(&repository.Order{}, "idx_order_user_idempotency"); err != nil {
-					return err
-				}
-			}
-			if migrator.HasColumn(&repository.Order{}, "idempotency_key") {
-				if err := migrator.DropColumn(&repository.Order{}, "idempotency_key"); err != nil {
-					return err
-				}
-			}
-			return nil
-		},
-	},
-	{
-		Version: 2025031501,
-		Name:    "site-settings",
-		Up: func(ctx context.Context, db *gorm.DB) error {
-			return db.WithContext(ctx).AutoMigrate(
-				&repository.SiteSetting{},
-			)
-		},
-		Down: func(ctx context.Context, db *gorm.DB) error {
-			migrator := db.WithContext(ctx).Migrator()
-			if migrator.HasTable(&repository.SiteSetting{}) {
-				if err := migrator.DropTable(&repository.SiteSetting{}); err != nil {
-					return err
-				}
-			}
-			return nil
-		},
-	},
-	{
-		Version: 2025032001,
-		Name:    "payment-channels",
-		Up: func(ctx context.Context, db *gorm.DB) error {
-			return db.WithContext(ctx).AutoMigrate(
-				&repository.PaymentChannel{},
-			)
-		},
-		Down: func(ctx context.Context, db *gorm.DB) error {
-			migrator := db.WithContext(ctx).Migrator()
-			if migrator.HasTable(&repository.PaymentChannel{}) {
-				if err := migrator.DropTable(&repository.PaymentChannel{}); err != nil {
-					return err
-				}
-			}
-			return nil
-		},
-	},
-	{
-		Version: 2025040101,
-		Name:    "user-auth-audit",
-		Up: func(ctx context.Context, db *gorm.DB) error {
-			return db.WithContext(ctx).AutoMigrate(
-				&repository.User{},
-				&repository.AuditLog{},
-			)
-		},
-		Down: func(ctx context.Context, db *gorm.DB) error {
-			migrator := db.WithContext(ctx).Migrator()
-			if migrator.HasTable(&repository.AuditLog{}) {
-				if err := migrator.DropTable(&repository.AuditLog{}); err != nil {
-					return err
-				}
-			}
-
-			columns := []string{
-				"email_verified_at",
-				"failed_login_attempts",
-				"locked_until",
-				"token_invalid_before",
-				"password_updated_at",
-				"password_reset_at",
-			}
-			for _, column := range columns {
-				if migrator.HasColumn(&repository.User{}, column) {
-					if err := migrator.DropColumn(&repository.User{}, column); err != nil {
-						return err
-					}
-				}
-			}
-			return nil
-		},
-	},
-	{
-		Version: 2025041701,
-		Name:    "protocol-management",
-		Up: func(ctx context.Context, db *gorm.DB) error {
-			return db.WithContext(ctx).AutoMigrate(
-				&repository.Plan{},
-				&repository.ProtocolBinding{},
-				&repository.ProtocolEntry{},
-				&repository.TrafficUsageRecord{},
-			)
-		},
-		Down: func(ctx context.Context, db *gorm.DB) error {
-			migrator := db.WithContext(ctx).Migrator()
-			if migrator.HasTable(&repository.TrafficUsageRecord{}) {
-				if err := migrator.DropTable(&repository.TrafficUsageRecord{}); err != nil {
-					return err
-				}
-			}
-			if migrator.HasTable(&repository.ProtocolEntry{}) {
-				if err := migrator.DropTable(&repository.ProtocolEntry{}); err != nil {
-					return err
-				}
-			}
-			if migrator.HasTable(&repository.ProtocolBinding{}) {
-				if err := migrator.DropTable(&repository.ProtocolBinding{}); err != nil {
-					return err
-				}
-			}
-			if migrator.HasColumn(&repository.Plan{}, "traffic_multipliers") {
-				if err := migrator.DropColumn(&repository.Plan{}, "traffic_multipliers"); err != nil {
-					return err
-				}
-			}
-			return nil
-		},
-	},
-	{
-		Version: 2025041801,
-		Name:    "user-credentials",
-		Up: func(ctx context.Context, db *gorm.DB) error {
-			return db.WithContext(ctx).AutoMigrate(
-				&repository.UserCredential{},
-			)
-		},
-		Down: func(ctx context.Context, db *gorm.DB) error {
-			migrator := db.WithContext(ctx).Migrator()
-			if migrator.HasTable(&repository.UserCredential{}) {
-				if err := migrator.DropTable(&repository.UserCredential{}); err != nil {
-					return err
-				}
-			}
-			return nil
-		},
-	},
-	{
-		Version: 2025041901,
-		Name:    "coupon-discounts",
-		Up: func(ctx context.Context, db *gorm.DB) error {
-			return db.WithContext(ctx).AutoMigrate(
-				&repository.Coupon{},
-				&repository.CouponRedemption{},
-			)
-		},
-		Down: func(ctx context.Context, db *gorm.DB) error {
-			migrator := db.WithContext(ctx).Migrator()
-			if migrator.HasTable(&repository.CouponRedemption{}) {
-				if err := migrator.DropTable(&repository.CouponRedemption{}); err != nil {
-					return err
-				}
-			}
-			if migrator.HasTable(&repository.Coupon{}) {
-				if err := migrator.DropTable(&repository.Coupon{}); err != nil {
-					return err
-				}
-			}
-			return nil
-		},
-	},
-	{
-		Version: 2025050101,
-		Name:    "plan-billing-options",
-		Up: func(ctx context.Context, db *gorm.DB) error {
-			if err := db.WithContext(ctx).AutoMigrate(&repository.PlanBillingOption{}); err != nil {
-				return err
-			}
-
-			var count int64
-			if err := db.WithContext(ctx).Model(&repository.PlanBillingOption{}).Count(&count).Error; err != nil {
-				return err
-			}
-			if count > 0 {
-				return nil
-			}
-
-			var plans []repository.Plan
-			if err := db.WithContext(ctx).Find(&plans).Error; err != nil {
-				return err
-			}
-			if len(plans) == 0 {
-				return nil
-			}
-
-			now := time.Now().UTC()
-			options := make([]repository.PlanBillingOption, 0, len(plans))
-			for _, plan := range plans {
-				if plan.DurationDays <= 0 {
-					continue
-				}
-				option := repository.PlanBillingOption{
-					PlanID:        plan.ID,
-					Name:          strings.TrimSpace(plan.Name),
-					DurationValue: plan.DurationDays,
-					DurationUnit:  repository.DurationUnitDay,
-					PriceCents:    plan.PriceCents,
-					Currency:      plan.Currency,
-					SortOrder:     plan.SortOrder,
-					Status:        plan.Status,
-					Visible:       plan.Visible,
-					CreatedAt:     now,
-					UpdatedAt:     now,
-				}
-				options = append(options, option)
-			}
-			if len(options) == 0 {
-				return nil
-			}
-			return db.WithContext(ctx).Create(&options).Error
-		},
-		Down: func(ctx context.Context, db *gorm.DB) error {
-			migrator := db.WithContext(ctx).Migrator()
-			if migrator.HasTable(&repository.PlanBillingOption{}) {
-				if err := migrator.DropTable(&repository.PlanBillingOption{}); err != nil {
-					return err
-				}
-			}
-			return nil
-		},
-	},
-	{
-		Version: 2025051201,
-		Name:    "protocol-binding-profile",
-		Up: func(ctx context.Context, db *gorm.DB) error {
-			return db.WithContext(ctx).AutoMigrate(&repository.ProtocolBinding{})
-		},
-		Down: func(ctx context.Context, db *gorm.DB) error {
-			migrator := db.WithContext(ctx).Migrator()
-			columns := []string{"profile", "protocol"}
-			for _, column := range columns {
-				if migrator.HasColumn(&repository.ProtocolBinding{}, column) {
-					if err := migrator.DropColumn(&repository.ProtocolBinding{}, column); err != nil {
-						return err
-					}
-				}
-			}
-			return nil
-		},
-	},
-	{
-		Version: 2025051301,
-		Name:    "plan-protocol-bindings",
-		Up: func(ctx context.Context, db *gorm.DB) error {
-			return db.WithContext(ctx).AutoMigrate(&repository.PlanProtocolBinding{})
-		},
-		Down: func(ctx context.Context, db *gorm.DB) error {
-			migrator := db.WithContext(ctx).Migrator()
-			if migrator.HasTable(&repository.PlanProtocolBinding{}) {
-				return migrator.DropTable(&repository.PlanProtocolBinding{})
-			}
-			return nil
-		},
-	},
-	{
-		Version: 2025052201,
-		Name:    "subscription-plan-snapshot",
-		Up: func(ctx context.Context, db *gorm.DB) error {
-			return db.WithContext(ctx).AutoMigrate(&repository.Subscription{})
-		},
-		Down: func(ctx context.Context, db *gorm.DB) error {
-			migrator := db.WithContext(ctx).Migrator()
-			if migrator.HasColumn(&repository.Subscription{}, "plan_snapshot") {
-				if err := migrator.DropColumn(&repository.Subscription{}, "plan_snapshot"); err != nil {
-					return err
-				}
-			}
-			return nil
-		},
-	},
-	{
-		Version: 2025052301,
-		Name:    "node-soft-delete",
-		Up: func(ctx context.Context, db *gorm.DB) error {
-			return db.WithContext(ctx).AutoMigrate(&repository.Node{})
-		},
-		Down: func(ctx context.Context, db *gorm.DB) error {
-			migrator := db.WithContext(ctx).Migrator()
-			if migrator.HasColumn(&repository.Node{}, "deleted_at") {
-				if err := migrator.DropColumn(&repository.Node{}, "deleted_at"); err != nil {
-					return err
-				}
-			}
-			return nil
-		},
-	},
-	{
-		Version: 2025052401,
-		Name:    "node-access-control",
-		Up: func(ctx context.Context, db *gorm.DB) error {
-			if err := db.WithContext(ctx).AutoMigrate(&repository.Node{}); err != nil {
-				return err
-			}
-			return db.WithContext(ctx).AutoMigrate(&repository.ProtocolBinding{})
-		},
-		Down: func(ctx context.Context, db *gorm.DB) error {
-			migrator := db.WithContext(ctx).Migrator()
-			columns := []string{"access_address", "control_endpoint"}
-			for _, column := range columns {
-				if migrator.HasColumn(&repository.Node{}, column) {
-					if err := migrator.DropColumn(&repository.Node{}, column); err != nil {
-						return err
-					}
-				}
-			}
-			if migrator.HasColumn(&repository.ProtocolBinding{}, "access_port") {
-				if err := migrator.DropColumn(&repository.ProtocolBinding{}, "access_port"); err != nil {
-					return err
-				}
-			}
-			return nil
-		},
-	},
-	{
-		Version: 2025052402,
-		Name:    "node-control-token",
-		Up: func(ctx context.Context, db *gorm.DB) error {
-			return db.WithContext(ctx).AutoMigrate(&repository.Node{})
-		},
-		Down: func(ctx context.Context, db *gorm.DB) error {
-			migrator := db.WithContext(ctx).Migrator()
-			if migrator.HasColumn(&repository.Node{}, "control_token") {
-				if err := migrator.DropColumn(&repository.Node{}, "control_token"); err != nil {
-					return err
-				}
-			}
-			return nil
-		},
-	},
-	{
-		Version: 2025060401,
-		Name:    "node-control-credentials",
-		Up: func(ctx context.Context, db *gorm.DB) error {
-			return db.WithContext(ctx).AutoMigrate(&repository.Node{})
-		},
-		Down: func(ctx context.Context, db *gorm.DB) error {
-			migrator := db.WithContext(ctx).Migrator()
-			columns := []string{"control_access_key", "control_secret_key"}
-			for _, column := range columns {
-				if migrator.HasColumn(&repository.Node{}, column) {
-					if err := migrator.DropColumn(&repository.Node{}, column); err != nil {
-						return err
-					}
-				}
-			}
-			return nil
-		},
-	},
-	{
-		Version: 2025060701,
-		Name:    "node-drop-protocols",
-		Up: func(ctx context.Context, db *gorm.DB) error {
-			migrator := db.WithContext(ctx).Migrator()
-			if migrator.HasColumn(&repository.Node{}, "protocols") {
-				if err := migrator.DropColumn(&repository.Node{}, "protocols"); err != nil {
-					return err
-				}
-			}
-			return nil
-		},
-		Down: func(ctx context.Context, db *gorm.DB) error {
-			migrator := db.WithContext(ctx).Migrator()
-			if !migrator.HasColumn(&nodeProtocolsSchema{}, "protocols") {
-				return migrator.AddColumn(&nodeProtocolsSchema{}, "protocols")
-			}
-			return nil
-		},
-	},
-	{
-		Version: 2025060901,
-		Name:    "node-remove-invalid-control-endpoints",
-		Up: func(ctx context.Context, db *gorm.DB) error {
-			return db.WithContext(ctx).
-				Where("deleted_at IS NULL").
-				Where("control_endpoint IS NULL OR TRIM(control_endpoint) = '' OR LOWER(control_endpoint) LIKE ? OR LOWER(control_endpoint) LIKE ?",
-					"http://kernel.local%", "https://kernel.local%").
-				Delete(&repository.Node{}).
-				Error
-		},
-		Down: func(ctx context.Context, db *gorm.DB) error {
-			return nil
-		},
-	},
-	{
-		Version: 2025060902,
-		Name:    "node-status-sync-enabled",
-		Up: func(ctx context.Context, db *gorm.DB) error {
-			if err := db.WithContext(ctx).AutoMigrate(&repository.Node{}); err != nil {
-				return err
-			}
-			return db.WithContext(ctx).
-				Model(&repository.Node{}).
-				Where("status_sync_enabled IS NULL OR status_sync_enabled = 0").
-				Update("status_sync_enabled", true).Error
-		},
-		Down: func(ctx context.Context, db *gorm.DB) error {
-			migrator := db.WithContext(ctx).Migrator()
-			if migrator.HasColumn(&repository.Node{}, "status_sync_enabled") {
-				return migrator.DropColumn(&repository.Node{}, "status_sync_enabled")
-			}
-			return nil
-		},
-	},
-	{
-		Version: 2026010501,
-		Name:    "protocol-entry-split",
-		Up: func(ctx context.Context, db *gorm.DB) error {
-			migrator := db.WithContext(ctx).Migrator()
-			if err := db.WithContext(ctx).AutoMigrate(&repository.ProtocolBinding{}, &repository.ProtocolEntry{}); err != nil {
-				return err
-			}
-			if migrator.HasColumn(&repository.ProtocolBinding{}, "protocol_config_id") {
-				if err := migrator.DropColumn(&repository.ProtocolBinding{}, "protocol_config_id"); err != nil {
-					return err
-				}
-			}
-			if migrator.HasTable("protocol_configs") {
-				if err := migrator.DropTable("protocol_configs"); err != nil {
-					return err
-				}
-			}
-			return nil
-		},
-		Down: func(ctx context.Context, db *gorm.DB) error {
 			return nil
 		},
 	},

@@ -18,6 +18,7 @@ import (
 
 	"github.com/zero-net-panel/zero-net-panel/internal/config"
 	"github.com/zero-net-panel/zero-net-panel/internal/handler"
+	kernelhandler "github.com/zero-net-panel/zero-net-panel/internal/handler/kernel"
 	publicsubscriptions "github.com/zero-net-panel/zero-net-panel/internal/handler/public/subscriptions"
 	kernellogic "github.com/zero-net-panel/zero-net-panel/internal/logic/kernel"
 	"github.com/zero-net-panel/zero-net-panel/internal/middleware"
@@ -191,6 +192,7 @@ func runHTTPServer(ctx context.Context, cfg config.Config, svcCtx *svc.ServiceCo
 	userAuth := authMiddleware.RequireRoles()
 	adminBasePath := cfg.Admin.APIBasePath()
 	adminPaymentCallbackPath := adminBasePath + "/orders/payments/callback"
+	webhookMiddleware := middleware.NewWebhookMiddleware(cfg.Webhook)
 
 	server.Use(func(next http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
@@ -220,6 +222,27 @@ func runHTTPServer(ctx context.Context, cfg config.Config, svcCtx *svc.ServiceCo
 	}
 
 	handler.RegisterHandlers(server, svcCtx)
+
+	server.AddRoutes(
+		[]rest.Route{
+			{
+				Method:  http.MethodPost,
+				Path:    "/kernel/events",
+				Handler: webhookMiddleware.Handler(kernelhandler.KernelEventHandler(svcCtx)),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/kernel/traffic",
+				Handler: webhookMiddleware.Handler(kernelhandler.KernelTrafficHandler(svcCtx)),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/kernel/service-events",
+				Handler: webhookMiddleware.Handler(kernelhandler.KernelServiceEventHandler(svcCtx)),
+			},
+		},
+		rest.WithPrefix("/api/v1"),
+	)
 
 	server.AddRoute(rest.Route{
 		Method:  http.MethodGet,

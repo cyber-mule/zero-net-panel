@@ -10,8 +10,10 @@ import (
 
 	"github.com/zeromicro/go-zero/core/logx"
 
+	adminprotocolbindings "github.com/zero-net-panel/zero-net-panel/internal/logic/admin/protocolbindings"
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
+	"github.com/zero-net-panel/zero-net-panel/internal/types"
 	"github.com/zero-net-panel/zero-net-panel/pkg/kernel"
 )
 
@@ -26,6 +28,7 @@ func SyncStatus(ctx context.Context, svcCtx *svc.ServiceContext) error {
 		return err
 	}
 
+	statusByID := make(map[uint64]string, len(nodes))
 	type controlKey struct {
 		endpoint string
 		token    string
@@ -33,6 +36,7 @@ func SyncStatus(ctx context.Context, svcCtx *svc.ServiceContext) error {
 	pairs := make(map[controlKey][]uint64)
 	metaByKey := make(map[controlKey]authDebug)
 	for _, node := range nodes {
+		statusByID[node.ID] = strings.ToLower(strings.TrimSpace(node.Status))
 		if !node.StatusSyncEnabled {
 			continue
 		}
@@ -86,12 +90,41 @@ func SyncStatus(ctx context.Context, svcCtx *svc.ServiceContext) error {
 
 		hadSuccess = true
 		markNodeStatus(ctx, svcCtx, nodeIDs, "online")
+		recovered := resolveRecoveredNodes(nodeIDs, statusByID)
+		if len(recovered) > 0 {
+			triggerKernelRecovery(ctx, svcCtx, recovered)
+		}
 	}
 
 	if !hadSuccess {
 		return lastErr
 	}
 	return nil
+}
+
+func resolveRecoveredNodes(nodeIDs []uint64, statusByID map[uint64]string) []uint64 {
+	recovered := make([]uint64, 0, len(nodeIDs))
+	for _, id := range nodeIDs {
+		status := statusByID[id]
+		if status == "online" || status == "disabled" {
+			continue
+		}
+		recovered = append(recovered, id)
+	}
+	return recovered
+}
+
+func triggerKernelRecovery(ctx context.Context, svcCtx *svc.ServiceContext, nodeIDs []uint64) {
+	if svcCtx == nil || len(nodeIDs) == 0 {
+		return
+	}
+	logic := adminprotocolbindings.NewSyncLogic(ctx, svcCtx)
+	_, err := logic.SyncBatch(&types.AdminSyncProtocolBindingsRequest{
+		NodeIDs: nodeIDs,
+	})
+	if err != nil && !errors.Is(err, repository.ErrInvalidArgument) {
+		logx.WithContext(ctx).Errorf("kernel recovery sync failed nodes=%v: %v", nodeIDs, err)
+	}
 }
 
 func resolveControlToken(node repository.Node) string {

@@ -71,6 +71,41 @@ func (c *ControlClient) UpsertProtocol(ctx context.Context, req ProtocolUpsertRe
 	return summary, nil
 }
 
+// RegisterServiceEvent registers service event callbacks.
+func (c *ControlClient) RegisterServiceEvent(ctx context.Context, req ServiceEventRegistrationRequest) (EventSubscriptionRecord, error) {
+	endpoint := c.buildURL("/service-events/registrations")
+
+	payload, err := json.Marshal(req)
+	if err != nil {
+		return EventSubscriptionRecord{}, err
+	}
+
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(payload))
+	if err != nil {
+		return EventSubscriptionRecord{}, err
+	}
+	c.applyAuth(httpReq)
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("Accept", "application/json")
+
+	resp, err := c.client.Do(httpReq)
+	if err != nil {
+		return EventSubscriptionRecord{}, err
+	}
+	defer closeBody(resp.Body)
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
+		return EventSubscriptionRecord{}, fmt.Errorf("kernel control: %s: %s", resp.Status, strings.TrimSpace(string(body)))
+	}
+
+	var record EventSubscriptionRecord
+	if err := json.NewDecoder(resp.Body).Decode(&record); err != nil {
+		return EventSubscriptionRecord{}, err
+	}
+	return record, nil
+}
+
 // GetStatus fetches runtime status snapshot (nodes only when supported).
 func (c *ControlClient) GetStatus(ctx context.Context) (StatusResponse, error) {
 	endpoint := c.buildURL("/status?include=nodes")

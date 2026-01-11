@@ -153,8 +153,8 @@ gRPC listen address [0.0.0.0:8890]: 0.0.0.0:8890
 ═══ Step 7: Initializing Database ═══
 
 Running database migrations...
-✓ Migrations applied: 5 version(s)
-  Current schema version: 2024063005
+✓ Migrations applied: 1 version(s)
+  Current schema version: 2026010501
 
 ═══ Step 8: Creating Admin User ═══
 

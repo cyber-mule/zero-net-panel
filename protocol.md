@@ -31,6 +31,7 @@
 - 回调接入：
   - `POST /api/v1/kernel/events`：节点健康事件回调（更新协议绑定健康）。
   - `POST /api/v1/kernel/traffic`：用户流量观测回调（记录原始/倍数流量）。
+  - `POST /api/v1/kernel/service-events`：服务事件回调（如 `user_traffic_reported`）。
 - 状态轮询：`Kernel.StatusPollInterval` 触发 `GET /v1/status` 轮询（`internal/logic/kernel/statussync.go`）。
 
 ## 订阅与展示

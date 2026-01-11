@@ -34,6 +34,7 @@ Zero Network Panel 旨在以 xboard 的功能体系为基线，提供面向节�
 - `GET /api/v1/{AdminPrefix}/protocol-entries` / `POST /api/v1/{AdminPrefix}/protocol-entries`：协议发布（对外入口）管理。
 - `POST /api/v1/kernel/events`：内核协议健康事件回调。
 - `POST /api/v1/kernel/traffic`：内核用户流量回调。
+- `POST /api/v1/kernel/service-events`：内核服务事件回调（如 `user_traffic_reported`）。
 - `GET /api/v1/user/subscriptions/{id}/traffic`：查询订阅原始/倍数流量明细。
 
 **套餐与公告**

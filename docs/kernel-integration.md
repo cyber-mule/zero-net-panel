@@ -48,7 +48,7 @@
 内核提供事件回调注册接口，用于订阅节点状态与服务级事件：
 
 - 节点事件：`POST /v1/events/registrations`（如 `node_added`、`node_healthy`、`node_degraded` 等）。
-- 服务事件：`POST /v1/service-events/registrations`（如 `user_quota_changed`）。
+- 服务事件：`POST /v1/service-events/registrations`（如 `user.quota.changed`、`user.traffic.reported`）。
 
 内核会在事件发生时向 callback 地址推送通知，已注册的回调可通过
 `GET /v1/events/registrations` 与 `GET /v1/service-events/registrations` 查询，删除使用对应的
@@ -60,6 +60,7 @@
 
 - `POST /api/v1/kernel/events`：节点状态事件回调。
 - `POST /api/v1/kernel/traffic`：用户流量观测回调。
+- `POST /api/v1/kernel/service-events`：服务事件回调（如 `user.traffic.reported`）。
 
 当前节点事件回调仅用于记录，不会自动更新协议健康状态；需要时请手动触发协议健康反向同步。
 
@@ -93,6 +94,21 @@
   ]
 }
 ```
+
+服务事件回调示例（`user.traffic.reported`）：
+
+```json
+{
+  "event": "user.traffic.reported",
+  "payload": {
+    "user_id": "alice",
+    "previous": {"used": 1024, "remaining": 2048},
+    "current": {"used": 2048, "remaining": 1024}
+  }
+}
+```
+
+面板侧会优先使用 `subscription_id`，否则使用 `user_id`（需与面板用户 ID 对齐）来更新订阅已用流量（`current.used`）。
 
 当内核无法推送事件时，可通过 `Kernel.StatusPollInterval` 启用状态轮询，面板会定期调用
 `GET /v1/status` 判断节点控制面可达性，并将节点 `status` 更新为 `online`/`offline`。
