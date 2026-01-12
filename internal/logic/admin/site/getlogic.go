@@ -2,6 +2,7 @@ package site
 
 import (
 	"context"
+	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
 
@@ -29,8 +30,9 @@ func NewGetLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetLogic {
 // Get 返回当前站点配置。
 func (l *GetLogic) Get() (*types.AdminSiteSettingResponse, error) {
 	defaults := repository.SiteSettingDefaults{
-		Name:    l.svcCtx.Config.Site.Name,
-		LogoURL: l.svcCtx.Config.Site.LogoURL,
+		Name:                                 l.svcCtx.Config.Site.Name,
+		LogoURL:                              l.svcCtx.Config.Site.LogoURL,
+		KernelOfflineProbeMaxIntervalSeconds: int(l.svcCtx.Config.Kernel.OfflineProbeMaxInterval / time.Second),
 	}
 	setting, err := l.svcCtx.Repositories.Site.GetSiteSetting(l.ctx, defaults)
 	if err != nil {

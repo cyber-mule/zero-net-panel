@@ -3,6 +3,7 @@ package site
 import (
 	"context"
 	"strings"
+	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
 
@@ -30,8 +31,9 @@ func NewUpdateLogic(ctx context.Context, svcCtx *svc.ServiceContext) *UpdateLogi
 // Update 根据请求更新站点配置。
 func (l *UpdateLogic) Update(req *types.AdminUpdateSiteSettingRequest) (*types.AdminSiteSettingResponse, error) {
 	defaults := repository.SiteSettingDefaults{
-		Name:    l.svcCtx.Config.Site.Name,
-		LogoURL: l.svcCtx.Config.Site.LogoURL,
+		Name:                                 l.svcCtx.Config.Site.Name,
+		LogoURL:                              l.svcCtx.Config.Site.LogoURL,
+		KernelOfflineProbeMaxIntervalSeconds: int(l.svcCtx.Config.Kernel.OfflineProbeMaxInterval / time.Second),
 	}
 	setting, err := l.svcCtx.Repositories.Site.GetSiteSetting(l.ctx, defaults)
 	if err != nil {
@@ -46,6 +48,13 @@ func (l *UpdateLogic) Update(req *types.AdminUpdateSiteSettingRequest) (*types.A
 	}
 	if req.AccessDomain != nil {
 		setting.AccessDomain = strings.TrimSpace(*req.AccessDomain)
+	}
+	if req.KernelOfflineProbeMaxIntervalSeconds != nil {
+		value := *req.KernelOfflineProbeMaxIntervalSeconds
+		if value < 0 {
+			value = 0
+		}
+		setting.KernelOfflineProbeMaxIntervalSeconds = value
 	}
 
 	updated, err := l.svcCtx.Repositories.Site.UpsertSiteSetting(l.ctx, setting)

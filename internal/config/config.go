@@ -40,11 +40,12 @@ type SiteConfig struct {
 }
 
 type KernelConfig struct {
-	DefaultProtocol    string           `json:"defaultProtocol" yaml:"DefaultProtocol"`
-	HTTP               KernelHTTPConfig `json:"http" yaml:"HTTP"`
-	GRPC               KernelGRPCConfig `json:"grpc" yaml:"GRPC"`
-	StatusPollInterval time.Duration    `json:"statusPollInterval" yaml:"StatusPollInterval"`
-	StatusPollBackoff  KernelBackoff    `json:"statusPollBackoff" yaml:"StatusPollBackoff"`
+	DefaultProtocol         string           `json:"defaultProtocol" yaml:"DefaultProtocol"`
+	HTTP                    KernelHTTPConfig `json:"http" yaml:"HTTP"`
+	GRPC                    KernelGRPCConfig `json:"grpc" yaml:"GRPC"`
+	StatusPollInterval      time.Duration    `json:"statusPollInterval" yaml:"StatusPollInterval"`
+	StatusPollBackoff       KernelBackoff    `json:"statusPollBackoff" yaml:"StatusPollBackoff"`
+	OfflineProbeMaxInterval time.Duration    `json:"offlineProbeMaxInterval" yaml:"OfflineProbeMaxInterval"`
 }
 
 type KernelHTTPConfig struct {
@@ -67,6 +68,9 @@ func (k *KernelConfig) Normalize() {
 	k.HTTP.Normalize()
 	if k.StatusPollInterval < 0 {
 		k.StatusPollInterval = 0
+	}
+	if k.OfflineProbeMaxInterval < 0 {
+		k.OfflineProbeMaxInterval = 0
 	}
 	k.StatusPollBackoff.Normalize(k.StatusPollInterval)
 }

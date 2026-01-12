@@ -7,11 +7,12 @@ import (
 
 func toSiteSetting(setting repository.SiteSetting) types.SiteSetting {
 	return types.SiteSetting{
-		ID:           setting.ID,
-		Name:         setting.Name,
-		LogoURL:      setting.LogoURL,
-		AccessDomain: setting.AccessDomain,
-		CreatedAt:    setting.CreatedAt.Unix(),
-		UpdatedAt:    setting.UpdatedAt.Unix(),
+		ID:                                   setting.ID,
+		Name:                                 setting.Name,
+		LogoURL:                              setting.LogoURL,
+		AccessDomain:                         setting.AccessDomain,
+		KernelOfflineProbeMaxIntervalSeconds: setting.KernelOfflineProbeMaxIntervalSeconds,
+		CreatedAt:                            setting.CreatedAt.Unix(),
+		UpdatedAt:                            setting.UpdatedAt.Unix(),
 	}
 }

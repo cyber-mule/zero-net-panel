@@ -71,6 +71,41 @@ func (c *ControlClient) UpsertProtocol(ctx context.Context, req ProtocolUpsertRe
 	return summary, nil
 }
 
+// RegisterEvent registers node event callbacks.
+func (c *ControlClient) RegisterEvent(ctx context.Context, req EventRegistrationRequest) (EventRegistrationRecord, error) {
+	endpoint := c.buildURL("/events/registrations")
+
+	payload, err := json.Marshal(req)
+	if err != nil {
+		return EventRegistrationRecord{}, err
+	}
+
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(payload))
+	if err != nil {
+		return EventRegistrationRecord{}, err
+	}
+	c.applyAuth(httpReq)
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("Accept", "application/json")
+
+	resp, err := c.client.Do(httpReq)
+	if err != nil {
+		return EventRegistrationRecord{}, err
+	}
+	defer closeBody(resp.Body)
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
+		return EventRegistrationRecord{}, fmt.Errorf("kernel control: %s: %s", resp.Status, strings.TrimSpace(string(body)))
+	}
+
+	var record EventRegistrationRecord
+	if err := json.NewDecoder(resp.Body).Decode(&record); err != nil {
+		return EventRegistrationRecord{}, err
+	}
+	return record, nil
+}
+
 // RegisterServiceEvent registers service event callbacks.
 func (c *ControlClient) RegisterServiceEvent(ctx context.Context, req ServiceEventRegistrationRequest) (EventSubscriptionRecord, error) {
 	endpoint := c.buildURL("/service-events/registrations")

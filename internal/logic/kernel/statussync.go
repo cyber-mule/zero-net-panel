@@ -29,10 +29,6 @@ func SyncStatus(ctx context.Context, svcCtx *svc.ServiceContext) error {
 	}
 
 	statusByID := make(map[uint64]string, len(nodes))
-	type controlKey struct {
-		endpoint string
-		token    string
-	}
 	pairs := make(map[controlKey][]uint64)
 	metaByKey := make(map[controlKey]authDebug)
 	for _, node := range nodes {

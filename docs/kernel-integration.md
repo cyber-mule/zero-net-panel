@@ -138,6 +138,11 @@ Kernel:
 - `Multiplier` 为退避倍率
 - `Jitter` 为抖动比例（0~1）
 
+为缩短离线节点恢复感知时间，面板会对离线节点执行补偿轮询：
+
+- 轮询间隔按 1/3/5 秒递增，跨自然日重置回 1s
+- 可通过 `Kernel.OfflineProbeMaxInterval` 或站点配置 `kernel_offline_probe_max_interval_seconds` 设置最大间隔（秒），默认 0 不限制
+
 ## 维护约定
 
 - 内核对外接口变更时需同步更新 `core.yaml`，并在 PR 中注明影响范围与兼容策略。

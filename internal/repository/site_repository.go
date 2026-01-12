@@ -11,12 +11,13 @@ import (
 
 // SiteSetting stores branding configuration.
 type SiteSetting struct {
-	ID           uint64 `gorm:"primaryKey"`
-	Name         string `gorm:"size:128"`
-	LogoURL      string `gorm:"size:512"`
-	AccessDomain string `gorm:"size:512"`
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	ID                                   uint64 `gorm:"primaryKey"`
+	Name                                 string `gorm:"size:128"`
+	LogoURL                              string `gorm:"size:512"`
+	AccessDomain                         string `gorm:"size:512"`
+	KernelOfflineProbeMaxIntervalSeconds int    `gorm:"column:kernel_offline_probe_max_interval_seconds"`
+	CreatedAt                            time.Time
+	UpdatedAt                            time.Time
 }
 
 // TableName custom binding.
@@ -24,9 +25,10 @@ func (SiteSetting) TableName() string { return "site_settings" }
 
 // SiteSettingDefaults contains fallback values when initializing settings.
 type SiteSettingDefaults struct {
-	Name         string
-	LogoURL      string
-	AccessDomain string
+	Name                                 string
+	LogoURL                              string
+	AccessDomain                         string
+	KernelOfflineProbeMaxIntervalSeconds int
 }
 
 // SiteRepository exposes accessors for site settings.
@@ -57,11 +59,12 @@ func (r *siteRepository) GetSiteSetting(ctx context.Context, defaults SiteSettin
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			now := time.Now().UTC()
 			setting = SiteSetting{
-				Name:         strings.TrimSpace(defaults.Name),
-				LogoURL:      strings.TrimSpace(defaults.LogoURL),
-				AccessDomain: strings.TrimSpace(defaults.AccessDomain),
-				CreatedAt:    now,
-				UpdatedAt:    now,
+				Name:                                 strings.TrimSpace(defaults.Name),
+				LogoURL:                              strings.TrimSpace(defaults.LogoURL),
+				AccessDomain:                         strings.TrimSpace(defaults.AccessDomain),
+				KernelOfflineProbeMaxIntervalSeconds: defaults.KernelOfflineProbeMaxIntervalSeconds,
+				CreatedAt:                            now,
+				UpdatedAt:                            now,
 			}
 			if err := r.db.WithContext(ctx).Create(&setting).Error; err != nil {
 				return SiteSetting{}, err
@@ -82,6 +85,9 @@ func (r *siteRepository) UpsertSiteSetting(ctx context.Context, setting SiteSett
 	setting.Name = strings.TrimSpace(setting.Name)
 	setting.LogoURL = strings.TrimSpace(setting.LogoURL)
 	setting.AccessDomain = strings.TrimSpace(setting.AccessDomain)
+	if setting.KernelOfflineProbeMaxIntervalSeconds < 0 {
+		setting.KernelOfflineProbeMaxIntervalSeconds = 0
+	}
 
 	now := time.Now().UTC()
 	setting.UpdatedAt = now
@@ -100,7 +106,8 @@ func (r *siteRepository) UpsertSiteSetting(ctx context.Context, setting SiteSett
 			"name":          setting.Name,
 			"logo_url":      setting.LogoURL,
 			"access_domain": setting.AccessDomain,
-			"updated_at":    setting.UpdatedAt,
+			"kernel_offline_probe_max_interval_seconds": setting.KernelOfflineProbeMaxIntervalSeconds,
+			"updated_at": setting.UpdatedAt,
 		}).Error; err != nil {
 		return SiteSetting{}, err
 	}

@@ -27,8 +27,9 @@ func NewPingLogic(ctx context.Context, svcCtx *svc.ServiceContext) *PingLogic {
 
 func (l *PingLogic) Ping() (*types.PingResponse, error) {
 	defaults := repository.SiteSettingDefaults{
-		Name:    l.svcCtx.Config.Site.Name,
-		LogoURL: l.svcCtx.Config.Site.LogoURL,
+		Name:                                 l.svcCtx.Config.Site.Name,
+		LogoURL:                              l.svcCtx.Config.Site.LogoURL,
+		KernelOfflineProbeMaxIntervalSeconds: int(l.svcCtx.Config.Kernel.OfflineProbeMaxInterval / time.Second),
 	}
 	setting, err := l.svcCtx.Repositories.Site.GetSiteSetting(l.ctx, defaults)
 	if err != nil {

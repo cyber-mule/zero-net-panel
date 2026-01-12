@@ -27,6 +27,8 @@ type SyncLogic struct {
 
 	registeredServiceEvents map[serviceEventKey]bool
 	serviceEventCallback    string
+	registeredNodeEvents    map[nodeEventKey]bool
+	nodeEventCallback       string
 }
 
 // NewSyncLogic constructs SyncLogic.
@@ -36,6 +38,7 @@ func NewSyncLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SyncLogic {
 		ctx:                     ctx,
 		svcCtx:                  svcCtx,
 		registeredServiceEvents: make(map[serviceEventKey]bool),
+		registeredNodeEvents:    make(map[nodeEventKey]bool),
 	}
 }
 
@@ -118,6 +121,9 @@ func (l *SyncLogic) syncBinding(binding repository.ProtocolBinding) types.Protoc
 		SyncedAt:  time.Now().UTC().Unix(),
 	}
 
+	if err := l.ensureNodeEventRegistration(binding); err != nil {
+		l.Errorf("kernel event registration failed: %v", err)
+	}
 	if err := l.ensureServiceEventRegistration(binding); err != nil {
 		l.Errorf("kernel service event registration failed: %v", err)
 	}
@@ -180,6 +186,64 @@ type serviceEventKey struct {
 	callback string
 }
 
+type nodeEventKey struct {
+	endpoint string
+	token    string
+	callback string
+	event    string
+}
+
+func (l *SyncLogic) ensureNodeEventRegistration(binding repository.ProtocolBinding) error {
+	if l.svcCtx == nil {
+		return repository.ErrInvalidState
+	}
+	callback, err := l.resolveNodeEventCallbackURL()
+	if err != nil {
+		return err
+	}
+
+	endpoint := strings.TrimSpace(binding.Node.ControlEndpoint)
+	if endpoint == "" {
+		return fmt.Errorf("node control endpoint not configured")
+	}
+	token := resolveControlToken(binding.Node)
+	control, err := kernel.NewControlClient(kernel.HTTPOptions{
+		BaseURL: endpoint,
+		Token:   token,
+		Timeout: l.svcCtx.Config.Kernel.HTTP.Timeout,
+	})
+	if err != nil {
+		return err
+	}
+
+	events := []string{"node_added", "node_removed", "node_healthy", "node_degraded", "node_unhealthy"}
+	for _, event := range events {
+		key := nodeEventKey{
+			endpoint: endpoint,
+			token:    token,
+			callback: callback,
+			event:    event,
+		}
+		if l.registeredNodeEvents[key] {
+			continue
+		}
+
+		req := kernel.EventRegistrationRequest{
+			Event:    event,
+			Callback: callback,
+		}
+		if secret := strings.TrimSpace(l.svcCtx.Config.Webhook.SharedToken); secret != "" {
+			req.Secret = secret
+		}
+
+		if _, err := control.RegisterEvent(l.ctx, req); err != nil {
+			return err
+		}
+		l.registeredNodeEvents[key] = true
+	}
+	return nil
+}
+
 func (l *SyncLogic) ensureServiceEventRegistration(binding repository.ProtocolBinding) error {
 	if l.svcCtx == nil {
 		return repository.ErrInvalidState
@@ -227,27 +291,57 @@ func (l *SyncLogic) ensureServiceEventRegistration(binding repository.ProtocolBi
 	return nil
 }
 
-func (l *SyncLogic) resolveServiceEventCallbackURL() (string, error) {
-	if l.serviceEventCallback != "" {
-		return l.serviceEventCallback, nil
+func (l *SyncLogic) resolveNodeEventCallbackURL() (string, error) {
+	if l.nodeEventCallback != "" {
+		return l.nodeEventCallback, nil
 	}
 	defaults := repository.SiteSettingDefaults{
-		Name:    l.svcCtx.Config.Site.Name,
-		LogoURL: l.svcCtx.Config.Site.LogoURL,
+		Name:                                 l.svcCtx.Config.Site.Name,
+		LogoURL:                              l.svcCtx.Config.Site.LogoURL,
+		KernelOfflineProbeMaxIntervalSeconds: int(l.svcCtx.Config.Kernel.OfflineProbeMaxInterval / time.Second),
 	}
 	setting, err := l.svcCtx.Repositories.Site.GetSiteSetting(l.ctx, defaults)
 	if err != nil {
 		return "", err
 	}
 	if raw := strings.TrimSpace(setting.AccessDomain); raw != "" {
-		callback, err := buildCallbackFromBase(raw, 0)
+		callback, err := buildCallbackFromBase(raw, 0, "/api/v1/kernel/events")
+		if err != nil {
+			return "", err
+		}
+		l.nodeEventCallback = callback
+		return callback, nil
+	}
+	callback, err := buildCallbackFromBase(l.svcCtx.Config.Host, l.svcCtx.Config.Port, "/api/v1/kernel/events")
+	if err != nil {
+		return "", err
+	}
+	l.nodeEventCallback = callback
+	return callback, nil
+}
+
+func (l *SyncLogic) resolveServiceEventCallbackURL() (string, error) {
+	if l.serviceEventCallback != "" {
+		return l.serviceEventCallback, nil
+	}
+	defaults := repository.SiteSettingDefaults{
+		Name:                                 l.svcCtx.Config.Site.Name,
+		LogoURL:                              l.svcCtx.Config.Site.LogoURL,
+		KernelOfflineProbeMaxIntervalSeconds: int(l.svcCtx.Config.Kernel.OfflineProbeMaxInterval / time.Second),
+	}
+	setting, err := l.svcCtx.Repositories.Site.GetSiteSetting(l.ctx, defaults)
+	if err != nil {
+		return "", err
+	}
+	if raw := strings.TrimSpace(setting.AccessDomain); raw != "" {
+		callback, err := buildCallbackFromBase(raw, 0, "/api/v1/kernel/service-events")
 		if err != nil {
 			return "", err
 		}
 		l.serviceEventCallback = callback
 		return callback, nil
 	}
-	callback, err := buildCallbackFromBase(l.svcCtx.Config.Host, l.svcCtx.Config.Port)
+	callback, err := buildCallbackFromBase(l.svcCtx.Config.Host, l.svcCtx.Config.Port, "/api/v1/kernel/service-events")
 	if err != nil {
 		return "", err
 	}
@@ -255,7 +349,7 @@ func (l *SyncLogic) resolveServiceEventCallbackURL() (string, error) {
 	return callback, nil
 }
 
-func buildCallbackFromBase(raw string, port int) (string, error) {
+func buildCallbackFromBase(raw string, port int, path string) (string, error) {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
 		return "", fmt.Errorf("callback host not configured")
@@ -279,7 +373,11 @@ func buildCallbackFromBase(raw string, port int) (string, error) {
 		base.Host = fmt.Sprintf("%s:%d", base.Host, port)
 	}
 
-	base.Path = strings.TrimSuffix(base.Path, "/") + "/api/v1/kernel/service-events"
+	path = strings.TrimSpace(path)
+	if path == "" {
+		path = "/"
+	}
+	base.Path = strings.TrimSuffix(base.Path, "/") + path
 	return base.String(), nil
 }
 

@@ -130,6 +130,17 @@ var migrationRegistry = []Migration{
 			return nil
 		},
 	},
+	{
+		Version: 2026010502,
+		Name:    "add-site-setting-offline-probe",
+		Up: func(ctx context.Context, db *gorm.DB) error {
+			return db.WithContext(ctx).AutoMigrate(&repository.SiteSetting{})
+		},
+		Down: func(ctx context.Context, db *gorm.DB) error {
+			return db.WithContext(ctx).Migrator().
+				DropColumn(&repository.SiteSetting{}, "kernel_offline_probe_max_interval_seconds")
+		},
+	},
 }
 
 func init() {

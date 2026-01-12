@@ -100,6 +100,7 @@ func runKernelStatusPoller(ctx context.Context, svcCtx *svc.ServiceContext, inte
 	logger := logx.WithContext(ctx)
 	backoff := newKernelStatusBackoff(interval, svcCtx.Config.Kernel.StatusPollBackoff)
 	nextDelay := interval
+	offlineProbe := kernellogic.NewOfflineProbeManager(svcCtx, int(svcCtx.Config.Kernel.OfflineProbeMaxInterval/time.Second))
 
 	for {
 		if err := kernellogic.SyncStatus(ctx, svcCtx); err != nil {
@@ -109,6 +110,7 @@ func runKernelStatusPoller(ctx context.Context, svcCtx *svc.ServiceContext, inte
 			backoff.Reset()
 			nextDelay = interval
 		}
+		offlineProbe.Update(ctx)
 
 		timer := time.NewTimer(nextDelay)
 		select {

@@ -62,6 +62,21 @@ type NodeHealthState struct {
 	Status string `json:"status"`
 }
 
+// EventRegistrationRequest registers a node event callback.
+type EventRegistrationRequest struct {
+	Event    string `json:"event"`
+	Callback string `json:"callback"`
+	Secret   string `json:"secret,omitempty"`
+}
+
+// EventRegistrationRecord represents an event subscription record.
+type EventRegistrationRecord struct {
+	ID          string `json:"id"`
+	Event       string `json:"event"`
+	Callback    string `json:"callback"`
+	CreatedAtMS int64  `json:"created_at_ms"`
+}
+
 // ServiceEventRegistrationRequest registers a service event callback.
 type ServiceEventRegistrationRequest struct {
 	Event    string `json:"event"`
