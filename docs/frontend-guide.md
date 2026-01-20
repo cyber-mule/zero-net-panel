@@ -151,7 +151,7 @@ Content-Type: application/json
 
 - `400`：协议不支持或参数非法
 - `404`：节点不存在
-- `500`：内核同步失败（检查 Kernel 地址/令牌）
+- `500`：内核同步失败（检查节点 control_endpoint/鉴权）
 
 **节点状态同步**
 

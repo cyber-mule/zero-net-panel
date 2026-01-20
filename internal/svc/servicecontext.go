@@ -13,7 +13,6 @@ import (
 	"github.com/zero-net-panel/zero-net-panel/pkg/auth"
 	"github.com/zero-net-panel/zero-net-panel/pkg/cache"
 	"github.com/zero-net-panel/zero-net-panel/pkg/database"
-	"github.com/zero-net-panel/zero-net-panel/pkg/kernel"
 )
 
 type ServiceContext struct {
@@ -21,8 +20,6 @@ type ServiceContext struct {
 	DB            *gorm.DB
 	Cache         cache.Cache
 	Repositories  *repository.Repositories
-	Kernel        *kernel.Registry
-	KernelControl *kernel.ControlClient
 	Auth          *auth.Generator
 	Credentials   *security.CredentialManager
 
@@ -50,42 +47,8 @@ func NewServiceContext(c config.Config) (*ServiceContext, error) {
 		return nil, fmt.Errorf("init cache: %w", err)
 	}
 
-	opts := kernel.Options{
-		DefaultProtocol: c.Kernel.DefaultProtocol,
-		HTTP: kernel.HTTPOptions{
-			BaseURL: c.Kernel.HTTP.BaseURL,
-			Token:   c.Kernel.HTTP.AuthToken(),
-			Timeout: c.Kernel.HTTP.Timeout,
-		},
-		GRPC: kernel.GRPCOptions{
-			Endpoint: c.Kernel.GRPC.Endpoint,
-			TLSCert:  c.Kernel.GRPC.TLSCert,
-			Timeout:  c.Kernel.GRPC.Timeout,
-		},
-	}
-
-	kernelRegistry, err := kernel.NewRegistry(opts)
-	if err != nil {
-		_ = cacheProvider.Close()
-		dbClose()
-		return nil, fmt.Errorf("init kernel registry: %w", err)
-	}
-
-	var kernelControl *kernel.ControlClient
-	if opts.HTTP.BaseURL != "" {
-		control, err := kernel.NewControlClient(opts.HTTP)
-		if err != nil {
-			_ = kernelRegistry.Close()
-			_ = cacheProvider.Close()
-			dbClose()
-			return nil, fmt.Errorf("init kernel control client: %w", err)
-		}
-		kernelControl = control
-	}
-
 	repos, err := repository.NewRepositories(db)
 	if err != nil {
-		_ = kernelRegistry.Close()
 		_ = cacheProvider.Close()
 		dbClose()
 		return nil, fmt.Errorf("init repositories: %w", err)
@@ -102,7 +65,6 @@ func NewServiceContext(c config.Config) (*ServiceContext, error) {
 
 	credentialManager, err := security.NewCredentialManager(c.Credentials.MasterKey)
 	if err != nil {
-		_ = kernelRegistry.Close()
 		_ = cacheProvider.Close()
 		dbClose()
 		return nil, fmt.Errorf("init credential manager: %w", err)
@@ -113,8 +75,6 @@ func NewServiceContext(c config.Config) (*ServiceContext, error) {
 		DB:            db,
 		Cache:         cacheProvider,
 		Repositories:  repos,
-		Kernel:        kernelRegistry,
-		KernelControl: kernelControl,
 		Auth:          authGenerator,
 		Credentials:   credentialManager,
 		Ctx:           ctx,
@@ -124,9 +84,6 @@ func NewServiceContext(c config.Config) (*ServiceContext, error) {
 	svcCtx.cleanup = func() {
 		if svcCtx.cancel != nil {
 			svcCtx.cancel()
-		}
-		if kernelRegistry != nil {
-			_ = kernelRegistry.Close()
 		}
 		if cacheProvider != nil {
 			_ = cacheProvider.Close()

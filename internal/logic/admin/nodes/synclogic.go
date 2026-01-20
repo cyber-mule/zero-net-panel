@@ -38,7 +38,7 @@ func (l *SyncLogic) Sync(req *types.AdminSyncNodeKernelRequest) (resp *types.Adm
 	start := time.Now()
 	protocol := strings.ToLower(strings.TrimSpace(req.Protocol))
 	if protocol == "" {
-		protocol = l.svcCtx.Kernel.DefaultProtocol()
+		protocol = strings.ToLower(strings.TrimSpace(l.svcCtx.Config.Kernel.DefaultProtocol))
 	}
 	if protocol == "" {
 		protocol = "http"

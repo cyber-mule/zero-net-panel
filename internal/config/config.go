@@ -1,7 +1,6 @@
 package config
 
 import (
-	"encoding/base64"
 	"strings"
 	"time"
 
@@ -42,24 +41,13 @@ type SiteConfig struct {
 type KernelConfig struct {
 	DefaultProtocol         string           `json:"defaultProtocol" yaml:"DefaultProtocol"`
 	HTTP                    KernelHTTPConfig `json:"http" yaml:"HTTP"`
-	GRPC                    KernelGRPCConfig `json:"grpc" yaml:"GRPC"`
 	StatusPollInterval      time.Duration    `json:"statusPollInterval" yaml:"StatusPollInterval"`
 	StatusPollBackoff       KernelBackoff    `json:"statusPollBackoff" yaml:"StatusPollBackoff"`
 	OfflineProbeMaxInterval time.Duration    `json:"offlineProbeMaxInterval" yaml:"OfflineProbeMaxInterval"`
 }
 
 type KernelHTTPConfig struct {
-	BaseURL      string        `json:"baseUrl" yaml:"BaseURL"`
-	Token        string        `json:"token" yaml:"Token"`
-	AccessKey    string        `json:"accessKey" yaml:"AccessKey"`
-	AccessSecret string        `json:"accessSecret" yaml:"AccessSecret"`
 	Timeout      time.Duration `json:"timeout" yaml:"Timeout"`
-}
-
-type KernelGRPCConfig struct {
-	Endpoint string        `json:"endpoint" yaml:"Endpoint"`
-	TLSCert  string        `json:"tlsCert" yaml:"TLSCert"`
-	Timeout  time.Duration `json:"timeout" yaml:"Timeout"`
 }
 
 // Normalize applies defaults for kernel configuration.
@@ -77,19 +65,9 @@ func (k *KernelConfig) Normalize() {
 
 // Normalize applies defaults for kernel HTTP config.
 func (h *KernelHTTPConfig) Normalize() {
-	h.BaseURL = strings.TrimSpace(h.BaseURL)
-	h.Token = strings.TrimSpace(h.Token)
-	h.AccessKey = strings.TrimSpace(h.AccessKey)
-	h.AccessSecret = strings.TrimSpace(h.AccessSecret)
-}
-
-// AuthToken resolves the Authorization token, preferring access key/secret.
-func (h KernelHTTPConfig) AuthToken() string {
-	if h.AccessKey != "" && h.AccessSecret != "" {
-		encoded := base64.StdEncoding.EncodeToString([]byte(h.AccessKey + ":" + h.AccessSecret))
-		return "Basic " + encoded
+	if h.Timeout < 0 {
+		h.Timeout = 0
 	}
-	return strings.TrimSpace(h.Token)
 }
 
 // CORSConfig configures cross-origin access for the HTTP API.

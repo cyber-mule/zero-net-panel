@@ -4,6 +4,31 @@ Zero Network Panel 提供完整的 Docker 部署方案，支持安装向导和�
 
 ## 快速开始
 
+### 安装步骤（容器化部署）
+
+首次部署必须生成配置文件。容器默认命令是 `znp serve --config /etc/znp/znp.yaml`，如果该文件不存在会直接退出。
+
+```bash
+# 1. 构建镜像（SQLite 版本需要 CGO）
+docker build -t znp:cgo -f deploy/docker/Dockerfile.cgo .
+
+# 2. 运行安装向导生成配置
+docker run -it --rm \
+  -v $(pwd)/deploy/docker/config:/etc/znp \
+  -v $(pwd)/deploy/docker/data:/var/lib/znp \
+  znp:cgo install --output /etc/znp/znp.yaml
+
+# 3. 启动服务
+docker run -d \
+  --name znp-server \
+  -v $(pwd)/deploy/docker/config:/etc/znp:ro \
+  -v $(pwd)/deploy/docker/data:/var/lib/znp \
+  -p 8888:8888 \
+  -p 8890:8890 \
+  -p 9100:9100 \
+  znp:cgo serve --config /etc/znp/znp.yaml --migrate-to latest
+```
+
 ### 方案 1：使用安装向导（推荐首次部署）
 
 #### 步骤 1：构建镜像

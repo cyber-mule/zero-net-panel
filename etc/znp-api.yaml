@@ -35,14 +35,6 @@ Kernel:
     Jitter: 0.2
   OfflineProbeMaxInterval: 0s
   HTTP:
-    BaseURL: http://kernel.local
-    AccessKey: ""
-    AccessSecret: ""
-    Token: ""
-    Timeout: 5s
-  GRPC:
-    Endpoint: 127.0.0.1:9000
-    TLSCert: ""
     Timeout: 5s
 
 CORS:

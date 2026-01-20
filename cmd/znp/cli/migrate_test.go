@@ -58,12 +58,6 @@ Kernel:
   DefaultProtocol: http
   StatusPollInterval: 0s
   HTTP:
-    BaseURL: http://localhost
-    Token: ""
-    Timeout: 1s
-  GRPC:
-    Endpoint: 127.0.0.1:9000
-    TLSCert: ""
     Timeout: 1s
 
 Auth:

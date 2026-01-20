@@ -1,4 +1,4 @@
-# 生产示例配置：复制后替换尖括号内容，不要提交秘钥。
+﻿# 生产示例配置：复制后替换尖括号内容，不要提交秘钥。
 Name: znp.prod
 Host: 0.0.0.0
 Port: 8888
@@ -43,16 +43,7 @@ Kernel:
     Jitter: 0.2
   OfflineProbeMaxInterval: 0s
   HTTP:
-    BaseURL: "https://kernel.example.com"  # 必填：内核 HTTP 入口
-    AccessKey: "<access-key>"              # 可选：内核 AK（Basic 鉴权）
-    AccessSecret: "<access-secret>"        # 可选：内核 SK（Basic 鉴权）
-    Token: "<token>"                       # 可选：Bearer 或 Basic 令牌
     Timeout: 5s
-  GRPC:
-    Endpoint: ""                           # 如需 gRPC 同步则填写
-    TLSCert: ""
-    Timeout: 5s
-
 CORS:
   Enabled: true
   AllowOrigins:

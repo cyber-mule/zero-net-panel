@@ -12,7 +12,7 @@
 
 面板侧鉴权配置说明：
 
-- 节点控制面必须配置 `control_endpoint`，面板不再回退全局 `Kernel.HTTP.BaseURL`。
+- 节点控制面必须配置 `control_endpoint`。
 - 在节点上配置 `control_access_key` + `control_secret_key` 时，面板会自动发送 Basic。
 - 鉴权优先级：`control_access_key` + `control_secret_key` → `control_token`（无全局兜底）。
 

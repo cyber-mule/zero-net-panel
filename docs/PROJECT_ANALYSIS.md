@@ -1,4 +1,4 @@
-# Zero Network Panel - 项目分析报告 / Project Analysis Report
+﻿# Zero Network Panel - 项目分析报告 / Project Analysis Report
 
 **生成日期 / Generated**: 2025-12-11  
 **分析人 / Analyst**: GitHub Copilot  
@@ -98,7 +98,7 @@ zero-net-panel/
 - `internal/logic/admin/nodes/`: 节点管理逻辑
 
 **功能特点 / Features**:
-- HTTP 与 gRPC Provider 注册表
+- 节点控制面地址与鉴权信息维护
 - 节点配置同步
 - 协议资源管理
 
@@ -489,14 +489,6 @@ Kernel:
     Multiplier: 2
     Jitter: 0.2
   HTTP:
-    BaseURL: "http://kernel.local"
-    AccessKey: ""
-    AccessSecret: ""
-    Token: ""
-    Timeout: 5s
-  GRPC:
-    Endpoint: ""
-    TLSCert: ""
     Timeout: 5s
 
 CORS:
@@ -685,23 +677,10 @@ cp etc/znp-api.yaml etc/znp-prod.yaml
 
 ### Docker 部署 / Docker Deployment
 
-**建议的 Dockerfile**:
-```dockerfile
-FROM golang:1.22-alpine AS builder
-WORKDIR /app
-COPY go.mod go.sum ./
-RUN go mod download
-COPY . .
-RUN go build -o znp ./cmd/znp
-
-FROM alpine:latest
-RUN apk --no-cache add ca-certificates
-WORKDIR /root/
-COPY --from=builder /app/znp .
-COPY etc/ ./etc/
-EXPOSE 8888 9100
-CMD ["./znp", "serve", "--config", "etc/znp-api.yaml"]
-```
+Use the deployment assets under `deploy/docker/`. Build the slim image with
+`deploy/docker/Dockerfile` (no SQLite), and the CGO/SQLite image with
+`deploy/docker/Dockerfile.cgo`. Compose examples live in
+`deploy/docker/docker-compose*.yml`.
 
 ---
 

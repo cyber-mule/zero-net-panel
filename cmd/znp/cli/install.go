@@ -190,10 +190,7 @@ func (w *InstallWizard) configureServiceStep() error {
 
 	// Kernel configuration
 	w.cfg.Kernel.DefaultProtocol = "http"
-	w.cfg.Kernel.HTTP.BaseURL = w.prompt("Kernel HTTP base URL (optional)", "http://kernel.local")
 	w.cfg.Kernel.HTTP.Timeout = 5 * time.Second
-	w.cfg.Kernel.GRPC.Endpoint = "127.0.0.1:9000"
-	w.cfg.Kernel.GRPC.Timeout = 5 * time.Second
 
 	w.cmd.Println("\n✓ Service configuration completed")
 	return nil

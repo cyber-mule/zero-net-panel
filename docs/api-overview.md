@@ -116,7 +116,7 @@
 | `GET /api/v1/{admin}/nodes` | `400` | 过滤条件非法 | 确认查询参数（如 `protocol`、`status`）是否在允许范围内。 |
 | `POST /api/v1/{admin}/nodes/{id}/kernels/sync` | `400` | 协议不支持 | 确认 `protocol` 参数与内核 Provider 配置一致。 |
 | 同上 | `404` | 节点不存在 | 检查节点是否被删除，确认 `Admin.RoutePrefix` 与 URL 中的 `{id}` 是否正确。 |
-| 同上 | `500` | 内核同步失败 | 检查内核服务地址、令牌是否正确，必要时查看 `Kernel` 配置或抓取 gRPC/HTTP 日志。 |
+| 同上 | `500` | 内核同步失败 | 检查节点 `control_endpoint` 与鉴权信息，必要时抓取内核 HTTP 日志。 |
 
 ### 协议绑定与发布流程
 

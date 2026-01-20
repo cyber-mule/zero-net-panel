@@ -3,7 +3,7 @@
 Zero Network Panel 旨在以 xboard 的功能体系为基线，提供面向节点运营、用户订阅、套餐计费等全栈后端能力。本项目采用 Go 语言与 [go-zero](https://go-zero.dev/) 微服务框架构建，默认以 RESTful API 的方式对外暴露接口，并结合 GORM、可插拔缓存服务以及自动化 CI/CD，支撑后续协议层和运营扩展。
 
 ## 核心模块
-- **节点发现 (kernel discovery)**：内置 HTTP 与 gRPC Provider 注册表，可在后台一键触发节点配置同步，确保协议资源与内核保持一致。
+- **节点发现 (kernel discovery)**：按节点配置控制面地址，可在后台一键触发节点配置同步，确保协议资源与内核保持一致。
 - **协议发布与绑定**：发布定义对外入口（地址/端口/公开 profile），绑定承载内核实际配置与健康状态，并支持手动下发。
 - **订阅模板管理**：提供模板 CRUD、版本发布、历史追溯及默认模板切换，变量描述采用 GitHub 风格的分页与字段规范。
 - **用户订阅能力**：支持订阅列表查询、模板预览与定制选择，同时输出渲染后的内容、ETag 及内容类型信息，方便前端或客户端下载。
@@ -102,7 +102,7 @@ go run ./cmd/znp install
 1. **选择部署场景并复制配置文件**：
    - **开发环境**：使用 `etc/znp-sqlite.yaml`，默认启用内存缓存并可结合 `--seed-demo` 注入演示数据。
    - **测试/集成环境**：基于 `etc/znp-api.yaml` 修改，将 `Database.DSN` 指向独立的 MySQL 数据库，建议启用 `Metrics.ListenOn` 便于观测。
-   - **生产环境**：在 `etc/znp-api.yaml` 基础上衍生专用配置，调整 `Auth` 密钥、缓存 Provider（如 Redis）与 `Kernel` 地址，并结合 systemd/容器运行。
+   - **生产环境**：在 `etc/znp-api.yaml` 基础上衍生专用配置，调整 `Auth` 密钥、缓存 Provider（如 Redis）与节点 `control_endpoint`，并结合 systemd/容器运行。
 2. **初始化数据库**：执行迁移并可选注入演示数据。
    ```bash
    go run ./cmd/znp migrate --config etc/znp-sqlite.yaml --apply --seed-demo

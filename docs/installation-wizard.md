@@ -80,12 +80,10 @@ Enter database DSN: host=db.example.com port=5432 user=znp_user password=secure_
 
 Service host [0.0.0.0]: 0.0.0.0
 Service port [8888]: 8888
-Kernel HTTP base URL (optional) [http://kernel.local]: http://kernel.internal.local
 ```
 
 - **Service host**: 通常使用 `0.0.0.0` 监听所有网络接口，生产环境可考虑使用 `127.0.0.1` 配合反向代理
 - **Service port**: 默认 8888，确保端口未被占用
-- **Kernel HTTP base URL**: 可选，配置内核服务的 HTTP 端点
 
 #### 步骤 3: JWT 认证配置
 
@@ -139,7 +137,7 @@ gRPC listen address [0.0.0.0:8890]: 0.0.0.0:8890
 **配置建议：**
 - **Prometheus metrics**: 建议启用，便于监控服务运行状态
 - **Separate port for metrics**: 生产环境建议使用独立端口
-- **gRPC server**: 如需使用 gRPC 协议与内核通信，请启用
+- **gRPC server**: 如需启用面板的 gRPC API，请开启
 
 #### 步骤 6-8: 自动初始化
 

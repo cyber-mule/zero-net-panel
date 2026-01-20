@@ -375,7 +375,7 @@ NodeSummary 字段：
 备注：
 - `status` 为管理端维护字段，手动禁用时为 `disabled`；运行态健康度请看协议绑定健康状态。
 - 当 `status_sync_enabled=true` 且能访问节点控制面时，服务会自动将 `status` 更新为 `online`/`offline`。
-- 节点控制面必须配置 `control_endpoint`，不再回退全局 `Kernel.HTTP`。
+- 节点控制面必须配置 `control_endpoint`。
 - 控制面鉴权优先级：`control_access_key` + `control_secret_key` → `control_token`（无全局兜底）
 
 #### POST /api/v1/{adminPrefix}/nodes
