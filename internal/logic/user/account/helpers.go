@@ -40,7 +40,7 @@ func toUnixOrZero(ts time.Time) int64 {
 }
 
 func toUnixPtr(ts time.Time) *int64 {
-	if ts.IsZero() {
+	if repository.IsZeroTime(ts) {
 		return nil
 	}
 	value := ts.Unix()

@@ -17,15 +17,15 @@ func toAdminUserSummary(user repository.User) types.AdminUserSummary {
 		UpdatedAt:           user.UpdatedAt.Unix(),
 	}
 
-	if !user.EmailVerifiedAt.IsZero() {
+	if !repository.IsZeroTime(user.EmailVerifiedAt) {
 		ts := user.EmailVerifiedAt.Unix()
 		summary.EmailVerifiedAt = &ts
 	}
-	if !user.LockedUntil.IsZero() {
+	if !repository.IsZeroTime(user.LockedUntil) {
 		ts := user.LockedUntil.Unix()
 		summary.LockedUntil = &ts
 	}
-	if !user.LastLoginAt.IsZero() {
+	if !repository.IsZeroTime(user.LastLoginAt) {
 		ts := user.LastLoginAt.Unix()
 		summary.LastLoginAt = &ts
 	}

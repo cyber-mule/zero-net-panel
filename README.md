@@ -117,15 +117,18 @@ go run ./cmd/znp install
 
 ### 方式三：使用 Docker（推荐生产部署）
 
-使用 Docker 容器化部署，支持一键启动和自动化运维：
+使用 Docker 容器化部署，支持一键启动和自动化运维。注意：容器内执行 `install` 仅初始化数据库与管理员账户，不会写入配置文件，请先准备配置并挂载至 `/etc/znp/znp.yaml`。
 
 #### 使用 Docker Compose（最简单）
 
 ```bash
 cd deploy/docker
 
-# 首次部署：运行安装向导生成配置
-docker-compose -f docker-compose.sqlite.yml run --rm znp install --output /etc/znp/znp.yaml
+# 首次部署：准备配置文件（SQLite 示例）
+cp ../../etc/znp-sqlite.yaml config/znp.yaml
+
+# 初始化数据库与管理员账户（容器内 install 不会改写配置）
+docker-compose -f docker-compose.sqlite.yml run --rm znp install --config /etc/znp/znp.yaml
 
 # 启动服务
 docker-compose -f docker-compose.sqlite.yml up -d
@@ -140,14 +143,17 @@ docker-compose -f docker-compose.sqlite.yml logs -f
 # 1. 构建镜像
 docker build -t znp:latest -f deploy/docker/Dockerfile.cgo .
 
-# 2. 运行安装向导
+# 2. 准备配置文件（SQLite 示例）
 mkdir -p ./config ./data
+cp ./etc/znp-sqlite.yaml ./config/znp.yaml
+
+# 3. 初始化数据库与管理员账户
 docker run -it --rm \
   -v $(pwd)/config:/etc/znp \
   -v $(pwd)/data:/var/lib/znp \
-  znp:latest install --output /etc/znp/znp.yaml
+  znp:latest install --config /etc/znp/znp.yaml
 
-# 3. 启动服务
+# 4. 启动服务
 docker run -d \
   --name znp-server \
   -v $(pwd)/config:/etc/znp:ro \

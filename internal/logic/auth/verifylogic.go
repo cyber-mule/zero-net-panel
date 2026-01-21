@@ -46,7 +46,7 @@ func (l *VerifyLogic) Verify(req *types.AuthVerifyRequest) (*types.AuthVerifyRes
 		return nil, err
 	}
 
-	if !user.EmailVerifiedAt.IsZero() {
+	if !repository.IsZeroTime(user.EmailVerifiedAt) {
 		return nil, repository.ErrConflict
 	}
 

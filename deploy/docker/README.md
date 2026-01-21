@@ -6,19 +6,23 @@ Zero Network Panel 提供完整的 Docker 部署方案，支持安装向导和�
 
 ### 安装步骤（容器化部署）
 
-首次部署必须生成配置文件。容器默认命令是 `znp serve --config /etc/znp/znp.yaml`，如果该文件不存在会直接退出。
+首次部署必须准备配置文件（可从 `etc/znp-sqlite.yaml` 或 `etc/znp-api.yaml` 复制并修改）。容器内 `install` 仅初始化数据库与管理员账户，不会写入配置文件。容器默认命令是 `znp serve --config /etc/znp/znp.yaml`，如果该文件不存在会直接退出。
 
 ```bash
 # 1. 构建镜像（SQLite 版本需要 CGO）
 docker build -t znp:cgo -f deploy/docker/Dockerfile.cgo .
 
-# 2. 运行安装向导生成配置
+# 2. 准备配置文件（SQLite 示例）
+mkdir -p ./deploy/docker/config ./deploy/docker/data
+cp ./etc/znp-sqlite.yaml ./deploy/docker/config/znp.yaml
+
+# 3. 初始化数据库与管理员账户
 docker run -it --rm \
   -v $(pwd)/deploy/docker/config:/etc/znp \
   -v $(pwd)/deploy/docker/data:/var/lib/znp \
-  znp:cgo install --output /etc/znp/znp.yaml
+  znp:cgo install --config /etc/znp/znp.yaml
 
-# 3. 启动服务
+# 4. 启动服务
 docker run -d \
   --name znp-server \
   -v $(pwd)/deploy/docker/config:/etc/znp:ro \
@@ -47,12 +51,15 @@ docker build -t znp:latest -f deploy/docker/Dockerfile .
 # 创建配置目录
 mkdir -p ./deploy/docker/config ./deploy/docker/data
 
-# 运行交互式安装向导
+# 准备配置文件（SQLite 示例）
+cp ./etc/znp-sqlite.yaml ./deploy/docker/config/znp.yaml
+
+# 运行交互式安装向导（容器内 install 不会改写配置）
 docker run -it --rm \
   -v $(pwd)/deploy/docker/config:/etc/znp \
   -v $(pwd)/deploy/docker/data:/var/lib/znp \
   znp:cgo \
-  install --output /etc/znp/znp.yaml
+  install --config /etc/znp/znp.yaml
 ```
 
 安装向导将引导您完成：
@@ -84,8 +91,9 @@ docker run -d \
 ```bash
 cd deploy/docker
 
-# 首次运行：执行安装向导
-docker-compose -f docker-compose.sqlite.yml run --rm znp install --output /etc/znp/znp.yaml
+# 首次运行：准备配置文件并执行安装向导
+cp ../../etc/znp-sqlite.yaml config/znp.yaml
+docker-compose -f docker-compose.sqlite.yml run --rm znp install --config /etc/znp/znp.yaml
 
 # 启动服务
 docker-compose -f docker-compose.sqlite.yml up -d
@@ -108,11 +116,11 @@ cd deploy/docker
 # 启动 MySQL 和应用
 docker-compose up -d
 
-# 首次运行：在容器中执行安装向导
-docker-compose exec znp znp install --output /etc/znp/znp.yaml
+# 首次运行：准备配置文件并在容器中执行安装向导
+cp ../../etc/znp-api.yaml config/znp.yaml
+docker-compose exec znp znp install --config /etc/znp/znp.yaml
 
-# 或者预先准备配置文件，放在 config/ 目录
-# 然后重启服务
+# 修改配置后重启服务
 docker-compose restart znp
 ```
 
@@ -335,4 +343,3 @@ scrape_configs:
 - [快速入门指南](../../docs/getting-started.md)
 - [API 文档](../../docs/api-overview.md)
 - [主项目 README](../../README.md)
-

@@ -168,6 +168,11 @@ func (r *userRepository) Create(ctx context.Context, user User) (User, error) {
 	if user.Status == "" {
 		user.Status = "active"
 	}
+	user.EmailVerifiedAt = NormalizeTime(user.EmailVerifiedAt)
+	user.LockedUntil = NormalizeTime(user.LockedUntil)
+	user.TokenInvalidBefore = NormalizeTime(user.TokenInvalidBefore)
+	user.PasswordResetAt = NormalizeTime(user.PasswordResetAt)
+	user.LastLoginAt = NormalizeTime(user.LastLoginAt)
 
 	if err := r.db.WithContext(ctx).Create(&user).Error; err != nil {
 		return User{}, translateError(err)
@@ -284,7 +289,7 @@ func (r *userRepository) UpdatePassword(ctx context.Context, id uint64, password
 		"password_hash":         passwordHash,
 		"password_updated_at":   now,
 		"failed_login_attempts": 0,
-		"locked_until":          time.Time{},
+		"locked_until":          ZeroTime(),
 		"updated_at":            now,
 	}
 	if resetAt != nil {
@@ -388,7 +393,7 @@ func (r *userRepository) UpdateLastLogin(ctx context.Context, id uint64, ts time
 		"last_login_at":         ts,
 		"updated_at":            ts,
 		"failed_login_attempts": 0,
-		"locked_until":          time.Time{},
+		"locked_until":          ZeroTime(),
 	}
 
 	if err := r.db.WithContext(ctx).Model(&User{}).Where("id = ?", id).Updates(updates).Error; err != nil {

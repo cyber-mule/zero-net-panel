@@ -45,6 +45,7 @@ This command will guide you through:
 				cmd:        cmd,
 				reader:     bufio.NewReader(os.Stdin),
 				outputFile: outputFile,
+				opts:       opts,
 			}
 
 			return wizard.Run()
@@ -64,47 +65,57 @@ type InstallWizard struct {
 	cfg           config.Config
 	adminEmail    string
 	adminPassword string
+	opts          *GlobalOptions
 }
 
 func (w *InstallWizard) Run() error {
 	w.printWelcome()
 
-	// Step 1: Database configuration
+	if isDockerEnvironment() {
+		return w.runDockerInstall()
+	}
+
+	// Step 1: Configuration output
+	if err := w.configureOutputFileStep(); err != nil {
+		return fmt.Errorf("configuration output failed: %w", err)
+	}
+
+	// Step 2: Database configuration
 	if err := w.configureDatabaseStep(); err != nil {
 		return fmt.Errorf("database configuration failed: %w", err)
 	}
 
-	// Step 2: Service configuration
+	// Step 3: Service configuration
 	if err := w.configureServiceStep(); err != nil {
 		return fmt.Errorf("service configuration failed: %w", err)
 	}
 
-	// Step 3: Generate JWT secrets
+	// Step 4: Generate JWT secrets
 	if err := w.configureAuthStep(); err != nil {
 		return fmt.Errorf("auth configuration failed: %w", err)
 	}
 
-	// Step 4: Admin account creation
+	// Step 5: Admin account creation
 	if err := w.configureAdminStep(); err != nil {
 		return fmt.Errorf("admin account creation failed: %w", err)
 	}
 
-	// Step 5: Optional features
+	// Step 6: Optional features
 	if err := w.configureOptionalFeaturesStep(); err != nil {
 		return fmt.Errorf("optional features configuration failed: %w", err)
 	}
 
-	// Step 6: Save configuration
+	// Step 7: Save configuration
 	if err := w.saveConfiguration(); err != nil {
 		return fmt.Errorf("failed to save configuration: %w", err)
 	}
 
-	// Step 7: Initialize database
+	// Step 8: Initialize database
 	if err := w.initializeDatabaseStep(); err != nil {
 		return fmt.Errorf("database initialization failed: %w", err)
 	}
 
-	// Step 8: Create admin user
+	// Step 9: Create admin user
 	if err := w.createAdminUserStep(); err != nil {
 		return fmt.Errorf("admin user creation failed: %w", err)
 	}
@@ -121,8 +132,108 @@ func (w *InstallWizard) printWelcome() {
 	w.cmd.Println("Press Ctrl+C at any time to exit.")
 }
 
+func (w *InstallWizard) runDockerInstall() error {
+	w.cmd.Println("\nDetected container environment. Only database operations will run.")
+
+	configFile, err := w.resolveExistingConfigFile()
+	if err != nil {
+		return err
+	}
+
+	cfg, err := loadConfig(configFile)
+	if err != nil {
+		return err
+	}
+
+	w.cfg = cfg
+	w.outputFile = configFile
+
+	if err := w.configureAdminStep(); err != nil {
+		return fmt.Errorf("admin account creation failed: %w", err)
+	}
+
+	if err := w.initializeDatabaseStep(); err != nil {
+		return fmt.Errorf("database initialization failed: %w", err)
+	}
+
+	if err := w.createAdminUserStep(); err != nil {
+		return fmt.Errorf("admin user creation failed: %w", err)
+	}
+
+	w.printDockerSuccess()
+	return nil
+}
+
+func (w *InstallWizard) resolveExistingConfigFile() (string, error) {
+	candidates := []string{}
+	if w.opts != nil && w.opts.ConfigFile != "" {
+		candidates = append(candidates, w.opts.ConfigFile)
+	}
+	if envPath := strings.TrimSpace(os.Getenv("ZNP_CONFIG")); envPath != "" {
+		candidates = append(candidates, envPath)
+	}
+	if strings.TrimSpace(w.outputFile) != "" {
+		candidates = append(candidates, w.outputFile)
+	}
+
+	for _, path := range candidates {
+		if path == "" {
+			continue
+		}
+		if _, err := os.Stat(path); err == nil {
+			return path, nil
+		} else if !os.IsNotExist(err) {
+			return "", fmt.Errorf("failed to check configuration file %q: %w", path, err)
+		}
+	}
+
+	if len(candidates) == 0 {
+		return "", fmt.Errorf("no configuration file provided; set --config or ZNP_CONFIG to an existing file")
+	}
+
+	return "", fmt.Errorf("configuration file not found; expected existing file at one of: %s", strings.Join(candidates, ", "))
+}
+
+func (w *InstallWizard) configureOutputFileStep() error {
+	w.cmd.Println("═══ Step 1: Configuration Output ═══")
+
+	outputFile := filepath.Clean(w.prompt("Configuration file path", w.outputFile))
+
+	for {
+		info, err := os.Stat(outputFile)
+		if err == nil {
+			if info.IsDir() {
+				w.cmd.Printf("✗ %s is a directory, please provide a file path.\n", outputFile)
+				outputFile = filepath.Clean(w.prompt("Configuration file path", w.outputFile))
+				continue
+			}
+
+			overwrite := w.promptYesNo(fmt.Sprintf("Config file already exists at %s. Overwrite", outputFile), false)
+			if overwrite {
+				break
+			}
+
+			outputFile = strings.TrimSpace(w.prompt("Enter a new configuration file path", ""))
+			if outputFile == "" {
+				w.cmd.Println("✗ Please provide a new file path.")
+				continue
+			}
+			outputFile = filepath.Clean(outputFile)
+			continue
+		}
+		if !os.IsNotExist(err) {
+			return fmt.Errorf("failed to check configuration file: %w", err)
+		}
+		break
+	}
+
+	w.outputFile = outputFile
+	w.cmd.Printf("✓ Using configuration file: %s\n\n", w.outputFile)
+	return nil
+}
+
 func (w *InstallWizard) configureDatabaseStep() error {
-	w.cmd.Println("═══ Step 1: Database Configuration ═══")
+	w.cmd.Println("═══ Step 2: Database Configuration ═══")
 
 	// Database driver selection
 	w.cmd.Println("Select database driver:")
@@ -171,7 +282,7 @@ func (w *InstallWizard) configureDatabaseStep() error {
 }
 
 func (w *InstallWizard) configureServiceStep() error {
-	w.cmd.Println("═══ Step 2: Service Configuration ═══")
+	w.cmd.Println("═══ Step 3: Service Configuration ═══")
 
 	w.cfg.Name = "znp.api"
 	w.cfg.Host = w.prompt("Service host", "0.0.0.0")
@@ -193,7 +304,7 @@ func (w *InstallWizard) configureServiceStep() error {
 }
 
 func (w *InstallWizard) configureAuthStep() error {
-	w.cmd.Println("═══ Step 3: JWT Authentication Configuration ═══")
+	w.cmd.Println("═══ Step 4: JWT Authentication Configuration ═══")
 
 	w.cmd.Println("Generating secure JWT secrets...")
 
@@ -222,7 +333,7 @@ func (w *InstallWizard) configureAuthStep() error {
 }
 
 func (w *InstallWizard) configureAdminStep() error {
-	w.cmd.Println("═══ Step 4: Admin Account Configuration ═══")
+	w.cmd.Println("═══ Step 5: Admin Account Configuration ═══")
 
 	// Email validation regex
 	emailRegex := regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
@@ -256,7 +367,7 @@ func (w *InstallWizard) configureAdminStep() error {
 }
 
 func (w *InstallWizard) configureOptionalFeaturesStep() error {
-	w.cmd.Println("═══ Step 5: Optional Features ═══")
+	w.cmd.Println("═══ Step 6: Optional Features ═══")
 
 	// Metrics configuration
 	enableMetrics := w.promptYesNo("Enable Prometheus metrics", true)
@@ -297,7 +408,7 @@ func (w *InstallWizard) configureOptionalFeaturesStep() error {
 }
 
 func (w *InstallWizard) saveConfiguration() error {
-	w.cmd.Println("═══ Step 6: Saving Configuration ═══")
+	w.cmd.Println("═══ Step 7: Saving Configuration ═══")
 
 	// Normalize configuration
 	w.cfg.Normalize()
@@ -324,7 +435,7 @@ func (w *InstallWizard) saveConfiguration() error {
 }
 
 func (w *InstallWizard) initializeDatabaseStep() error {
-	w.cmd.Println("═══ Step 7: Initializing Database ═══")
+	w.cmd.Println("═══ Step 8: Initializing Database ═══")
 
 	db, closeFn, err := database.NewGorm(w.cfg.Database)
 	if err != nil {
@@ -334,6 +445,24 @@ func (w *InstallWizard) initializeDatabaseStep() error {
 
 	if db == nil {
 		return fmt.Errorf("database connection is nil")
+	}
+
+	tables, err := db.Migrator().GetTables()
+	if err != nil {
+		return fmt.Errorf("failed to inspect existing tables: %w", err)
+	}
+
+	if len(tables) > 0 {
+		w.cmd.Printf("Detected %d existing table(s): %s\n", len(tables), strings.Join(tables, ", "))
+		rebuild := w.promptYesNo("Existing data found. Rebuild database (drop all tables)?", false)
+		if rebuild {
+			if err := w.dropAllTables(db, tables); err != nil {
+				return fmt.Errorf("failed to drop existing tables: %w", err)
+			}
+			w.cmd.Println("✓ Existing tables dropped")
+		} else {
+			w.cmd.Println("Keeping existing tables; will attempt in-place migrations.")
+		}
 	}
 
 	w.cmd.Println("Running database migrations...")
@@ -350,7 +479,7 @@ func (w *InstallWizard) initializeDatabaseStep() error {
 }
 
 func (w *InstallWizard) createAdminUserStep() error {
-	w.cmd.Println("═══ Step 8: Creating Admin User ═══")
+	w.cmd.Println("═══ Step 9: Creating Admin User ═══")
 
 	db, closeFn, err := database.NewGorm(w.cfg.Database)
 	if err != nil {
@@ -381,12 +510,21 @@ func (w *InstallWizard) createAdminUserStep() error {
 	}
 
 	// Create admin user
+	now := time.Now().UTC()
 	adminUser := repository.User{
-		Email:        w.adminEmail,
-		DisplayName:  "System Administrator",
-		PasswordHash: string(hashedPassword),
-		Roles:        []string{"admin", "user"},
-		Status:       "active",
+		Email:              w.adminEmail,
+		DisplayName:        "System Administrator",
+		PasswordHash:       string(hashedPassword),
+		Roles:              []string{"admin", "user"},
+		Status:             "active",
+		EmailVerifiedAt:    now,
+		LockedUntil:        repository.ZeroTime(),
+		TokenInvalidBefore: repository.ZeroTime(),
+		PasswordUpdatedAt:  now,
+		PasswordResetAt:    repository.ZeroTime(),
+		LastLoginAt:        repository.ZeroTime(),
+		CreatedAt:          now,
+		UpdatedAt:          now,
 	}
 
 	if err := db.Create(&adminUser).Error; err != nil {
@@ -427,6 +565,20 @@ func (w *InstallWizard) printSuccess() {
 	w.cmd.Printf("  2. Start the service: go run ./cmd/znp serve --config %s\n", w.outputFile)
 	w.cmd.Printf("  3. Access the API at: http://%s:%d/api/v1/ping\n", w.cfg.Host, w.cfg.Port)
 	w.cmd.Printf("  4. Login with: %s\n", w.adminEmail)
+	w.cmd.Println("\nThank you for using Zero Network Panel!")
+	w.cmd.Println()
+}
+
+func (w *InstallWizard) printDockerSuccess() {
+	w.cmd.Println("\n╔════════════════════════════════════════════════════════════════╗")
+	w.cmd.Println("║              Installation Completed Successfully!             ║")
+	w.cmd.Println("╚════════════════════════════════════════════════════════════════╝")
+	w.cmd.Println("\n✓ Configuration file unchanged")
+	w.cmd.Println("✓ Database initialized")
+	w.cmd.Println("✓ Admin user created")
+	w.cmd.Println("\nNext steps:")
+	w.cmd.Printf("  1. Verify the configuration file: %s\n", w.outputFile)
+	w.cmd.Printf("  2. Start the service: go run ./cmd/znp serve --config %s\n", w.outputFile)
 	w.cmd.Println("\nThank you for using Zero Network Panel!")
 	w.cmd.Println()
 }
@@ -503,4 +655,78 @@ func generateSecret(length int) (string, error) {
 		return "", err
 	}
 	return base64.URLEncoding.EncodeToString(bytes), nil
+}
+
+func isDockerEnvironment() bool {
+	if _, err := os.Stat("/.dockerenv"); err == nil {
+		return true
+	}
+
+	data, err := os.ReadFile("/proc/1/cgroup")
+	if err != nil {
+		return false
+	}
+
+	content := string(data)
+	return strings.Contains(content, "docker") ||
+		strings.Contains(content, "containerd") ||
+		strings.Contains(content, "kubepods")
+}
+
+func (w *InstallWizard) dropAllTables(db *gorm.DB, tables []string) error {
+	if len(tables) == 0 {
+		return nil
+	}
+
+	if w.cfg.Database.Driver == "sqlite" {
+		filtered := make([]string, 0, len(tables))
+		for _, table := range tables {
+			if table == "sqlite_sequence" {
+				continue
+			}
+			filtered = append(filtered, table)
+		}
+		tables = filtered
+	}
+
+	switch w.cfg.Database.Driver {
+	case "mysql":
+		if err := db.Exec("SET FOREIGN_KEY_CHECKS = 0").Error; err != nil {
+			return err
+		}
+		defer db.Exec("SET FOREIGN_KEY_CHECKS = 1")
+		return dropTablesWithMigrator(db, tables)
+	case "sqlite":
+		if err := db.Exec("PRAGMA foreign_keys = OFF").Error; err != nil {
+			return err
+		}
+		defer db.Exec("PRAGMA foreign_keys = ON")
+		return dropTablesWithMigrator(db, tables)
+	case "postgres":
+		for _, table := range tables {
+			statement := fmt.Sprintf("DROP TABLE IF EXISTS %s CASCADE", quoteIdentifier(table))
+			if err := db.Exec(statement).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	default:
+		return dropTablesWithMigrator(db, tables)
+	}
+}
+
+func dropTablesWithMigrator(db *gorm.DB, tables []string) error {
+	if len(tables) == 0 {
+		return nil
+	}
+	toDrop := make([]interface{}, 0, len(tables))
+	for _, table := range tables {
+		toDrop = append(toDrop, table)
+	}
+	return db.Migrator().DropTable(toDrop...)
+}
+
+func quoteIdentifier(name string) string {
+	escaped := strings.ReplaceAll(name, `"`, `""`)
+	return `"` + escaped + `"`
 }

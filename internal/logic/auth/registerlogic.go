@@ -62,7 +62,7 @@ func (l *RegisterLogic) Register(req *types.AuthRegisterRequest) (*types.AuthReg
 
 	existing, err := l.svcCtx.Repositories.User.GetByEmail(l.ctx, email)
 	if err == nil {
-		if strings.EqualFold(existing.Status, "pending") && existing.EmailVerifiedAt.IsZero() {
+		if strings.EqualFold(existing.Status, "pending") && repository.IsZeroTime(existing.EmailVerifiedAt) {
 			if err := l.sendVerificationCode(email, authCfg.Verification); err != nil {
 				return nil, err
 			}
@@ -89,7 +89,7 @@ func (l *RegisterLogic) Register(req *types.AuthRegisterRequest) (*types.AuthReg
 
 	requiresVerification := authCfg.Registration.RequireEmailVerification
 	status := "active"
-	verifiedAt := time.Time{}
+	verifiedAt := repository.ZeroTime()
 	if requiresVerification {
 		status = "pending"
 	} else {

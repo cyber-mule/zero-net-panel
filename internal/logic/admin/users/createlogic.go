@@ -61,7 +61,7 @@ func (l *CreateLogic) Create(req *types.AdminCreateUserRequest) (*types.AdminUse
 	}
 
 	now := time.Now().UTC()
-	verifiedAt := time.Time{}
+	verifiedAt := repository.ZeroTime()
 	if req.EmailVerified != nil {
 		if *req.EmailVerified {
 			verifiedAt = now
