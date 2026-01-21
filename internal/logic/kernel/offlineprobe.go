@@ -10,28 +10,23 @@ import (
 
 	"github.com/zeromicro/go-zero/core/logx"
 
-	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/pkg/kernel"
 )
 
 // OfflineProbeManager schedules compensation probes for offline nodes.
 type OfflineProbeManager struct {
-	svcCtx                    *svc.ServiceContext
-	defaultMaxIntervalSeconds int
-	maxIntervalSeconds        atomic.Int64
-	mu                        sync.Mutex
-	probes                    map[controlKey]*offlineProbe
+	svcCtx *svc.ServiceContext
+	mu     sync.Mutex
+	probes map[controlKey]*offlineProbe
 }
 
 // NewOfflineProbeManager constructs an offline probe manager.
-func NewOfflineProbeManager(svcCtx *svc.ServiceContext, defaultMaxIntervalSeconds int) *OfflineProbeManager {
+func NewOfflineProbeManager(svcCtx *svc.ServiceContext) *OfflineProbeManager {
 	manager := &OfflineProbeManager{
-		svcCtx:                    svcCtx,
-		defaultMaxIntervalSeconds: defaultMaxIntervalSeconds,
-		probes:                    make(map[controlKey]*offlineProbe),
+		svcCtx: svcCtx,
+		probes: make(map[controlKey]*offlineProbe),
 	}
-	manager.maxIntervalSeconds.Store(int64(defaultMaxIntervalSeconds))
 	return manager
 }
 
@@ -40,9 +35,6 @@ func (m *OfflineProbeManager) Update(ctx context.Context) {
 	if m == nil || m.svcCtx == nil {
 		return
 	}
-	maxInterval := m.resolveMaxIntervalSeconds(ctx)
-	m.maxIntervalSeconds.Store(int64(maxInterval))
-
 	targets, err := m.listOfflineTargets(ctx)
 	if err != nil {
 		logx.WithContext(ctx).Errorf("kernel offline probe: list targets failed: %v", err)
@@ -55,28 +47,14 @@ func (m *OfflineProbeManager) Update(ctx context.Context) {
 type controlKey struct {
 	endpoint string
 	token    string
+	timeout  time.Duration
 }
 
 type offlineTarget struct {
-	key     controlKey
-	nodeIDs []uint64
-	meta    authDebug
-}
-
-func (m *OfflineProbeManager) resolveMaxIntervalSeconds(ctx context.Context) int {
-	defaults := repository.SiteSettingDefaults{
-		Name:                                 m.svcCtx.Config.Site.Name,
-		LogoURL:                              m.svcCtx.Config.Site.LogoURL,
-		KernelOfflineProbeMaxIntervalSeconds: m.defaultMaxIntervalSeconds,
-	}
-	setting, err := m.svcCtx.Repositories.Site.GetSiteSetting(ctx, defaults)
-	if err != nil {
-		return m.defaultMaxIntervalSeconds
-	}
-	if setting.KernelOfflineProbeMaxIntervalSeconds < 0 {
-		return 0
-	}
-	return setting.KernelOfflineProbeMaxIntervalSeconds
+	key                controlKey
+	nodeIDs            []uint64
+	meta               authDebug
+	maxIntervalSeconds int
 }
 
 func (m *OfflineProbeManager) listOfflineTargets(ctx context.Context) ([]offlineTarget, error) {
@@ -94,12 +72,16 @@ func (m *OfflineProbeManager) listOfflineTargets(ctx context.Context) ([]offline
 		if !node.StatusSyncEnabled {
 			continue
 		}
+		if node.KernelStatusPollIntervalSeconds <= 0 {
+			continue
+		}
 		endpoint := strings.TrimSpace(node.ControlEndpoint)
 		if endpoint == "" {
 			continue
 		}
 		token := resolveControlToken(node)
-		key := controlKey{endpoint: endpoint, token: token}
+		timeout := resolveKernelHTTPTimeout(node)
+		key := controlKey{endpoint: endpoint, token: token, timeout: timeout}
 		target := targets[key]
 		if target == nil {
 			target = &offlineTarget{
@@ -109,6 +91,7 @@ func (m *OfflineProbeManager) listOfflineTargets(ctx context.Context) ([]offline
 			targets[key] = target
 		}
 		target.nodeIDs = append(target.nodeIDs, node.ID)
+		target.maxIntervalSeconds = mergeOfflineProbeInterval(target.maxIntervalSeconds, node.KernelOfflineProbeMaxIntervalSeconds)
 	}
 
 	results := make([]offlineTarget, 0, len(targets))
@@ -116,6 +99,25 @@ func (m *OfflineProbeManager) listOfflineTargets(ctx context.Context) ([]offline
 		results = append(results, *target)
 	}
 	return results, nil
+}
+
+func mergeOfflineProbeInterval(current int, candidate int) int {
+	if candidate < 0 {
+		candidate = 0
+	}
+	if candidate == 0 {
+		if current == 0 {
+			return 0
+		}
+		return current
+	}
+	if current == 0 {
+		return candidate
+	}
+	if candidate < current {
+		return candidate
+	}
+	return current
 }
 
 func (m *OfflineProbeManager) applyTargets(ctx context.Context, targets []offlineTarget) {
@@ -137,9 +139,10 @@ func (m *OfflineProbeManager) applyTargets(ctx context.Context, targets []offlin
 		if probe, ok := m.probes[key]; ok {
 			probe.updateNodeIDs(target.nodeIDs)
 			probe.meta = target.meta
+			probe.updateMaxInterval(target.maxIntervalSeconds)
 			continue
 		}
-		probe := newOfflineProbe(target.key, target.meta, target.nodeIDs)
+		probe := newOfflineProbe(target.key, target.meta, target.nodeIDs, target.maxIntervalSeconds)
 		m.probes[key] = probe
 		newProbes = append(newProbes, probe)
 	}
@@ -156,7 +159,7 @@ func (m *OfflineProbeManager) applyTargets(ctx context.Context, targets []offlin
 		probe.stop()
 	}
 	for _, probe := range newProbes {
-		go probe.run(ctx, m.svcCtx, &m.maxIntervalSeconds)
+		go probe.run(ctx, m.svcCtx)
 	}
 }
 
@@ -175,14 +178,15 @@ func (m *OfflineProbeManager) stopAll() {
 }
 
 type offlineProbe struct {
-	key     controlKey
-	meta    authDebug
-	stopCh  chan struct{}
-	doneCh  chan struct{}
-	nodeIDs atomic.Value
+	key                controlKey
+	meta               authDebug
+	stopCh             chan struct{}
+	doneCh             chan struct{}
+	nodeIDs            atomic.Value
+	maxIntervalSeconds atomic.Int64
 }
 
-func newOfflineProbe(key controlKey, meta authDebug, nodeIDs []uint64) *offlineProbe {
+func newOfflineProbe(key controlKey, meta authDebug, nodeIDs []uint64, maxIntervalSeconds int) *offlineProbe {
 	probe := &offlineProbe{
 		key:    key,
 		meta:   meta,
@@ -190,12 +194,20 @@ func newOfflineProbe(key controlKey, meta authDebug, nodeIDs []uint64) *offlineP
 		doneCh: make(chan struct{}),
 	}
 	probe.updateNodeIDs(nodeIDs)
+	probe.updateMaxInterval(maxIntervalSeconds)
 	return probe
 }
 
 func (p *offlineProbe) updateNodeIDs(nodeIDs []uint64) {
 	cloned := append([]uint64(nil), nodeIDs...)
 	p.nodeIDs.Store(cloned)
+}
+
+func (p *offlineProbe) updateMaxInterval(seconds int) {
+	if seconds < 0 {
+		seconds = 0
+	}
+	p.maxIntervalSeconds.Store(int64(seconds))
 }
 
 func (p *offlineProbe) stop() {
@@ -207,7 +219,7 @@ func (p *offlineProbe) stop() {
 	}
 }
 
-func (p *offlineProbe) run(ctx context.Context, svcCtx *svc.ServiceContext, maxIntervalSeconds *atomic.Int64) {
+func (p *offlineProbe) run(ctx context.Context, svcCtx *svc.ServiceContext) {
 	defer close(p.doneCh)
 
 	attempt := 0
@@ -222,7 +234,7 @@ func (p *offlineProbe) run(ctx context.Context, svcCtx *svc.ServiceContext, maxI
 		}
 
 		delaySeconds := 1 + attempt*2
-		maxInterval := int(maxIntervalSeconds.Load())
+		maxInterval := int(p.maxIntervalSeconds.Load())
 		if maxInterval > 0 && delaySeconds > maxInterval {
 			delaySeconds = maxInterval
 		}
@@ -267,7 +279,7 @@ func probeControlEndpoint(ctx context.Context, svcCtx *svc.ServiceContext, key c
 	client, err := kernel.NewControlClient(kernel.HTTPOptions{
 		BaseURL: key.endpoint,
 		Token:   key.token,
-		Timeout: svcCtx.Config.Kernel.HTTP.Timeout,
+		Timeout: key.timeout,
 	})
 	if err != nil {
 		return err

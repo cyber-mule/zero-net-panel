@@ -40,13 +40,6 @@ func NewToolsCheckConfigCommand(opts *GlobalOptions) *cobra.Command {
 				issues = append(issues, fmt.Sprintf("unsupported cache provider %q (use memory or redis)", cfg.Cache.Provider))
 			}
 
-			kernelProtocol := strings.ToLower(strings.TrimSpace(cfg.Kernel.DefaultProtocol))
-			if kernelProtocol == "" {
-				issues = append(issues, "kernel.defaultProtocol is required (http)")
-			} else if kernelProtocol != "http" {
-				issues = append(issues, fmt.Sprintf("unsupported kernel.defaultProtocol %q (only http is supported)", cfg.Kernel.DefaultProtocol))
-			}
-
 			if strings.TrimSpace(cfg.Auth.AccessSecret) == "" || strings.TrimSpace(cfg.Auth.RefreshSecret) == "" {
 				issues = append(issues, "auth secrets are required")
 			}

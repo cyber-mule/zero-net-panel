@@ -7,10 +7,12 @@ import (
 	"encoding/hex"
 	"errors"
 	"strings"
+	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
 
 	adminprotocolbindings "github.com/zero-net-panel/zero-net-panel/internal/logic/admin/protocolbindings"
+	"github.com/zero-net-panel/zero-net-panel/internal/nodecfg"
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
@@ -41,7 +43,7 @@ func SyncStatus(ctx context.Context, svcCtx *svc.ServiceContext) error {
 			continue
 		}
 		token := resolveControlToken(node)
-		key := controlKey{endpoint: endpoint, token: token}
+		key := controlKey{endpoint: endpoint, token: token, timeout: resolveKernelHTTPTimeout(node)}
 		pairs[key] = append(pairs[key], node.ID)
 		if _, ok := metaByKey[key]; !ok {
 			metaByKey[key] = buildAuthDebug(node)
@@ -55,7 +57,7 @@ func SyncStatus(ctx context.Context, svcCtx *svc.ServiceContext) error {
 		client, err := kernel.NewControlClient(kernel.HTTPOptions{
 			BaseURL: key.endpoint,
 			Token:   key.token,
-			Timeout: svcCtx.Config.Kernel.HTTP.Timeout,
+			Timeout: key.timeout,
 		})
 		if err != nil {
 			lastErr = err
@@ -135,6 +137,14 @@ func resolveControlToken(node repository.Node) string {
 		return token
 	}
 	return ""
+}
+
+func resolveKernelHTTPTimeout(node repository.Node) time.Duration {
+	timeoutSeconds := node.KernelHTTPTimeoutSeconds
+	if timeoutSeconds <= 0 {
+		timeoutSeconds = nodecfg.DefaultKernelHTTPTimeoutSeconds
+	}
+	return time.Duration(timeoutSeconds) * time.Second
 }
 
 type authDebug struct {

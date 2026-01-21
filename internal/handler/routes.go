@@ -768,4 +768,15 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 		},
 		rest.WithPrefix("/api/v1"),
 	)
+
+	server.AddRoutes(
+		[]rest.Route{
+			{
+				// Root banner message
+				Method:  http.MethodGet,
+				Path:    "/",
+				Handler: shared.RootHandler(serverCtx),
+			},
+		},
+	)
 }

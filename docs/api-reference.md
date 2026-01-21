@@ -370,6 +370,10 @@ NodeSummary 字段：
 
 - `id`、`name`、`region`、`country`、`isp`、`status`、`tags`
 - `capacity_mbps`、`description`、`access_address`、`control_endpoint`
+- `kernel_default_protocol`, `kernel_http_timeout_seconds`, `kernel_status_poll_interval_seconds`
+- `kernel_status_poll_backoff_enabled`, `kernel_status_poll_backoff_max_interval_seconds`
+- `kernel_status_poll_backoff_multiplier`, `kernel_status_poll_backoff_jitter`
+- `kernel_offline_probe_max_interval_seconds`
 - `status_sync_enabled`（是否允许节点状态自动同步）
 - `last_synced_at`、`updated_at`
 备注：
@@ -397,6 +401,14 @@ NodeSummary 字段：
   - `ak` string（可选，兼容字段，等同 control_access_key）
   - `sk` string（可选，兼容字段，等同 control_secret_key）
   - `control_token` string（可选，节点控制面鉴权 token，写入不回显）
+  - `kernel_default_protocol` string（可选，默认 `http`）
+  - `kernel_http_timeout_seconds` int（可选，控制面 HTTP 超时，默认 5）
+  - `kernel_status_poll_interval_seconds` int（可选，状态轮询间隔，默认 30；<=0 将禁用轮询）
+  - `kernel_status_poll_backoff_enabled` bool（可选，失败退避开关，默认 true）
+  - `kernel_status_poll_backoff_max_interval_seconds` int（可选，退避最大间隔，默认 300）
+  - `kernel_status_poll_backoff_multiplier` float64（可选，退避倍数，默认 2）
+  - `kernel_status_poll_backoff_jitter` float64（可选，退避抖动，默认 0.2）
+  - `kernel_offline_probe_max_interval_seconds` int（可选，离线补偿轮询最大间隔，0 表示不限制）
   - `status_sync_enabled` bool（可选，是否允许节点状态自动同步，默认 true）
 - 响应：
   - `node` NodeSummary
@@ -437,6 +449,14 @@ NodeSummary 字段：
   - `ak` string（可选，兼容字段，等同 control_access_key）
   - `sk` string（可选，兼容字段，等同 control_secret_key）
   - `control_token` string（可选，节点控制面鉴权 token，写入不回显）
+  - `kernel_default_protocol` string（可选，默认 `http`）
+  - `kernel_http_timeout_seconds` int（可选，控制面 HTTP 超时）
+  - `kernel_status_poll_interval_seconds` int（可选，状态轮询间隔，<=0 将禁用轮询）
+  - `kernel_status_poll_backoff_enabled` bool（可选，失败退避开关）
+  - `kernel_status_poll_backoff_max_interval_seconds` int（可选，退避最大间隔）
+  - `kernel_status_poll_backoff_multiplier` float64（可选，退避倍数）
+  - `kernel_status_poll_backoff_jitter` float64（可选，退避抖动）
+  - `kernel_offline_probe_max_interval_seconds` int（可选，离线补偿轮询最大间隔，0 表示不限制）
   - `status_sync_enabled` bool（可选，是否允许节点状态自动同步）
 - 响应：
   - `node` NodeSummary

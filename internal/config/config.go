@@ -13,11 +13,10 @@ import (
 type Config struct {
 	rest.RestConf
 
-	Project     ProjectConfig    `json:"project" yaml:"Project"`
-	Site        SiteConfig       `json:"site" yaml:"Site"`
-	Database    database.Config  `json:"database" yaml:"Database"`
-	Cache       cache.Config     `json:"cache" yaml:"Cache"`
-	Kernel      KernelConfig     `json:"kernel" yaml:"Kernel"`
+	Project  ProjectConfig   `json:"project" yaml:"Project"`
+	Site     SiteConfig      `json:"site" yaml:"Site"`
+	Database database.Config `json:"database" yaml:"Database"`
+	Cache    cache.Config    `json:"cache" yaml:"Cache"`
 	CORS        CORSConfig       `json:"cors" yaml:"CORS"`
 	Auth        AuthConfig       `json:"auth" yaml:"Auth"`
 	Credentials CredentialConfig `json:"credentials" yaml:"Credentials"`
@@ -38,38 +37,6 @@ type SiteConfig struct {
 	LogoURL string `json:"logoUrl" yaml:"LogoURL"`
 }
 
-type KernelConfig struct {
-	DefaultProtocol         string           `json:"defaultProtocol" yaml:"DefaultProtocol"`
-	HTTP                    KernelHTTPConfig `json:"http" yaml:"HTTP"`
-	StatusPollInterval      time.Duration    `json:"statusPollInterval" yaml:"StatusPollInterval"`
-	StatusPollBackoff       KernelBackoff    `json:"statusPollBackoff" yaml:"StatusPollBackoff"`
-	OfflineProbeMaxInterval time.Duration    `json:"offlineProbeMaxInterval" yaml:"OfflineProbeMaxInterval"`
-}
-
-type KernelHTTPConfig struct {
-	Timeout      time.Duration `json:"timeout" yaml:"Timeout"`
-}
-
-// Normalize applies defaults for kernel configuration.
-func (k *KernelConfig) Normalize() {
-	k.DefaultProtocol = strings.TrimSpace(k.DefaultProtocol)
-	k.HTTP.Normalize()
-	if k.StatusPollInterval < 0 {
-		k.StatusPollInterval = 0
-	}
-	if k.OfflineProbeMaxInterval < 0 {
-		k.OfflineProbeMaxInterval = 0
-	}
-	k.StatusPollBackoff.Normalize(k.StatusPollInterval)
-}
-
-// Normalize applies defaults for kernel HTTP config.
-func (h *KernelHTTPConfig) Normalize() {
-	if h.Timeout < 0 {
-		h.Timeout = 0
-	}
-}
-
 // CORSConfig configures cross-origin access for the HTTP API.
 type CORSConfig struct {
 	Enabled      bool     `json:"enabled" yaml:"Enabled"`
@@ -83,40 +50,6 @@ func (c *CORSConfig) Normalize() {
 	c.AllowHeaders = normalizeStringList(c.AllowHeaders, true)
 	if c.Enabled && len(c.AllowOrigins) == 0 {
 		c.AllowOrigins = []string{"*"}
-	}
-}
-
-// KernelBackoff defines retry backoff behavior for kernel status polling.
-type KernelBackoff struct {
-	Enabled     bool          `json:"enabled" yaml:"Enabled"`
-	MaxInterval time.Duration `json:"maxInterval" yaml:"MaxInterval"`
-	Multiplier  float64       `json:"multiplier" yaml:"Multiplier"`
-	Jitter      float64       `json:"jitter" yaml:"Jitter"`
-}
-
-// Normalize applies defaults for backoff settings.
-func (b *KernelBackoff) Normalize(base time.Duration) {
-	if base <= 0 {
-		b.Enabled = false
-		return
-	}
-	if !b.Enabled {
-		return
-	}
-	if b.Multiplier <= 1 {
-		b.Multiplier = 2
-	}
-	if b.Jitter < 0 {
-		b.Jitter = 0
-	}
-	if b.Jitter > 1 {
-		b.Jitter = 1
-	}
-	if b.MaxInterval <= 0 {
-		b.MaxInterval = base * 8
-	}
-	if b.MaxInterval < base {
-		b.MaxInterval = base
 	}
 }
 
@@ -492,7 +425,6 @@ func (c *Config) Normalize() {
 	if c.Site.Name == "" {
 		c.Site.Name = c.Project.Name
 	}
-	c.Kernel.Normalize()
 	c.CORS.Normalize()
 	c.Auth.Normalize()
 	c.Credentials.Normalize()

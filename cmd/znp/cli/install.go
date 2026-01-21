@@ -188,10 +188,6 @@ func (w *InstallWizard) configureServiceStep() error {
 	w.cfg.Cache.Provider = "memory"
 	w.cfg.Cache.Memory.Size = 1024
 
-	// Kernel configuration
-	w.cfg.Kernel.DefaultProtocol = "http"
-	w.cfg.Kernel.HTTP.Timeout = 5 * time.Second
-
 	w.cmd.Println("\n✓ Service configuration completed")
 	return nil
 }

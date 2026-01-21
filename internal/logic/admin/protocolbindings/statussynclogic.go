@@ -56,6 +56,7 @@ func (l *StatusSyncLogic) Sync(req *types.AdminSyncProtocolBindingStatusRequest)
 	type controlKey struct {
 		endpoint string
 		token    string
+		timeout  time.Duration
 	}
 	controlGroups := make(map[controlKey][]uint64)
 	validNodeIDs := make([]uint64, 0, len(nodeIDs))
@@ -78,7 +79,11 @@ func (l *StatusSyncLogic) Sync(req *types.AdminSyncProtocolBindingStatusRequest)
 			continue
 		}
 
-		key := controlKey{endpoint: endpoint, token: resolveControlToken(node)}
+		key := controlKey{
+			endpoint: endpoint,
+			token:    resolveControlToken(node),
+			timeout:  resolveKernelHTTPTimeout(node),
+		}
 		controlGroups[key] = append(controlGroups[key], nodeID)
 		validNodeIDs = append(validNodeIDs, nodeID)
 	}
@@ -98,7 +103,7 @@ func (l *StatusSyncLogic) Sync(req *types.AdminSyncProtocolBindingStatusRequest)
 		client, err := kernel.NewControlClient(kernel.HTTPOptions{
 			BaseURL: key.endpoint,
 			Token:   key.token,
-			Timeout: l.svcCtx.Config.Kernel.HTTP.Timeout,
+			Timeout: key.timeout,
 		})
 		if err != nil {
 			l.markResults(nodeGroup, "error", err.Error(), nil, results, indexByID)

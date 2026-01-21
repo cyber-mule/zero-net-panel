@@ -9,6 +9,7 @@ import (
 
 	"github.com/zeromicro/go-zero/core/logx"
 
+	"github.com/zero-net-panel/zero-net-panel/internal/nodecfg"
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 	"github.com/zero-net-panel/zero-net-panel/internal/security"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
@@ -37,15 +38,6 @@ func NewSyncLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SyncLogic {
 func (l *SyncLogic) Sync(req *types.AdminSyncNodeKernelRequest) (resp *types.AdminSyncNodeKernelResponse, err error) {
 	start := time.Now()
 	protocol := strings.ToLower(strings.TrimSpace(req.Protocol))
-	if protocol == "" {
-		protocol = strings.ToLower(strings.TrimSpace(l.svcCtx.Config.Kernel.DefaultProtocol))
-	}
-	if protocol == "" {
-		protocol = "http"
-	}
-	if protocol != "http" {
-		return nil, kernel.ErrProviderNotFound
-	}
 
 	defer func() {
 		result := "success"
@@ -63,12 +55,21 @@ func (l *SyncLogic) Sync(req *types.AdminSyncNodeKernelRequest) (resp *types.Adm
 	if endpoint == "" {
 		return nil, fmt.Errorf("%w: node control endpoint not configured", repository.ErrInvalidArgument)
 	}
+	if protocol == "" {
+		protocol = strings.ToLower(strings.TrimSpace(node.KernelDefaultProtocol))
+	}
+	if protocol == "" {
+		protocol = nodecfg.DefaultKernelProtocol
+	}
+	if protocol != "http" {
+		return nil, kernel.ErrProviderNotFound
+	}
 	token := resolveNodeControlToken(node)
 
 	provider, err := kernel.NewHTTPProvider(kernel.HTTPOptions{
 		BaseURL: endpoint,
 		Token:   token,
-		Timeout: l.svcCtx.Config.Kernel.HTTP.Timeout,
+		Timeout: resolveKernelHTTPTimeout(node),
 	})
 	if err != nil {
 		return nil, err

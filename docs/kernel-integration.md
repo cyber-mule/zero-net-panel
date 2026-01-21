@@ -110,8 +110,8 @@
 
 面板侧会优先使用 `subscription_id`，否则使用 `user_id`（需与面板用户 ID 对齐）来更新订阅已用流量（`current.used`）。
 
-当内核无法推送事件时，可通过 `Kernel.StatusPollInterval` 启用状态轮询，面板会定期调用
-`GET /v1/status` 判断节点控制面可达性，并将节点 `status` 更新为 `online`/`offline`。
+当内核无法推送事件时，面板会按内置轮询间隔调用
+`GET /v1/status` 判断节点控制面可达性，并将节点 `status` 更新为 `online`/`offline`。节点是否参与由 `status_sync_enabled` 控制。
 
 如需即时刷新某些节点的在线状态，可调用管理端：
 
@@ -123,25 +123,12 @@
 
 为了避免内核不可用时刷屏，支持失败退避：
 
-```yaml
-Kernel:
-  StatusPollInterval: 30s
-  StatusPollBackoff:
-    Enabled: true
-    MaxInterval: 5m
-    Multiplier: 2
-    Jitter: 0.2
-```
-
-- `Enabled=true` 时，连续失败会按倍率退避，成功后恢复基准间隔
-- `MaxInterval` 为退避上限
-- `Multiplier` 为退避倍率
-- `Jitter` 为抖动比例（0~1）
+退避策略由节点配置决定：默认基准 30s、最大 5m、倍数 2、抖动 0.2。
 
 为缩短离线节点恢复感知时间，面板会对离线节点执行补偿轮询：
 
-- 轮询间隔按 1/3/5 秒递增，跨自然日重置回 1s
-- 可通过 `Kernel.OfflineProbeMaxInterval` 或站点配置 `kernel_offline_probe_max_interval_seconds` 设置最大间隔（秒），默认 0 不限制
+- 轮询间隔按 1/3/5/7... 秒递增，跨自然日重置回 1s
+- 最大轮询间隔由节点 `kernel_offline_probe_max_interval_seconds` 控制，0 表示不限制
 
 ## 维护约定
 

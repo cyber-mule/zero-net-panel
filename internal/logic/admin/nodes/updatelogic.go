@@ -7,6 +7,7 @@ import (
 
 	"github.com/zeromicro/go-zero/core/logx"
 
+	"github.com/zero-net-panel/zero-net-panel/internal/nodecfg"
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 	"github.com/zero-net-panel/zero-net-panel/internal/security"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
@@ -120,6 +121,123 @@ func (l *UpdateLogic) Update(req *types.AdminUpdateNodeRequest) (*types.AdminNod
 	if req.ControlToken != nil {
 		token := strings.TrimSpace(*req.ControlToken)
 		input.ControlToken = &token
+	}
+	kernelUpdate := req.KernelDefaultProtocol != nil ||
+		req.KernelHTTPTimeoutSeconds != nil ||
+		req.KernelStatusPollIntervalSeconds != nil ||
+		req.KernelStatusPollBackoffEnabled != nil ||
+		req.KernelStatusPollBackoffMaxIntervalSeconds != nil ||
+		req.KernelStatusPollBackoffMultiplier != nil ||
+		req.KernelStatusPollBackoffJitter != nil ||
+		req.KernelOfflineProbeMaxIntervalSeconds != nil
+	if kernelUpdate {
+		current, err := l.svcCtx.Repositories.Node.Get(l.ctx, req.NodeID)
+		if err != nil {
+			return nil, err
+		}
+
+		kernelDefaultProtocol := strings.TrimSpace(current.KernelDefaultProtocol)
+		if kernelDefaultProtocol == "" {
+			kernelDefaultProtocol = nodecfg.DefaultKernelProtocol
+		}
+		kernelHTTPTimeoutSeconds := current.KernelHTTPTimeoutSeconds
+		if kernelHTTPTimeoutSeconds <= 0 {
+			kernelHTTPTimeoutSeconds = nodecfg.DefaultKernelHTTPTimeoutSeconds
+		}
+		kernelStatusPollIntervalSeconds := current.KernelStatusPollIntervalSeconds
+		if kernelStatusPollIntervalSeconds < 0 {
+			kernelStatusPollIntervalSeconds = nodecfg.DefaultKernelStatusPollIntervalSeconds
+		}
+		kernelStatusPollBackoffEnabled := current.KernelStatusPollBackoffEnabled
+		kernelStatusPollBackoffMaxIntervalSeconds := current.KernelStatusPollBackoffMaxIntervalSeconds
+		if kernelStatusPollBackoffMaxIntervalSeconds < 0 {
+			kernelStatusPollBackoffMaxIntervalSeconds = nodecfg.DefaultKernelStatusPollBackoffMaxIntervalSeconds
+		}
+		kernelStatusPollBackoffMultiplier := current.KernelStatusPollBackoffMultiplier
+		if kernelStatusPollBackoffMultiplier <= 1 {
+			kernelStatusPollBackoffMultiplier = nodecfg.DefaultKernelStatusPollBackoffMultiplier
+		}
+		kernelStatusPollBackoffJitter := current.KernelStatusPollBackoffJitter
+		if kernelStatusPollBackoffJitter < 0 || kernelStatusPollBackoffJitter > 1 {
+			kernelStatusPollBackoffJitter = nodecfg.DefaultKernelStatusPollBackoffJitter
+		}
+		kernelOfflineProbeMaxIntervalSeconds := current.KernelOfflineProbeMaxIntervalSeconds
+		if kernelOfflineProbeMaxIntervalSeconds < 0 {
+			kernelOfflineProbeMaxIntervalSeconds = nodecfg.DefaultKernelOfflineProbeMaxIntervalSeconds
+		}
+
+		if req.KernelDefaultProtocol != nil {
+			kernelDefaultProtocol = strings.TrimSpace(*req.KernelDefaultProtocol)
+			if kernelDefaultProtocol == "" {
+				return nil, repository.ErrInvalidArgument
+			}
+			input.KernelDefaultProtocol = &kernelDefaultProtocol
+			metadata["kernel_default_protocol"] = kernelDefaultProtocol
+		}
+		if req.KernelHTTPTimeoutSeconds != nil {
+			kernelHTTPTimeoutSeconds = *req.KernelHTTPTimeoutSeconds
+			input.KernelHTTPTimeoutSeconds = req.KernelHTTPTimeoutSeconds
+			metadata["kernel_http_timeout_seconds"] = kernelHTTPTimeoutSeconds
+		}
+		if req.KernelStatusPollIntervalSeconds != nil {
+			kernelStatusPollIntervalSeconds = *req.KernelStatusPollIntervalSeconds
+			input.KernelStatusPollIntervalSeconds = req.KernelStatusPollIntervalSeconds
+			metadata["kernel_status_poll_interval_seconds"] = kernelStatusPollIntervalSeconds
+		}
+		if req.KernelStatusPollBackoffEnabled != nil {
+			kernelStatusPollBackoffEnabled = *req.KernelStatusPollBackoffEnabled
+			input.KernelStatusPollBackoffEnabled = req.KernelStatusPollBackoffEnabled
+			metadata["kernel_status_poll_backoff_enabled"] = kernelStatusPollBackoffEnabled
+		}
+		if req.KernelStatusPollBackoffMaxIntervalSeconds != nil {
+			kernelStatusPollBackoffMaxIntervalSeconds = *req.KernelStatusPollBackoffMaxIntervalSeconds
+			input.KernelStatusPollBackoffMaxIntervalSeconds = req.KernelStatusPollBackoffMaxIntervalSeconds
+			metadata["kernel_status_poll_backoff_max_interval_seconds"] = kernelStatusPollBackoffMaxIntervalSeconds
+		}
+		if req.KernelStatusPollBackoffMultiplier != nil {
+			kernelStatusPollBackoffMultiplier = *req.KernelStatusPollBackoffMultiplier
+			input.KernelStatusPollBackoffMultiplier = req.KernelStatusPollBackoffMultiplier
+			metadata["kernel_status_poll_backoff_multiplier"] = kernelStatusPollBackoffMultiplier
+		}
+		if req.KernelStatusPollBackoffJitter != nil {
+			kernelStatusPollBackoffJitter = *req.KernelStatusPollBackoffJitter
+			input.KernelStatusPollBackoffJitter = req.KernelStatusPollBackoffJitter
+			metadata["kernel_status_poll_backoff_jitter"] = kernelStatusPollBackoffJitter
+		}
+		if req.KernelOfflineProbeMaxIntervalSeconds != nil {
+			kernelOfflineProbeMaxIntervalSeconds = *req.KernelOfflineProbeMaxIntervalSeconds
+			input.KernelOfflineProbeMaxIntervalSeconds = req.KernelOfflineProbeMaxIntervalSeconds
+			metadata["kernel_offline_probe_max_interval_seconds"] = kernelOfflineProbeMaxIntervalSeconds
+		}
+
+		if kernelDefaultProtocol == "" {
+			return nil, repository.ErrInvalidArgument
+		}
+		if kernelHTTPTimeoutSeconds <= 0 {
+			return nil, repository.ErrInvalidArgument
+		}
+		if kernelStatusPollIntervalSeconds < 0 {
+			return nil, repository.ErrInvalidArgument
+		}
+		if kernelStatusPollBackoffMaxIntervalSeconds < 0 {
+			return nil, repository.ErrInvalidArgument
+		}
+		if kernelStatusPollBackoffMultiplier <= 1 {
+			return nil, repository.ErrInvalidArgument
+		}
+		if kernelStatusPollBackoffJitter < 0 || kernelStatusPollBackoffJitter > 1 {
+			return nil, repository.ErrInvalidArgument
+		}
+		if kernelOfflineProbeMaxIntervalSeconds < 0 {
+			return nil, repository.ErrInvalidArgument
+		}
+		if kernelStatusPollBackoffEnabled && kernelStatusPollIntervalSeconds <= 0 {
+			return nil, repository.ErrInvalidArgument
+		}
+		if kernelStatusPollBackoffEnabled && kernelStatusPollBackoffMaxIntervalSeconds > 0 &&
+			kernelStatusPollBackoffMaxIntervalSeconds < kernelStatusPollIntervalSeconds {
+			return nil, repository.ErrInvalidArgument
+		}
 	}
 	if req.StatusSyncEnabled != nil {
 		input.StatusSyncEnabled = req.StatusSyncEnabled

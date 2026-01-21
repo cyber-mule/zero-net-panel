@@ -54,12 +54,6 @@ Cache:
     NonBlock: false
     PingTimeout: 0s
 
-Kernel:
-  DefaultProtocol: http
-  StatusPollInterval: 0s
-  HTTP:
-    Timeout: 1s
-
 Auth:
   AccessSecret: test
   AccessExpire: 1h

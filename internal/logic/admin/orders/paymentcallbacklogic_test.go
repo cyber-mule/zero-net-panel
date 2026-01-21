@@ -13,11 +13,14 @@ import (
 	"github.com/zero-net-panel/zero-net-panel/internal/bootstrap/migrations"
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
+	"github.com/zero-net-panel/zero-net-panel/internal/testutil"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
 )
 
 func setupPaymentCallbackTest(t *testing.T) (*svc.ServiceContext, func()) {
 	t.Helper()
+
+	testutil.RequireSQLite(t)
 
 	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
 	require.NoError(t, err)
@@ -136,7 +139,7 @@ func TestPaymentCallbackLogic_Success(t *testing.T) {
 			"traffic_limit_bytes": plan.TrafficLimitBytes,
 			"devices_limit":       plan.DevicesLimit,
 		},
-		CreatedAt:      now,
+		CreatedAt: now,
 	}})
 	require.NoError(t, err)
 	require.Len(t, items, 1)

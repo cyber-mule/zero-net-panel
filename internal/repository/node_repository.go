@@ -14,25 +14,33 @@ import (
 
 // Node 表示节点元信息。
 type Node struct {
-	ID                uint64         `gorm:"primaryKey"`
-	Name              string         `gorm:"size:255;uniqueIndex"`
-	Region            string         `gorm:"size:128"`
-	Country           string         `gorm:"size:8"`
-	ISP               string         `gorm:"size:128"`
-	Status            string         `gorm:"size:32"`
-	Tags              []string       `gorm:"serializer:json"`
-	CapacityMbps      int            `gorm:"column:capacity_mbps"`
-	Description       string         `gorm:"type:text"`
-	AccessAddress     string         `gorm:"size:512"`
-	ControlEndpoint   string         `gorm:"size:512"`
-	ControlAccessKey  string         `gorm:"size:255"`
-	ControlSecretKey  string         `gorm:"size:512"`
-	ControlToken      string         `gorm:"size:512"`
-	StatusSyncEnabled bool           `gorm:"column:status_sync_enabled;default:true"`
-	LastSyncedAt      time.Time      `gorm:"column:last_synced_at"`
-	DeletedAt         gorm.DeletedAt `gorm:"index"`
-	UpdatedAt         time.Time
-	CreatedAt         time.Time
+	ID                                        uint64         `gorm:"primaryKey"`
+	Name                                      string         `gorm:"size:255;uniqueIndex"`
+	Region                                    string         `gorm:"size:128"`
+	Country                                   string         `gorm:"size:8"`
+	ISP                                       string         `gorm:"size:128"`
+	Status                                    string         `gorm:"size:32"`
+	Tags                                      []string       `gorm:"serializer:json"`
+	CapacityMbps                              int            `gorm:"column:capacity_mbps"`
+	Description                               string         `gorm:"type:text"`
+	AccessAddress                             string         `gorm:"size:512"`
+	ControlEndpoint                           string         `gorm:"size:512"`
+	ControlAccessKey                          string         `gorm:"size:255"`
+	ControlSecretKey                          string         `gorm:"size:512"`
+	ControlToken                              string         `gorm:"size:512"`
+	KernelDefaultProtocol                     string         `gorm:"column:kernel_default_protocol;size:32;default:http"`
+	KernelHTTPTimeoutSeconds                  int            `gorm:"column:kernel_http_timeout_seconds;default:5"`
+	KernelStatusPollIntervalSeconds           int            `gorm:"column:kernel_status_poll_interval_seconds;default:30"`
+	KernelStatusPollBackoffEnabled            bool           `gorm:"column:kernel_status_poll_backoff_enabled;default:true"`
+	KernelStatusPollBackoffMaxIntervalSeconds int            `gorm:"column:kernel_status_poll_backoff_max_interval_seconds;default:300"`
+	KernelStatusPollBackoffMultiplier         float64        `gorm:"column:kernel_status_poll_backoff_multiplier;default:2"`
+	KernelStatusPollBackoffJitter             float64        `gorm:"column:kernel_status_poll_backoff_jitter;default:0.2"`
+	KernelOfflineProbeMaxIntervalSeconds      int            `gorm:"column:kernel_offline_probe_max_interval_seconds;default:0"`
+	StatusSyncEnabled                         bool           `gorm:"column:status_sync_enabled;default:true"`
+	LastSyncedAt                              time.Time      `gorm:"column:last_synced_at"`
+	DeletedAt                                 gorm.DeletedAt `gorm:"index"`
+	UpdatedAt                                 time.Time
+	CreatedAt                                 time.Time
 }
 
 // TableName 自定义节点表名。
@@ -180,6 +188,7 @@ func (r *nodeRepository) Create(ctx context.Context, node Node) (Node, error) {
 	node.AccessAddress = strings.TrimSpace(node.AccessAddress)
 	node.ControlEndpoint = strings.TrimSpace(node.ControlEndpoint)
 	node.ControlToken = strings.TrimSpace(node.ControlToken)
+	node.KernelDefaultProtocol = strings.TrimSpace(node.KernelDefaultProtocol)
 	if node.Tags == nil {
 		node.Tags = []string{}
 	}
@@ -244,6 +253,30 @@ func (r *nodeRepository) Update(ctx context.Context, nodeID uint64, input Update
 	}
 	if input.ControlToken != nil {
 		updates["control_token"] = strings.TrimSpace(*input.ControlToken)
+	}
+	if input.KernelDefaultProtocol != nil {
+		updates["kernel_default_protocol"] = strings.TrimSpace(*input.KernelDefaultProtocol)
+	}
+	if input.KernelHTTPTimeoutSeconds != nil {
+		updates["kernel_http_timeout_seconds"] = *input.KernelHTTPTimeoutSeconds
+	}
+	if input.KernelStatusPollIntervalSeconds != nil {
+		updates["kernel_status_poll_interval_seconds"] = *input.KernelStatusPollIntervalSeconds
+	}
+	if input.KernelStatusPollBackoffEnabled != nil {
+		updates["kernel_status_poll_backoff_enabled"] = *input.KernelStatusPollBackoffEnabled
+	}
+	if input.KernelStatusPollBackoffMaxIntervalSeconds != nil {
+		updates["kernel_status_poll_backoff_max_interval_seconds"] = *input.KernelStatusPollBackoffMaxIntervalSeconds
+	}
+	if input.KernelStatusPollBackoffMultiplier != nil {
+		updates["kernel_status_poll_backoff_multiplier"] = *input.KernelStatusPollBackoffMultiplier
+	}
+	if input.KernelStatusPollBackoffJitter != nil {
+		updates["kernel_status_poll_backoff_jitter"] = *input.KernelStatusPollBackoffJitter
+	}
+	if input.KernelOfflineProbeMaxIntervalSeconds != nil {
+		updates["kernel_offline_probe_max_interval_seconds"] = *input.KernelOfflineProbeMaxIntervalSeconds
 	}
 	if input.StatusSyncEnabled != nil {
 		updates["status_sync_enabled"] = *input.StatusSyncEnabled
@@ -318,21 +351,29 @@ func (r *nodeRepository) Delete(ctx context.Context, nodeID uint64) error {
 
 // UpdateNodeInput defines mutable node fields.
 type UpdateNodeInput struct {
-	Name              *string
-	Region            *string
-	Country           *string
-	ISP               *string
-	Status            *string
-	Tags              *[]string
-	CapacityMbps      *int
-	Description       *string
-	AccessAddress     *string
-	ControlEndpoint   *string
-	ControlAccessKey  *string
-	ControlSecretKey  *string
-	ControlToken      *string
-	StatusSyncEnabled *bool
-	LastSyncedAt      *time.Time
+	Name                                      *string
+	Region                                    *string
+	Country                                   *string
+	ISP                                       *string
+	Status                                    *string
+	Tags                                      *[]string
+	CapacityMbps                              *int
+	Description                               *string
+	AccessAddress                             *string
+	ControlEndpoint                           *string
+	ControlAccessKey                          *string
+	ControlSecretKey                          *string
+	ControlToken                              *string
+	KernelDefaultProtocol                     *string
+	KernelHTTPTimeoutSeconds                  *int
+	KernelStatusPollIntervalSeconds           *int
+	KernelStatusPollBackoffEnabled            *bool
+	KernelStatusPollBackoffMaxIntervalSeconds *int
+	KernelStatusPollBackoffMultiplier         *float64
+	KernelStatusPollBackoffJitter             *float64
+	KernelOfflineProbeMaxIntervalSeconds      *int
+	StatusSyncEnabled                         *bool
+	LastSyncedAt                              *time.Time
 }
 
 // UpsertNodeKernelInput defines node kernel configuration updates.

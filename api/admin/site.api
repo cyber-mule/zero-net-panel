@@ -20,7 +20,6 @@ type SiteSetting {
 	name       string
 	logo_url   string
 	access_domain string
-	kernel_offline_probe_max_interval_seconds int
 	created_at int64
 	updated_at int64
 }
@@ -33,5 +32,4 @@ type AdminUpdateSiteSettingRequest {
 	name          string `form:"name,optional" json:"name,optional"`
 	logo_url      string `form:"logo_url,optional" json:"logo_url,optional"`
 	access_domain string `form:"access_domain,optional" json:"access_domain,optional"`
-	kernel_offline_probe_max_interval_seconds int `form:"kernel_offline_probe_max_interval_seconds,optional" json:"kernel_offline_probe_max_interval_seconds,optional"`
 }

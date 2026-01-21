@@ -503,6 +503,14 @@ type AdminCreateNodeRequest struct {
 	Ak string `form:"ak,optional" json:"ak,optional"`
 	Sk string `form:"sk,optional" json:"sk,optional"`
 	Control_token string `form:"control_token,optional" json:"control_token,optional"`
+	Kernel_default_protocol string `form:"kernel_default_protocol,optional" json:"kernel_default_protocol,optional"`
+	Kernel_http_timeout_seconds int `form:"kernel_http_timeout_seconds,optional" json:"kernel_http_timeout_seconds,optional"`
+	Kernel_status_poll_interval_seconds int `form:"kernel_status_poll_interval_seconds,optional" json:"kernel_status_poll_interval_seconds,optional"`
+	Kernel_status_poll_backoff_enabled bool `form:"kernel_status_poll_backoff_enabled,optional" json:"kernel_status_poll_backoff_enabled,optional"`
+	Kernel_status_poll_backoff_max_interval_seconds int `form:"kernel_status_poll_backoff_max_interval_seconds,optional" json:"kernel_status_poll_backoff_max_interval_seconds,optional"`
+	Kernel_status_poll_backoff_multiplier float64 `form:"kernel_status_poll_backoff_multiplier,optional" json:"kernel_status_poll_backoff_multiplier,optional"`
+	Kernel_status_poll_backoff_jitter float64 `form:"kernel_status_poll_backoff_jitter,optional" json:"kernel_status_poll_backoff_jitter,optional"`
+	Kernel_offline_probe_max_interval_seconds int `form:"kernel_offline_probe_max_interval_seconds,optional" json:"kernel_offline_probe_max_interval_seconds,optional"`
 	Status_sync_enabled bool `form:"status_sync_enabled,optional" json:"status_sync_enabled,optional"`
 }
 ```
@@ -529,6 +537,14 @@ type NodeSummary struct {
 	Description string 
 	Access_address string 
 	Control_endpoint string 
+	Kernel_default_protocol string 
+	Kernel_http_timeout_seconds int 
+	Kernel_status_poll_interval_seconds int 
+	Kernel_status_poll_backoff_enabled bool 
+	Kernel_status_poll_backoff_max_interval_seconds int 
+	Kernel_status_poll_backoff_multiplier float64 
+	Kernel_status_poll_backoff_jitter float64 
+	Kernel_offline_probe_max_interval_seconds int 
 	Status_sync_enabled bool 
 	Last_synced_at int64 
 	Updated_at int64 
@@ -566,6 +582,14 @@ type AdminUpdateNodeRequest struct {
 	Ak string `form:"ak,optional" json:"ak,optional"`
 	Sk string `form:"sk,optional" json:"sk,optional"`
 	Control_token string `form:"control_token,optional" json:"control_token,optional"`
+	Kernel_default_protocol string `form:"kernel_default_protocol,optional" json:"kernel_default_protocol,optional"`
+	Kernel_http_timeout_seconds int `form:"kernel_http_timeout_seconds,optional" json:"kernel_http_timeout_seconds,optional"`
+	Kernel_status_poll_interval_seconds int `form:"kernel_status_poll_interval_seconds,optional" json:"kernel_status_poll_interval_seconds,optional"`
+	Kernel_status_poll_backoff_enabled bool `form:"kernel_status_poll_backoff_enabled,optional" json:"kernel_status_poll_backoff_enabled,optional"`
+	Kernel_status_poll_backoff_max_interval_seconds int `form:"kernel_status_poll_backoff_max_interval_seconds,optional" json:"kernel_status_poll_backoff_max_interval_seconds,optional"`
+	Kernel_status_poll_backoff_multiplier float64 `form:"kernel_status_poll_backoff_multiplier,optional" json:"kernel_status_poll_backoff_multiplier,optional"`
+	Kernel_status_poll_backoff_jitter float64 `form:"kernel_status_poll_backoff_jitter,optional" json:"kernel_status_poll_backoff_jitter,optional"`
+	Kernel_offline_probe_max_interval_seconds int `form:"kernel_offline_probe_max_interval_seconds,optional" json:"kernel_offline_probe_max_interval_seconds,optional"`
 	Status_sync_enabled bool `form:"status_sync_enabled,optional" json:"status_sync_enabled,optional"`
 }
 ```
@@ -592,6 +616,14 @@ type NodeSummary struct {
 	Description string 
 	Access_address string 
 	Control_endpoint string 
+	Kernel_default_protocol string 
+	Kernel_http_timeout_seconds int 
+	Kernel_status_poll_interval_seconds int 
+	Kernel_status_poll_backoff_enabled bool 
+	Kernel_status_poll_backoff_max_interval_seconds int 
+	Kernel_status_poll_backoff_multiplier float64 
+	Kernel_status_poll_backoff_jitter float64 
+	Kernel_offline_probe_max_interval_seconds int 
 	Status_sync_enabled bool 
 	Last_synced_at int64 
 	Updated_at int64 
@@ -662,6 +694,14 @@ type NodeSummary struct {
 	Description string 
 	Access_address string 
 	Control_endpoint string 
+	Kernel_default_protocol string 
+	Kernel_http_timeout_seconds int 
+	Kernel_status_poll_interval_seconds int 
+	Kernel_status_poll_backoff_enabled bool 
+	Kernel_status_poll_backoff_max_interval_seconds int 
+	Kernel_status_poll_backoff_multiplier float64 
+	Kernel_status_poll_backoff_jitter float64 
+	Kernel_offline_probe_max_interval_seconds int 
 	Status_sync_enabled bool 
 	Last_synced_at int64 
 	Updated_at int64 
@@ -2358,6 +2398,7 @@ type SiteSetting struct {
 	Id uint64 
 	Name string 
 	Logo_url string 
+	Access_domain string 
 	Created_at int64 
 	Updated_at int64 
 }
@@ -2380,6 +2421,7 @@ type SiteSetting struct {
 type AdminUpdateSiteSettingRequest struct {
 	Name string `form:"name,optional" json:"name,optional"`
 	Logo_url string `form:"logo_url,optional" json:"logo_url,optional"`
+	Access_domain string `form:"access_domain,optional" json:"access_domain,optional"`
 }
 ```
 
@@ -2397,6 +2439,7 @@ type SiteSetting struct {
 	Id uint64 
 	Name string 
 	Logo_url string 
+	Access_domain string 
 	Created_at int64 
 	Updated_at int64 
 }

@@ -5,26 +5,35 @@ import (
 	"strings"
 	"time"
 
+	"github.com/zero-net-panel/zero-net-panel/internal/nodecfg"
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
 )
 
 func mapNodeSummary(node repository.Node) types.NodeSummary {
 	return types.NodeSummary{
-		ID:                node.ID,
-		Name:              node.Name,
-		Region:            node.Region,
-		Country:           node.Country,
-		ISP:               node.ISP,
-		Status:            node.Status,
-		Tags:              append([]string(nil), node.Tags...),
-		CapacityMbps:      node.CapacityMbps,
-		Description:       node.Description,
-		AccessAddress:     node.AccessAddress,
-		ControlEndpoint:   node.ControlEndpoint,
-		StatusSyncEnabled: node.StatusSyncEnabled,
-		LastSyncedAt:      toUnixOrZero(node.LastSyncedAt),
-		UpdatedAt:         toUnixOrZero(node.UpdatedAt),
+		ID:                              node.ID,
+		Name:                            node.Name,
+		Region:                          node.Region,
+		Country:                         node.Country,
+		ISP:                             node.ISP,
+		Status:                          node.Status,
+		Tags:                            append([]string(nil), node.Tags...),
+		CapacityMbps:                    node.CapacityMbps,
+		Description:                     node.Description,
+		AccessAddress:                   node.AccessAddress,
+		ControlEndpoint:                 node.ControlEndpoint,
+		KernelDefaultProtocol:           node.KernelDefaultProtocol,
+		KernelHTTPTimeoutSeconds:        node.KernelHTTPTimeoutSeconds,
+		KernelStatusPollIntervalSeconds: node.KernelStatusPollIntervalSeconds,
+		KernelStatusPollBackoffEnabled:  node.KernelStatusPollBackoffEnabled,
+		KernelStatusPollBackoffMaxIntervalSeconds: node.KernelStatusPollBackoffMaxIntervalSeconds,
+		KernelStatusPollBackoffMultiplier:         node.KernelStatusPollBackoffMultiplier,
+		KernelStatusPollBackoffJitter:             node.KernelStatusPollBackoffJitter,
+		KernelOfflineProbeMaxIntervalSeconds:      node.KernelOfflineProbeMaxIntervalSeconds,
+		StatusSyncEnabled:                         node.StatusSyncEnabled,
+		LastSyncedAt:                              toUnixOrZero(node.LastSyncedAt),
+		UpdatedAt:                                 toUnixOrZero(node.UpdatedAt),
 	}
 }
 
@@ -85,4 +94,12 @@ func toUnixOrZero(ts time.Time) int64 {
 		return 0
 	}
 	return ts.Unix()
+}
+
+func resolveKernelHTTPTimeout(node repository.Node) time.Duration {
+	timeoutSeconds := node.KernelHTTPTimeoutSeconds
+	if timeoutSeconds <= 0 {
+		timeoutSeconds = nodecfg.DefaultKernelHTTPTimeoutSeconds
+	}
+	return time.Duration(timeoutSeconds) * time.Second
 }

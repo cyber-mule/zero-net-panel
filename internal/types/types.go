@@ -129,13 +129,12 @@ type AdminAuditLogExportResponse struct {
 
 // SiteSetting 站点品牌配置。
 type SiteSetting struct {
-	ID                                   uint64 `json:"id"`
-	Name                                 string `json:"name"`
-	LogoURL                              string `json:"logo_url"`
-	AccessDomain                         string `json:"access_domain"`
-	KernelOfflineProbeMaxIntervalSeconds int    `json:"kernel_offline_probe_max_interval_seconds"`
-	CreatedAt                            int64  `json:"created_at"`
-	UpdatedAt                            int64  `json:"updated_at"`
+	ID           uint64 `json:"id"`
+	Name         string `json:"name"`
+	LogoURL      string `json:"logo_url"`
+	AccessDomain string `json:"access_domain"`
+	CreatedAt    int64  `json:"created_at"`
+	UpdatedAt    int64  `json:"updated_at"`
 }
 
 // AdminSiteSettingResponse 站点配置响应。
@@ -145,10 +144,9 @@ type AdminSiteSettingResponse struct {
 
 // AdminUpdateSiteSettingRequest 更新站点配置。
 type AdminUpdateSiteSettingRequest struct {
-	Name                                 *string `json:"name,optional"`
-	LogoURL                              *string `json:"logo_url,optional"`
-	AccessDomain                         *string `json:"access_domain,optional"`
-	KernelOfflineProbeMaxIntervalSeconds *int    `json:"kernel_offline_probe_max_interval_seconds,optional"`
+	Name         *string `json:"name,optional"`
+	LogoURL      *string `json:"logo_url,optional"`
+	AccessDomain *string `json:"access_domain,optional"`
 }
 
 // AdminListNodesRequest 管理端节点列表查询参数。
@@ -164,20 +162,28 @@ type AdminListNodesRequest struct {
 
 // NodeSummary 节点摘要信息。
 type NodeSummary struct {
-	ID                uint64   `json:"id"`
-	Name              string   `json:"name"`
-	Region            string   `json:"region"`
-	Country           string   `json:"country"`
-	ISP               string   `json:"isp"`
-	Status            string   `json:"status"`
-	Tags              []string `json:"tags"`
-	CapacityMbps      int      `json:"capacity_mbps"`
-	Description       string   `json:"description"`
-	AccessAddress     string   `json:"access_address"`
-	ControlEndpoint   string   `json:"control_endpoint"`
-	StatusSyncEnabled bool     `json:"status_sync_enabled"`
-	LastSyncedAt      int64    `json:"last_synced_at"`
-	UpdatedAt         int64    `json:"updated_at"`
+	ID                                        uint64   `json:"id"`
+	Name                                      string   `json:"name"`
+	Region                                    string   `json:"region"`
+	Country                                   string   `json:"country"`
+	ISP                                       string   `json:"isp"`
+	Status                                    string   `json:"status"`
+	Tags                                      []string `json:"tags"`
+	CapacityMbps                              int      `json:"capacity_mbps"`
+	Description                               string   `json:"description"`
+	AccessAddress                             string   `json:"access_address"`
+	ControlEndpoint                           string   `json:"control_endpoint"`
+	KernelDefaultProtocol                     string   `json:"kernel_default_protocol"`
+	KernelHTTPTimeoutSeconds                  int      `json:"kernel_http_timeout_seconds"`
+	KernelStatusPollIntervalSeconds           int      `json:"kernel_status_poll_interval_seconds"`
+	KernelStatusPollBackoffEnabled            bool     `json:"kernel_status_poll_backoff_enabled"`
+	KernelStatusPollBackoffMaxIntervalSeconds int      `json:"kernel_status_poll_backoff_max_interval_seconds"`
+	KernelStatusPollBackoffMultiplier         float64  `json:"kernel_status_poll_backoff_multiplier"`
+	KernelStatusPollBackoffJitter             float64  `json:"kernel_status_poll_backoff_jitter"`
+	KernelOfflineProbeMaxIntervalSeconds      int      `json:"kernel_offline_probe_max_interval_seconds"`
+	StatusSyncEnabled                         bool     `json:"status_sync_enabled"`
+	LastSyncedAt                              int64    `json:"last_synced_at"`
+	UpdatedAt                                 int64    `json:"updated_at"`
 }
 
 // AdminNodeResponse 节点详情响应。
@@ -187,43 +193,59 @@ type AdminNodeResponse struct {
 
 // AdminCreateNodeRequest 管理端创建节点请求。
 type AdminCreateNodeRequest struct {
-	Name              string   `json:"name"`
-	Region            string   `json:"region,optional"`
-	Country           string   `json:"country,optional"`
-	ISP               string   `json:"isp,optional"`
-	Status            string   `json:"status,optional"`
-	Tags              []string `json:"tags,optional"`
-	CapacityMbps      int      `json:"capacity_mbps,optional"`
-	Description       string   `json:"description,optional"`
-	AccessAddress     string   `json:"access_address,optional"`
-	ControlEndpoint   string   `json:"control_endpoint"`
-	ControlAccessKey  string   `json:"control_access_key,optional"`
-	ControlSecretKey  string   `json:"control_secret_key,optional"`
-	AK                string   `json:"ak,optional"`
-	SK                string   `json:"sk,optional"`
-	ControlToken      string   `json:"control_token,optional"`
-	StatusSyncEnabled *bool    `json:"status_sync_enabled,optional"`
+	Name                                      string   `json:"name"`
+	Region                                    string   `json:"region,optional"`
+	Country                                   string   `json:"country,optional"`
+	ISP                                       string   `json:"isp,optional"`
+	Status                                    string   `json:"status,optional"`
+	Tags                                      []string `json:"tags,optional"`
+	CapacityMbps                              int      `json:"capacity_mbps,optional"`
+	Description                               string   `json:"description,optional"`
+	AccessAddress                             string   `json:"access_address,optional"`
+	ControlEndpoint                           string   `json:"control_endpoint"`
+	ControlAccessKey                          string   `json:"control_access_key,optional"`
+	ControlSecretKey                          string   `json:"control_secret_key,optional"`
+	AK                                        string   `json:"ak,optional"`
+	SK                                        string   `json:"sk,optional"`
+	ControlToken                              string   `json:"control_token,optional"`
+	KernelDefaultProtocol                     string   `json:"kernel_default_protocol,optional"`
+	KernelHTTPTimeoutSeconds                  *int     `json:"kernel_http_timeout_seconds,optional"`
+	KernelStatusPollIntervalSeconds           *int     `json:"kernel_status_poll_interval_seconds,optional"`
+	KernelStatusPollBackoffEnabled            *bool    `json:"kernel_status_poll_backoff_enabled,optional"`
+	KernelStatusPollBackoffMaxIntervalSeconds *int     `json:"kernel_status_poll_backoff_max_interval_seconds,optional"`
+	KernelStatusPollBackoffMultiplier         *float64 `json:"kernel_status_poll_backoff_multiplier,optional"`
+	KernelStatusPollBackoffJitter             *float64 `json:"kernel_status_poll_backoff_jitter,optional"`
+	KernelOfflineProbeMaxIntervalSeconds      *int     `json:"kernel_offline_probe_max_interval_seconds,optional"`
+	StatusSyncEnabled                         *bool    `json:"status_sync_enabled,optional"`
 }
 
 // AdminUpdateNodeRequest 管理端更新节点请求。
 type AdminUpdateNodeRequest struct {
-	NodeID            uint64   `path:"id"`
-	Name              *string  `json:"name,optional"`
-	Region            *string  `json:"region,optional"`
-	Country           *string  `json:"country,optional"`
-	ISP               *string  `json:"isp,optional"`
-	Status            *string  `json:"status,optional"`
-	Tags              []string `json:"tags,optional"`
-	CapacityMbps      *int     `json:"capacity_mbps,optional"`
-	Description       *string  `json:"description,optional"`
-	AccessAddress     *string  `json:"access_address,optional"`
-	ControlEndpoint   *string  `json:"control_endpoint,optional"`
-	ControlAccessKey  *string  `json:"control_access_key,optional"`
-	ControlSecretKey  *string  `json:"control_secret_key,optional"`
-	AK                *string  `json:"ak,optional"`
-	SK                *string  `json:"sk,optional"`
-	ControlToken      *string  `json:"control_token,optional"`
-	StatusSyncEnabled *bool    `json:"status_sync_enabled,optional"`
+	NodeID                                    uint64   `path:"id"`
+	Name                                      *string  `json:"name,optional"`
+	Region                                    *string  `json:"region,optional"`
+	Country                                   *string  `json:"country,optional"`
+	ISP                                       *string  `json:"isp,optional"`
+	Status                                    *string  `json:"status,optional"`
+	Tags                                      []string `json:"tags,optional"`
+	CapacityMbps                              *int     `json:"capacity_mbps,optional"`
+	Description                               *string  `json:"description,optional"`
+	AccessAddress                             *string  `json:"access_address,optional"`
+	ControlEndpoint                           *string  `json:"control_endpoint,optional"`
+	ControlAccessKey                          *string  `json:"control_access_key,optional"`
+	ControlSecretKey                          *string  `json:"control_secret_key,optional"`
+	AK                                        *string  `json:"ak,optional"`
+	SK                                        *string  `json:"sk,optional"`
+	ControlToken                              *string  `json:"control_token,optional"`
+	KernelDefaultProtocol                     *string  `json:"kernel_default_protocol,optional"`
+	KernelHTTPTimeoutSeconds                  *int     `json:"kernel_http_timeout_seconds,optional"`
+	KernelStatusPollIntervalSeconds           *int     `json:"kernel_status_poll_interval_seconds,optional"`
+	KernelStatusPollBackoffEnabled            *bool    `json:"kernel_status_poll_backoff_enabled,optional"`
+	KernelStatusPollBackoffMaxIntervalSeconds *int     `json:"kernel_status_poll_backoff_max_interval_seconds,optional"`
+	KernelStatusPollBackoffMultiplier         *float64 `json:"kernel_status_poll_backoff_multiplier,optional"`
+	KernelStatusPollBackoffJitter             *float64 `json:"kernel_status_poll_backoff_jitter,optional"`
+	KernelOfflineProbeMaxIntervalSeconds      *int     `json:"kernel_offline_probe_max_interval_seconds,optional"`
+	StatusSyncEnabled                         *bool    `json:"status_sync_enabled,optional"`
 }
 
 // AdminDisableNodeRequest 管理端禁用节点请求。

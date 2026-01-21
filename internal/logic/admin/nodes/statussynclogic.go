@@ -56,6 +56,7 @@ func (l *SyncStatusLogic) Sync(req *types.AdminSyncNodeStatusRequest) (*types.Ad
 	type controlKey struct {
 		endpoint string
 		token    string
+		timeout  time.Duration
 	}
 	controlGroups := make(map[controlKey][]uint64)
 
@@ -77,7 +78,11 @@ func (l *SyncStatusLogic) Sync(req *types.AdminSyncNodeStatusRequest) (*types.Ad
 			continue
 		}
 
-		key := controlKey{endpoint: endpoint, token: resolveNodeControlToken(node)}
+		key := controlKey{
+			endpoint: endpoint,
+			token:    resolveNodeControlToken(node),
+			timeout:  resolveKernelHTTPTimeout(node),
+		}
 		controlGroups[key] = append(controlGroups[key], nodeID)
 	}
 
@@ -85,7 +90,7 @@ func (l *SyncStatusLogic) Sync(req *types.AdminSyncNodeStatusRequest) (*types.Ad
 		client, err := kernel.NewControlClient(kernel.HTTPOptions{
 			BaseURL: key.endpoint,
 			Token:   key.token,
-			Timeout: l.svcCtx.Config.Kernel.HTTP.Timeout,
+			Timeout: key.timeout,
 		})
 		if err != nil {
 			l.markNodeGroup(nodeGroup, "offline", err.Error(), results, indexByID)

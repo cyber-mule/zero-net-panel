@@ -480,17 +480,6 @@ Auth:
 Admin:
   RoutePrefix: admin  # 可自定义管理端路由前缀
 
-Kernel:
-  DefaultProtocol: http
-  StatusPollInterval: 30s
-  StatusPollBackoff:
-    Enabled: true
-    MaxInterval: 5m
-    Multiplier: 2
-    Jitter: 0.2
-  HTTP:
-    Timeout: 5s
-
 CORS:
   Enabled: true
   AllowOrigins:

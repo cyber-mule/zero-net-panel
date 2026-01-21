@@ -67,6 +67,14 @@ type NodeSummary {
 	description         string
 	access_address      string
 	control_endpoint    string
+	kernel_default_protocol string
+	kernel_http_timeout_seconds int
+	kernel_status_poll_interval_seconds int
+	kernel_status_poll_backoff_enabled bool
+	kernel_status_poll_backoff_max_interval_seconds int
+	kernel_status_poll_backoff_multiplier float64
+	kernel_status_poll_backoff_jitter float64
+	kernel_offline_probe_max_interval_seconds int
 	status_sync_enabled bool
 	last_synced_at      int64
 	updated_at          int64
@@ -92,6 +100,14 @@ type AdminCreateNodeRequest {
 	ak                  string   `form:"ak,optional" json:"ak,optional"`
 	sk                  string   `form:"sk,optional" json:"sk,optional"`
 	control_token       string   `form:"control_token,optional" json:"control_token,optional"`
+	kernel_default_protocol string `form:"kernel_default_protocol,optional" json:"kernel_default_protocol,optional"`
+	kernel_http_timeout_seconds int `form:"kernel_http_timeout_seconds,optional" json:"kernel_http_timeout_seconds,optional"`
+	kernel_status_poll_interval_seconds int `form:"kernel_status_poll_interval_seconds,optional" json:"kernel_status_poll_interval_seconds,optional"`
+	kernel_status_poll_backoff_enabled bool `form:"kernel_status_poll_backoff_enabled,optional" json:"kernel_status_poll_backoff_enabled,optional"`
+	kernel_status_poll_backoff_max_interval_seconds int `form:"kernel_status_poll_backoff_max_interval_seconds,optional" json:"kernel_status_poll_backoff_max_interval_seconds,optional"`
+	kernel_status_poll_backoff_multiplier float64 `form:"kernel_status_poll_backoff_multiplier,optional" json:"kernel_status_poll_backoff_multiplier,optional"`
+	kernel_status_poll_backoff_jitter float64 `form:"kernel_status_poll_backoff_jitter,optional" json:"kernel_status_poll_backoff_jitter,optional"`
+	kernel_offline_probe_max_interval_seconds int `form:"kernel_offline_probe_max_interval_seconds,optional" json:"kernel_offline_probe_max_interval_seconds,optional"`
 	status_sync_enabled bool     `form:"status_sync_enabled,optional" json:"status_sync_enabled,optional"`
 }
 
@@ -112,6 +128,14 @@ type AdminUpdateNodeRequest {
 	ak                  string   `form:"ak,optional" json:"ak,optional"`
 	sk                  string   `form:"sk,optional" json:"sk,optional"`
 	control_token       string   `form:"control_token,optional" json:"control_token,optional"`
+	kernel_default_protocol string `form:"kernel_default_protocol,optional" json:"kernel_default_protocol,optional"`
+	kernel_http_timeout_seconds int `form:"kernel_http_timeout_seconds,optional" json:"kernel_http_timeout_seconds,optional"`
+	kernel_status_poll_interval_seconds int `form:"kernel_status_poll_interval_seconds,optional" json:"kernel_status_poll_interval_seconds,optional"`
+	kernel_status_poll_backoff_enabled bool `form:"kernel_status_poll_backoff_enabled,optional" json:"kernel_status_poll_backoff_enabled,optional"`
+	kernel_status_poll_backoff_max_interval_seconds int `form:"kernel_status_poll_backoff_max_interval_seconds,optional" json:"kernel_status_poll_backoff_max_interval_seconds,optional"`
+	kernel_status_poll_backoff_multiplier float64 `form:"kernel_status_poll_backoff_multiplier,optional" json:"kernel_status_poll_backoff_multiplier,optional"`
+	kernel_status_poll_backoff_jitter float64 `form:"kernel_status_poll_backoff_jitter,optional" json:"kernel_status_poll_backoff_jitter,optional"`
+	kernel_offline_probe_max_interval_seconds int `form:"kernel_offline_probe_max_interval_seconds,optional" json:"kernel_offline_probe_max_interval_seconds,optional"`
 	status_sync_enabled bool     `form:"status_sync_enabled,optional" json:"status_sync_enabled,optional"`
 }
 

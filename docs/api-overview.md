@@ -101,7 +101,7 @@
 
 ### 节点状态同步流程
 
-1. 定时任务按 `Kernel.StatusPollInterval` 轮询 `/v1/status`，成功则更新节点 `status=online`，失败更新为 `offline`。
+1. 定时任务按内置轮询间隔访问 `/v1/status`，节点是否参与由 `status_sync_enabled` 控制，成功更新 `status=online`，失败更新为 `offline`。
 2. 需要即时更新时，可调用 `POST /api/v1/{admin}/nodes/status/sync` 并传入 `node_ids`。
 3. 响应中返回每个节点的 `status` 与 `message`，便于定位控制面鉴权或地址问题。
 

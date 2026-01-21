@@ -155,7 +155,7 @@ Content-Type: application/json
 
 **节点状态同步**
 
-- 状态自动同步：服务按 `Kernel.StatusPollInterval` 定时拉取内核 `/v1/status`，更新节点 `online/offline`。
+- 状态自动同步：服务按内置轮询间隔拉取内核 `/v1/status`，节点是否参与由 `status_sync_enabled` 控制，更新 `online/offline`。
 
 - `POST /api/v1/{adminPrefix}/nodes/status/sync`
 - 请求体：

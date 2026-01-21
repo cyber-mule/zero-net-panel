@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/zero-net-panel/zero-net-panel/internal/nodecfg"
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
 )
@@ -73,4 +74,12 @@ func extractHostPort(address string) (string, int) {
 
 func normalizeBindingProtocol(binding repository.ProtocolBinding) string {
 	return strings.ToLower(strings.TrimSpace(binding.Protocol))
+}
+
+func resolveKernelHTTPTimeout(node repository.Node) time.Duration {
+	timeoutSeconds := node.KernelHTTPTimeoutSeconds
+	if timeoutSeconds <= 0 {
+		timeoutSeconds = nodecfg.DefaultKernelHTTPTimeoutSeconds
+	}
+	return time.Duration(timeoutSeconds) * time.Second
 }

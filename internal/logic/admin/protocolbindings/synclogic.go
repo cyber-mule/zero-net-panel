@@ -210,7 +210,7 @@ func (l *SyncLogic) ensureNodeEventRegistration(binding repository.ProtocolBindi
 	control, err := kernel.NewControlClient(kernel.HTTPOptions{
 		BaseURL: endpoint,
 		Token:   token,
-		Timeout: l.svcCtx.Config.Kernel.HTTP.Timeout,
+		Timeout: resolveKernelHTTPTimeout(binding.Node),
 	})
 	if err != nil {
 		return err
@@ -270,7 +270,7 @@ func (l *SyncLogic) ensureServiceEventRegistration(binding repository.ProtocolBi
 	control, err := kernel.NewControlClient(kernel.HTTPOptions{
 		BaseURL: endpoint,
 		Token:   token,
-		Timeout: l.svcCtx.Config.Kernel.HTTP.Timeout,
+		Timeout: resolveKernelHTTPTimeout(binding.Node),
 	})
 	if err != nil {
 		return err
@@ -296,9 +296,8 @@ func (l *SyncLogic) resolveNodeEventCallbackURL() (string, error) {
 		return l.nodeEventCallback, nil
 	}
 	defaults := repository.SiteSettingDefaults{
-		Name:                                 l.svcCtx.Config.Site.Name,
-		LogoURL:                              l.svcCtx.Config.Site.LogoURL,
-		KernelOfflineProbeMaxIntervalSeconds: int(l.svcCtx.Config.Kernel.OfflineProbeMaxInterval / time.Second),
+		Name:    l.svcCtx.Config.Site.Name,
+		LogoURL: l.svcCtx.Config.Site.LogoURL,
 	}
 	setting, err := l.svcCtx.Repositories.Site.GetSiteSetting(l.ctx, defaults)
 	if err != nil {
@@ -325,9 +324,8 @@ func (l *SyncLogic) resolveServiceEventCallbackURL() (string, error) {
 		return l.serviceEventCallback, nil
 	}
 	defaults := repository.SiteSettingDefaults{
-		Name:                                 l.svcCtx.Config.Site.Name,
-		LogoURL:                              l.svcCtx.Config.Site.LogoURL,
-		KernelOfflineProbeMaxIntervalSeconds: int(l.svcCtx.Config.Kernel.OfflineProbeMaxInterval / time.Second),
+		Name:    l.svcCtx.Config.Site.Name,
+		LogoURL: l.svcCtx.Config.Site.LogoURL,
 	}
 	setting, err := l.svcCtx.Repositories.Site.GetSiteSetting(l.ctx, defaults)
 	if err != nil {
@@ -442,7 +440,7 @@ func (l *SyncLogic) resolveControlClient(binding repository.ProtocolBinding) (*k
 	opts := kernel.HTTPOptions{
 		BaseURL: endpoint,
 		Token:   token,
-		Timeout: l.svcCtx.Config.Kernel.HTTP.Timeout,
+		Timeout: resolveKernelHTTPTimeout(binding.Node),
 	}
 	return kernel.NewControlClient(opts)
 }
