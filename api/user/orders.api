@@ -43,9 +43,9 @@ type UserCreateOrderRequest {
 type UserOrderListRequest {
 	page           int
 	per_page       int
-	status         string
+	status         int
 	payment_method string
-	payment_status string
+	payment_status int
 	number         string
 	sort           string
 	direction      string
@@ -72,8 +72,8 @@ type UserOrderPaymentStatusRequest {
 
 type UserOrderPaymentStatusResponse {
 	order_id                uint64
-	status                  string
-	payment_status          string
+	status                  int
+	payment_status          int
 	payment_method          string
 	payment_intent_id       *string
 	payment_reference       *string

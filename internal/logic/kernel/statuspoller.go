@@ -12,6 +12,7 @@ import (
 
 	"github.com/zero-net-panel/zero-net-panel/internal/nodecfg"
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/pkg/kernel"
 )
@@ -25,7 +26,7 @@ type nodePollState struct {
 	next       time.Time
 	backoff    *statusBackoff
 	cfgKey     string
-	lastStatus string
+	lastStatus int
 }
 
 // RunStatusPoller schedules per-node kernel status polling.
@@ -105,7 +106,7 @@ func (p *statusPoller) syncStates(nodes []repository.Node) {
 		active[node.ID] = struct{}{}
 
 		cfgKey := pollConfigKey(node)
-		status := normalizeStatus(node.Status)
+		statusCode := node.Status
 		interval := time.Duration(node.KernelStatusPollIntervalSeconds) * time.Second
 		backoffCfg := nodecfg.KernelBackoffConfig{
 			Enabled:            node.KernelStatusPollBackoffEnabled,
@@ -119,7 +120,7 @@ func (p *statusPoller) syncStates(nodes []repository.Node) {
 			p.states[node.ID] = &nodePollState{
 				backoff:    newStatusBackoff(interval, backoffCfg),
 				cfgKey:     cfgKey,
-				lastStatus: status,
+				lastStatus: statusCode,
 			}
 			continue
 		}
@@ -128,7 +129,7 @@ func (p *statusPoller) syncStates(nodes []repository.Node) {
 			state.cfgKey = cfgKey
 			state.next = time.Time{}
 		}
-		state.lastStatus = status
+		state.lastStatus = statusCode
 	}
 
 	for nodeID := range p.states {
@@ -168,11 +169,11 @@ func (p *statusPoller) pollDue(ctx context.Context) {
 	}
 }
 
-func pollNodeStatus(ctx context.Context, svcCtx *svc.ServiceContext, node repository.Node, previousStatus string) (string, error) {
+func pollNodeStatus(ctx context.Context, svcCtx *svc.ServiceContext, node repository.Node, previousStatus int) (int, error) {
 	endpoint := strings.TrimSpace(node.ControlEndpoint)
 	if endpoint == "" {
-		markNodeStatus(ctx, svcCtx, []uint64{node.ID}, "offline")
-		return "offline", fmt.Errorf("node control endpoint not configured")
+		markNodeStatus(ctx, svcCtx, []uint64{node.ID}, status.NodeStatusOffline)
+		return status.NodeStatusOffline, fmt.Errorf("node control endpoint not configured")
 	}
 	token := resolveControlToken(node)
 	client, err := kernel.NewControlClient(kernel.HTTPOptions{
@@ -181,8 +182,8 @@ func pollNodeStatus(ctx context.Context, svcCtx *svc.ServiceContext, node reposi
 		Timeout: resolveKernelHTTPTimeout(node),
 	})
 	if err != nil {
-		markNodeStatus(ctx, svcCtx, []uint64{node.ID}, "offline")
-		return "offline", err
+		markNodeStatus(ctx, svcCtx, []uint64{node.ID}, status.NodeStatusOffline)
+		return status.NodeStatusOffline, err
 	}
 
 	_, err = client.GetStatus(ctx)
@@ -200,23 +201,22 @@ func pollNodeStatus(ctx context.Context, svcCtx *svc.ServiceContext, node reposi
 				[]uint64{node.ID},
 			)
 		}
-		markNodeStatus(ctx, svcCtx, []uint64{node.ID}, "offline")
-		return "offline", err
+		markNodeStatus(ctx, svcCtx, []uint64{node.ID}, status.NodeStatusOffline)
+		return status.NodeStatusOffline, err
 	}
 
-	markNodeStatus(ctx, svcCtx, []uint64{node.ID}, "online")
-	prev := normalizeStatus(previousStatus)
-	if prev != "online" && prev != "disabled" {
+	markNodeStatus(ctx, svcCtx, []uint64{node.ID}, status.NodeStatusOnline)
+	if previousStatus != status.NodeStatusOnline && previousStatus != status.NodeStatusDisabled {
 		triggerKernelRecovery(ctx, svcCtx, []uint64{node.ID})
 	}
-	return "online", nil
+	return status.NodeStatusOnline, nil
 }
 
 func isPollEligible(node repository.Node) bool {
 	if !node.StatusSyncEnabled {
 		return false
 	}
-	if strings.EqualFold(node.Status, "disabled") {
+	if node.Status == status.NodeStatusDisabled {
 		return false
 	}
 	if strings.TrimSpace(node.ControlEndpoint) == "" {
@@ -225,9 +225,6 @@ func isPollEligible(node repository.Node) bool {
 	return node.KernelStatusPollIntervalSeconds > 0
 }
 
-func normalizeStatus(status string) string {
-	return strings.ToLower(strings.TrimSpace(status))
-}
 
 func pollConfigKey(node repository.Node) string {
 	endpoint := strings.TrimSpace(node.ControlEndpoint)

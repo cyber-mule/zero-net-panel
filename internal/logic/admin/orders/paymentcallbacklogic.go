@@ -37,8 +37,8 @@ func (l *PaymentCallbackLogic) Process(req *types.AdminPaymentCallbackRequest) (
 		return nil, repository.ErrInvalidArgument
 	}
 
-	status := strings.TrimSpace(strings.ToLower(req.Status))
-	if status == "" {
+	status := req.Status
+	if status == 0 {
 		return nil, repository.ErrInvalidArgument
 	}
 	if status != repository.OrderPaymentStatusSucceeded && status != repository.OrderPaymentStatusFailed {
@@ -67,7 +67,7 @@ func (l *PaymentCallbackLogic) Process(req *types.AdminPaymentCallbackRequest) (
 	if !found {
 		return nil, repository.ErrNotFound
 	}
-	if strings.EqualFold(existingPayment.Status, status) {
+	if existingPayment.Status == status {
 		if status == repository.OrderPaymentStatusSucceeded {
 			if err := l.svcCtx.Repositories.Coupon.UpdateRedemptionStatusByOrder(l.ctx, order.ID, repository.CouponRedemptionApplied); err != nil {
 				return nil, err
@@ -79,7 +79,7 @@ func (l *PaymentCallbackLogic) Process(req *types.AdminPaymentCallbackRequest) (
 		}
 
 		provisionedOrder := order
-		if status == repository.OrderPaymentStatusSucceeded && strings.EqualFold(order.Status, repository.OrderStatusPaid) {
+		if status == repository.OrderPaymentStatusSucceeded && order.Status == repository.OrderStatusPaid {
 			if err := l.svcCtx.Repositories.Transaction(l.ctx, func(txRepos *repository.Repositories) error {
 				result, err := subscriptionutil.EnsureOrderSubscription(l.ctx, txRepos, order, items)
 				if err != nil {
@@ -113,7 +113,7 @@ func (l *PaymentCallbackLogic) Process(req *types.AdminPaymentCallbackRequest) (
 		}
 		return &resp, nil
 	}
-	if strings.EqualFold(existingPayment.Status, repository.OrderPaymentStatusSucceeded) && status == repository.OrderPaymentStatusFailed {
+	if existingPayment.Status == repository.OrderPaymentStatusSucceeded && status == repository.OrderPaymentStatusFailed {
 		return nil, repository.ErrInvalidState
 	}
 
@@ -243,7 +243,7 @@ func (l *PaymentCallbackLogic) Process(req *types.AdminPaymentCallbackRequest) (
 		},
 	}
 
-	l.Infof("audit: payment callback order=%d payment=%d status=%s reference=%s", updatedOrder.ID, updatedPayment.ID, status, strings.TrimSpace(req.Reference))
+	l.Infof("audit: payment callback order=%d payment=%d status=%d reference=%s", updatedOrder.ID, updatedPayment.ID, status, strings.TrimSpace(req.Reference))
 
 	return &resp, nil
 }

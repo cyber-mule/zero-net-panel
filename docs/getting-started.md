@@ -124,8 +124,8 @@ curl -X POST http://127.0.0.1:8888/api/v1/user/orders \
     "order": {
       "id": 120,
       "number": "ORD-20240630-001",
-      "status": "paid",
-      "payment_status": "succeeded",
+      "status": 2,
+      "payment_status": 2,
       "total_cents": 2990,
       "currency": "CNY",
       "items": [

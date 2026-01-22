@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
 )
 
@@ -55,4 +56,17 @@ func toUnixOrZero(ts time.Time) int64 {
 		return 0
 	}
 	return ts.Unix()
+}
+
+func normalizeEntryStatus(statusCode int) (int, error) {
+	if statusCode == 0 {
+		return 0, repository.ErrInvalidArgument
+	}
+	switch statusCode {
+	case status.ProtocolEntryStatusActive,
+		status.ProtocolEntryStatusDisabled:
+		return statusCode, nil
+	default:
+		return 0, repository.ErrInvalidArgument
+	}
 }

@@ -7,6 +7,7 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
 )
@@ -54,9 +55,14 @@ func (l *CreateLogic) Create(req *types.AdminCreatePlanBillingOptionRequest) (*t
 		currency = "CNY"
 	}
 
-	status := strings.TrimSpace(req.Status)
-	if status == "" {
-		status = "draft"
+	statusCode := req.Status
+	if statusCode == 0 {
+		statusCode = status.PlanBillingOptionStatusDraft
+	}
+	switch statusCode {
+	case status.PlanBillingOptionStatusDraft, status.PlanBillingOptionStatusActive, status.PlanBillingOptionStatusArchived:
+	default:
+		return nil, repository.ErrInvalidArgument
 	}
 
 	name := strings.TrimSpace(req.Name)
@@ -72,7 +78,7 @@ func (l *CreateLogic) Create(req *types.AdminCreatePlanBillingOptionRequest) (*t
 		PriceCents:    req.PriceCents,
 		Currency:      strings.ToUpper(currency),
 		SortOrder:     req.SortOrder,
-		Status:        status,
+		Status:        statusCode,
 		Visible:       req.Visible,
 	}
 

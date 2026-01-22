@@ -73,7 +73,7 @@ type UserRotateCredentialResponse struct {
 
 type CredentialSummary struct {
 	Version int 
-	Status string 
+	Status int 
 	Issued_at int64 
 	Deprecated_at *int64 
 	Revoked_at *int64 
@@ -116,7 +116,7 @@ type UserProfile struct {
 	Id uint64 
 	Email string 
 	Display_name string 
-	Status string 
+	Status int 
 	Email_verified_at *int64 
 	Created_at int64 
 	Updated_at int64 
@@ -216,7 +216,7 @@ type UserProfile struct {
 	Id uint64 
 	Email string 
 	Display_name string 
-	Status string 
+	Status int 
 	Email_verified_at *int64 
 	Created_at int64 
 	Updated_at int64 
@@ -256,7 +256,7 @@ type UserProfile struct {
 	Id uint64 
 	Email string 
 	Display_name string 
-	Status string 
+	Status int 
 	Email_verified_at *int64 
 	Created_at int64 
 	Updated_at int64 

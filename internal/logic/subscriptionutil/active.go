@@ -1,15 +1,15 @@
 package subscriptionutil
 
 import (
-	"strings"
 	"time"
 
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 )
 
 // IsSubscriptionEffective reports whether a subscription is active and not expired.
 func IsSubscriptionEffective(sub repository.Subscription, now time.Time) bool {
-	if !strings.EqualFold(strings.TrimSpace(sub.Status), "active") {
+	if sub.Status != status.SubscriptionStatusActive {
 		return false
 	}
 	if sub.ExpiresAt.IsZero() {

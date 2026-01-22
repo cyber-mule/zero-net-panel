@@ -76,7 +76,7 @@ func (l *ReconcileLogic) Reconcile(req *types.AdminReconcilePaymentRequest) (*ty
 		return nil, err
 	}
 
-	if strings.EqualFold(payment.Status, repository.OrderPaymentStatusSucceeded) && result.Status == repository.OrderPaymentStatusFailed {
+	if payment.Status == repository.OrderPaymentStatusSucceeded && result.Status == repository.OrderPaymentStatusFailed {
 		return nil, repository.ErrInvalidState
 	}
 
@@ -103,7 +103,7 @@ func (l *ReconcileLogic) Reconcile(req *types.AdminReconcilePaymentRequest) (*ty
 		if result.Status != repository.OrderPaymentStatusPending {
 			paymentStatus = result.Status
 		}
-		if strings.EqualFold(payment.Status, repository.OrderPaymentStatusSucceeded) && paymentStatus == repository.OrderPaymentStatusPending {
+		if payment.Status == repository.OrderPaymentStatusSucceeded && paymentStatus == repository.OrderPaymentStatusPending {
 			paymentStatus = payment.Status
 		}
 
@@ -225,7 +225,7 @@ func (l *ReconcileLogic) Reconcile(req *types.AdminReconcilePaymentRequest) (*ty
 		},
 	}
 
-	l.Infof("audit: payment reconcile order=%d payment=%d status=%s actor=%s", updatedOrder.ID, updatedPayment.ID, updatedPayment.Status, actor.Email)
+	l.Infof("audit: payment reconcile order=%d payment=%d status=%d actor=%s", updatedOrder.ID, updatedPayment.ID, updatedPayment.Status, actor.Email)
 
 	return &resp, nil
 }

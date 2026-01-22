@@ -86,10 +86,19 @@ func (l *UpdateLogic) Update(req *types.AdminUpdateCouponRequest) (*types.Coupon
 		return nil, repository.ErrInvalidArgument
 	}
 
+	var statusPtr *int
+	if req.Status != nil {
+		normalized, err := normalizeStatus(*req.Status)
+		if err != nil {
+			return nil, err
+		}
+		statusPtr = &normalized
+	}
+
 	input := repository.UpdateCouponInput{
 		Name:                  req.Name,
 		Description:           req.Description,
-		Status:                req.Status,
+		Status:                statusPtr,
 		DiscountType:          req.DiscountType,
 		DiscountValue:         req.DiscountValue,
 		Currency:              req.Currency,

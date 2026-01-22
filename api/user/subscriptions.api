@@ -31,7 +31,7 @@ type UserListSubscriptionsRequest {
 	sort      string `form:"sort,optional" json:"sort,optional"`
 	direction string `form:"direction,optional" json:"direction,optional"`
 	q         string `form:"q,optional" json:"q,optional"`
-	status    string `form:"status,optional" json:"status,optional"`
+	status    int    `form:"status,optional" json:"status,optional"`
 }
 
 type UserSubscriptionSummary {
@@ -39,7 +39,7 @@ type UserSubscriptionSummary {
 	name                   string
 	plan_name              string
 	plan_id                uint64
-	status                 string
+	status                 int
 	template_id            uint64
 	available_template_ids []uint64
 	expires_at             int64

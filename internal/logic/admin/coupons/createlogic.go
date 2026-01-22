@@ -30,9 +30,13 @@ func NewCreateLogic(ctx context.Context, svcCtx *svc.ServiceContext) *CreateLogi
 
 // Create creates a new coupon.
 func (l *CreateLogic) Create(req *types.AdminCreateCouponRequest) (*types.CouponSummary, error) {
-	status := normalizeStatus(req.Status)
-	if status == "" {
-		status = repository.CouponStatusActive
+	statusCode := repository.CouponStatusActive
+	if req.Status != 0 {
+		normalized, err := normalizeStatus(req.Status)
+		if err != nil {
+			return nil, err
+		}
+		statusCode = normalized
 	}
 
 	currency := strings.ToUpper(strings.TrimSpace(req.Currency))
@@ -81,7 +85,7 @@ func (l *CreateLogic) Create(req *types.AdminCreateCouponRequest) (*types.Coupon
 		Code:                  req.Code,
 		Name:                  req.Name,
 		Description:           strings.TrimSpace(req.Description),
-		Status:                status,
+		Status:                statusCode,
 		DiscountType:          req.DiscountType,
 		DiscountValue:         req.DiscountValue,
 		Currency:              currency,

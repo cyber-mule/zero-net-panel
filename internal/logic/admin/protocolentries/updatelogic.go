@@ -62,8 +62,11 @@ func (l *UpdateLogic) Update(req *types.AdminUpdateProtocolEntryRequest) (*types
 	}
 
 	if req.Status != nil {
-		status := strings.TrimSpace(*req.Status)
-		input.Status = &status
+		statusCode, err := normalizeEntryStatus(*req.Status)
+		if err != nil {
+			return nil, err
+		}
+		input.Status = &statusCode
 	}
 	if req.EntryAddress != nil {
 		entryAddress := strings.TrimSpace(*req.EntryAddress)

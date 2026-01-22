@@ -7,6 +7,7 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
 )
@@ -41,9 +42,13 @@ func (l *CreateLogic) Create(req *types.AdminCreatePlanRequest) (*types.PlanSumm
 	if currency == "" {
 		currency = "CNY"
 	}
-	status := strings.TrimSpace(req.Status)
-	if status == "" {
-		status = "draft"
+	statusCode := status.PlanStatusDraft
+	if req.Status != 0 {
+		normalized, err := normalizePlanStatus(req.Status)
+		if err != nil {
+			return nil, err
+		}
+		statusCode = normalized
 	}
 
 	plan := repository.Plan{
@@ -59,7 +64,7 @@ func (l *CreateLogic) Create(req *types.AdminCreatePlanRequest) (*types.PlanSumm
 		TrafficMultipliers: normalizeTrafficMultipliers(req.TrafficMultipliers),
 		DevicesLimit:       req.DevicesLimit,
 		SortOrder:          req.SortOrder,
-		Status:             status,
+		Status:             statusCode,
 		Visible:            req.Visible,
 	}
 

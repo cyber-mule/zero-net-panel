@@ -10,6 +10,7 @@ import (
 
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 	"github.com/zero-net-panel/zero-net-panel/internal/security"
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 	"github.com/zero-net-panel/zero-net-panel/pkg/auth"
 )
 
@@ -52,7 +53,7 @@ func (m *AuthMiddleware) RequireRoles(roles ...string) func(http.HandlerFunc) ht
 				return
 			}
 
-			if !strings.EqualFold(user.Status, "active") {
+			if user.Status != status.UserStatusActive {
 				writeAuthError(w, r, http.StatusForbidden, "user is disabled")
 				return
 			}

@@ -53,7 +53,7 @@ func (l *MarkPaidLogic) MarkPaid(req *types.AdminMarkOrderPaidRequest) (*types.A
 		return nil, err
 	}
 
-	if strings.EqualFold(order.Status, repository.OrderStatusPaid) {
+	if order.Status == repository.OrderStatusPaid {
 		if err := l.svcCtx.Repositories.Coupon.UpdateRedemptionStatusByOrder(l.ctx, order.ID, repository.CouponRedemptionApplied); err != nil {
 			return nil, err
 		}
@@ -70,7 +70,7 @@ func (l *MarkPaidLogic) MarkPaid(req *types.AdminMarkOrderPaidRequest) (*types.A
 		}
 		return l.buildResponse(provisionedOrder, items, paymentsMap[order.ID])
 	}
-	if !strings.EqualFold(order.Status, repository.OrderStatusPendingPayment) {
+	if order.Status != repository.OrderStatusPendingPayment {
 		return nil, repository.ErrInvalidArgument
 	}
 

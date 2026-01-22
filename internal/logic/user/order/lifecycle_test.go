@@ -13,6 +13,7 @@ import (
 	adminorders "github.com/zero-net-panel/zero-net-panel/internal/logic/admin/orders"
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 	"github.com/zero-net-panel/zero-net-panel/internal/security"
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/internal/testutil"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
@@ -86,7 +87,7 @@ func TestOrderLifecycle(t *testing.T) {
 		Email:       "user@example.com",
 		DisplayName: "Test User",
 		Roles:       []string{"user"},
-		Status:      "active",
+		Status:      status.UserStatusActive,
 		CreatedAt:   now,
 		UpdatedAt:   now,
 	}
@@ -98,7 +99,7 @@ func TestOrderLifecycle(t *testing.T) {
 		Email:       "admin@example.com",
 		DisplayName: "Admin",
 		Roles:       []string{"admin"},
-		Status:      "active",
+		Status:      status.UserStatusActive,
 		CreatedAt:   now,
 		UpdatedAt:   now,
 	}
@@ -117,7 +118,7 @@ func TestOrderLifecycle(t *testing.T) {
 		DurationDays:      30,
 		TrafficLimitBytes: 1024,
 		DevicesLimit:      2,
-		Status:            "active",
+		Status:            status.PlanStatusActive,
 		Visible:           true,
 		CreatedAt:         now,
 		UpdatedAt:         now,
@@ -157,7 +158,7 @@ func TestOrderLifecycle(t *testing.T) {
 		t.Fatalf("cancel order: %v", err)
 	}
 	if cancelResp.Order.Status != repository.OrderStatusCancelled {
-		t.Fatalf("expected order status cancelled, got %s", cancelResp.Order.Status)
+		t.Fatalf("expected order status cancelled, got %d", cancelResp.Order.Status)
 	}
 	if cancelResp.Order.Metadata["cancel_reason"] != "no longer needed" {
 		t.Fatalf("expected cancel reason metadata, got %v", cancelResp.Order.Metadata["cancel_reason"])
@@ -221,7 +222,7 @@ func TestOrderLifecycle(t *testing.T) {
 		t.Fatalf("mark order paid: %v", err)
 	}
 	if markResp.Order.Status != repository.OrderStatusPaid {
-		t.Fatalf("expected paid status, got %s", markResp.Order.Status)
+		t.Fatalf("expected paid status, got %d", markResp.Order.Status)
 	}
 	if markResp.Order.PaymentMethod != repository.PaymentMethodBalance {
 		t.Fatalf("expected payment method balance, got %s", markResp.Order.PaymentMethod)
@@ -258,7 +259,7 @@ func TestOrderLifecycle(t *testing.T) {
 		t.Fatalf("partial refund: %v", err)
 	}
 	if refundResp1.Order.Status != repository.OrderStatusPartiallyRefunded {
-		t.Fatalf("expected partially_refunded status after partial refund, got %s", refundResp1.Order.Status)
+		t.Fatalf("expected partially_refunded status after partial refund, got %d", refundResp1.Order.Status)
 	}
 	if refundResp1.Order.RefundedCents != half {
 		t.Fatalf("expected refunded cents %d, got %d", half, refundResp1.Order.RefundedCents)
@@ -283,7 +284,7 @@ func TestOrderLifecycle(t *testing.T) {
 		t.Fatalf("final refund: %v", err)
 	}
 	if refundResp2.Order.Status != repository.OrderStatusRefunded {
-		t.Fatalf("expected refunded status after full refund, got %s", refundResp2.Order.Status)
+		t.Fatalf("expected refunded status after full refund, got %d", refundResp2.Order.Status)
 	}
 	if refundResp2.Order.RefundedCents != payOrder.TotalCents {
 		t.Fatalf("expected refunded cents %d, got %d", payOrder.TotalCents, refundResp2.Order.RefundedCents)
@@ -335,6 +336,6 @@ func TestOrderLifecycle(t *testing.T) {
 		t.Fatalf("admin cancel: %v", err)
 	}
 	if cancelRespAdmin.Order.Status != repository.OrderStatusCancelled {
-		t.Fatalf("expected admin cancelled status, got %s", cancelRespAdmin.Order.Status)
+		t.Fatalf("expected admin cancelled status, got %d", cancelRespAdmin.Order.Status)
 	}
 }

@@ -45,8 +45,8 @@ type OrderDetail {
 	id                      uint64
 	number                  string
 	user_id                 uint64
-	status                  string
-	payment_status          string
+	status                  int
+	payment_status          int
 	payment_intent_id       *string
 	payment_reference       *string
 	payment_failure_code    *string
@@ -85,7 +85,7 @@ type OrderPayment {
 	method          string
 	intent_id       string
 	reference       string
-	status          string
+	status          int
 	amount_cents    int64
 	currency        string
 	failure_code    string
@@ -104,7 +104,7 @@ type PlanBillingOptionSummary {
 	price_cents    int64
 	currency       string
 	sort_order     int
-	status         string
+	status         int
 	visible        bool
 	created_at     int64
 	updated_at     int64
@@ -112,7 +112,7 @@ type PlanBillingOptionSummary {
 
 type CredentialSummary {
 	version       int
-	status        string
+	status        int
 	issued_at     int64
 	deprecated_at *int64
 	revoked_at    *int64

@@ -11,6 +11,7 @@ import (
 	"github.com/zero-net-panel/zero-net-panel/internal/nodecfg"
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 	"github.com/zero-net-panel/zero-net-panel/internal/security"
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
 )
@@ -62,13 +63,13 @@ func (l *CreateLogic) Create(req *types.AdminCreateNodeRequest) (*types.AdminNod
 		statusSyncEnabled = *req.StatusSyncEnabled
 	}
 
-	status := "offline"
-	if strings.TrimSpace(req.Status) != "" {
+	statusCode := status.NodeStatusOffline
+	if req.Status != 0 {
 		normalized, err := normalizeNodeStatus(req.Status)
 		if err != nil {
 			return nil, err
 		}
-		status = normalized
+		statusCode = normalized
 	}
 
 	tags := normalizeTags(req.Tags)
@@ -143,7 +144,7 @@ func (l *CreateLogic) Create(req *types.AdminCreateNodeRequest) (*types.AdminNod
 		Region:                          strings.TrimSpace(req.Region),
 		Country:                         strings.TrimSpace(req.Country),
 		ISP:                             strings.TrimSpace(req.ISP),
-		Status:                          status,
+		Status:                          statusCode,
 		Tags:                            tags,
 		CapacityMbps:                    req.CapacityMbps,
 		Description:                     strings.TrimSpace(req.Description),

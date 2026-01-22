@@ -15,7 +15,7 @@
 type AdminListAnnouncementsRequest struct {
 	Page int `form:"page,optional" json:"page,optional"`
 	Per_page int `form:"per_page,optional" json:"per_page,optional"`
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 	Category string `form:"category,optional" json:"category,optional"`
 	Audience string `form:"audience,optional" json:"audience,optional"`
 	Q string `form:"q,optional" json:"q,optional"`
@@ -80,7 +80,7 @@ type AnnouncementSummary struct {
 	Title string 
 	Content string 
 	Category string 
-	Status string 
+	Status int 
 	Audience string 
 	Is_pinned bool 
 	Priority int 
@@ -127,7 +127,7 @@ type AnnouncementSummary struct {
 	Title string 
 	Content string 
 	Category string 
-	Status string 
+	Status int 
 	Audience string 
 	Is_pinned bool 
 	Priority int 

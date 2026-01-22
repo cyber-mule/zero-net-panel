@@ -15,6 +15,7 @@ import (
 	"github.com/zero-net-panel/zero-net-panel/internal/bootstrap/migrations"
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 	"github.com/zero-net-panel/zero-net-panel/internal/security"
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/internal/testutil"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
@@ -60,7 +61,7 @@ func TestAdminRefundOrder_FullRefundCancelsOrder(t *testing.T) {
 		Email:       "admin@test.local",
 		DisplayName: "Admin",
 		Roles:       []string{"admin"},
-		Status:      "active",
+		Status:      status.UserStatusActive,
 		CreatedAt:   now,
 		UpdatedAt:   now,
 	}
@@ -70,7 +71,7 @@ func TestAdminRefundOrder_FullRefundCancelsOrder(t *testing.T) {
 		Email:       "buyer@test.local",
 		DisplayName: "Buyer",
 		Roles:       []string{"user"},
-		Status:      "active",
+		Status:      status.UserStatusActive,
 		CreatedAt:   now,
 		UpdatedAt:   now,
 	}
@@ -153,7 +154,7 @@ func TestAdminRefundOrder_ExternalRefund(t *testing.T) {
 		Email:       "admin-external@test.local",
 		DisplayName: "Admin",
 		Roles:       []string{"admin"},
-		Status:      "active",
+		Status:      status.UserStatusActive,
 		CreatedAt:   now,
 		UpdatedAt:   now,
 	}
@@ -163,7 +164,7 @@ func TestAdminRefundOrder_ExternalRefund(t *testing.T) {
 		Email:       "buyer-external@test.local",
 		DisplayName: "Buyer",
 		Roles:       []string{"user"},
-		Status:      "active",
+		Status:      status.UserStatusActive,
 		CreatedAt:   now,
 		UpdatedAt:   now,
 	}

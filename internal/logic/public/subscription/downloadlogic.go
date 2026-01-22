@@ -14,6 +14,7 @@ import (
 	"github.com/zero-net-panel/zero-net-panel/internal/logic/credentialutil"
 	subscriptionutil "github.com/zero-net-panel/zero-net-panel/internal/logic/subscriptionutil"
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	subtemplate "github.com/zero-net-panel/zero-net-panel/pkg/subscription/template"
 )
@@ -238,7 +239,7 @@ func detectClientType(userAgent string) string {
 }
 
 func isSubscriptionActive(sub repository.Subscription, now time.Time) bool {
-	if !strings.EqualFold(sub.Status, "active") {
+	if sub.Status != status.SubscriptionStatusActive {
 		return false
 	}
 	if sub.ExpiresAt.IsZero() {
@@ -303,10 +304,10 @@ func containsUint64(list []uint64, target uint64) bool {
 }
 
 func entryVisible(entry repository.ProtocolEntry) bool {
-	if strings.ToLower(entry.Status) != "active" {
+	if entry.Status != status.ProtocolEntryStatusActive {
 		return false
 	}
-	if strings.ToLower(entry.Binding.Status) != "active" {
+	if entry.Binding.Status != status.ProtocolBindingStatusActive {
 		return false
 	}
 	return true

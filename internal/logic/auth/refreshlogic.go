@@ -10,6 +10,7 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
 )
@@ -55,7 +56,7 @@ func (l *RefreshLogic) Refresh(req *types.AuthRefreshRequest) (*types.AuthRefres
 		return nil, err
 	}
 
-	if !strings.EqualFold(user.Status, "active") {
+	if user.Status != status.UserStatusActive {
 		return nil, repository.ErrForbidden
 	}
 	now := time.Now().UTC()

@@ -72,6 +72,27 @@ METHOD\nPATH\nRAW_QUERY\nTIMESTAMP\nNONCE\nBASE64(BODY)
 
 ## 通用数据结构
 
+## 状态码
+
+- UserStatus: 0=unknown, 1=active, 2=pending, 3=disabled
+- UserCredentialStatus: 0=unknown, 1=active, 2=deprecated, 3=revoked
+- AnnouncementStatus: 0=unknown, 1=draft, 2=published, 3=archived
+- CouponStatus: 0=unknown, 1=active, 2=disabled
+- CouponRedemptionStatus: 0=unknown, 1=reserved, 2=applied, 3=released
+- PlanStatus: 0=unknown, 1=draft, 2=active, 3=archived
+- PlanBillingOptionStatus: 0=unknown, 1=draft, 2=active, 3=archived
+- SubscriptionStatus: 0=unknown, 1=active, 2=disabled, 3=expired
+- NodeStatus: 0=unknown, 1=online, 2=offline, 3=maintenance, 4=disabled
+- NodeKernelStatus: 0=unknown, 1=configured, 2=synced
+- ProtocolBindingStatus: 0=unknown, 1=active, 2=disabled
+- ProtocolBindingSyncStatus: 0=unknown, 1=pending, 2=synced, 3=error
+- ProtocolBindingHealthStatus: 0=unknown, 1=healthy, 2=degraded, 3=unhealthy, 4=offline
+- ProtocolEntryStatus: 0=unknown, 1=active, 2=disabled
+- OrderStatus: 0=unknown, 1=pending_payment, 2=paid, 3=payment_failed, 4=cancelled, 5=partially_refunded, 6=refunded
+- OrderPaymentStatus: 0=unknown, 1=pending, 2=succeeded, 3=failed
+- SyncResultStatus: 0=unknown, 1=synced, 2=error, 3=skipped
+- NodeSyncResultStatus: 0=unknown, 1=online, 2=offline, 3=skipped, 4=error
+
 ### PaginationMeta
 
 - `page` int
@@ -114,7 +135,7 @@ METHOD\nPATH\nRAW_QUERY\nTIMESTAMP\nNONCE\nBASE64(BODY)
 - `code` string
 - `name` string
 - `description` string
-- `status` string（示例：`active`、`disabled`）
+- `status` int（见状态码：CouponStatus）
 - `discount_type` string（`percent` 或 `fixed`）
 - `discount_value` int64（percent 为 0~10000，fixed 为分单位）
 - `currency` string（fixed 折扣必填）
@@ -158,7 +179,7 @@ METHOD\nPATH\nRAW_QUERY\nTIMESTAMP\nNONCE\nBASE64(BODY)
 - `method` string
 - `intent_id` string
 - `reference` string
-- `status` string
+- `status` int（见状态码：OrderPaymentStatus）
 - `amount_cents` int64
 - `currency` string
 - `failure_code` string
@@ -172,8 +193,8 @@ METHOD\nPATH\nRAW_QUERY\nTIMESTAMP\nNONCE\nBASE64(BODY)
 - `id` uint64
 - `number` string
 - `user_id` uint64
-- `status` string（示例：`pending_payment`、`paid`、`payment_failed`、`cancelled`、`partially_refunded`、`refunded`）
-- `payment_status` string（示例：`pending`、`succeeded`、`failed`）
+- `status` int（见状态码：OrderStatus）
+- `payment_status` int（见状态码：OrderPaymentStatus）
 - `payment_method` string（示例：`balance`、`external`、`manual`）
 - `payment_intent_id` string（可选）
 - `payment_reference` string（可选）
@@ -315,7 +336,7 @@ AdminUserSummary 字段：
   - `password` string
   - `display_name` string（可选）
   - `roles` []string（可选）
-  - `status` string（可选）
+  - `status` int（可选，见状态码：UserStatus）
   - `email_verified` bool（可选）
 - 响应：
   - `user` AdminUserSummary
@@ -324,7 +345,7 @@ AdminUserSummary 字段：
 
 - 说明：更新用户状态
 - 请求体：
-  - `status` string（示例：`active`、`disabled`、`pending`）
+  - `status` int（见状态码：UserStatus）
 - 响应：
   - `user` AdminUserSummary
 
@@ -377,8 +398,8 @@ NodeSummary 字段：
 - `status_sync_enabled`（是否允许节点状态自动同步）
 - `last_synced_at`、`updated_at`
 备注：
-- `status` 为管理端维护字段，手动禁用时为 `disabled`；运行态健康度请看协议绑定健康状态。
-- 当 `status_sync_enabled=true` 且能访问节点控制面时，服务会自动将 `status` 更新为 `online`/`offline`。
+- `status` 为管理端维护字段，手动禁用时为 `4`（disabled）；运行态健康度请看协议绑定健康状态。
+- 当 `status_sync_enabled=true` 且能访问节点控制面时，服务会自动将 `status` 更新为 `1`（online）/`2`（offline）。
 - 节点控制面必须配置 `control_endpoint`。
 - 控制面鉴权优先级：`control_access_key` + `control_secret_key` → `control_token`（无全局兜底）
 
@@ -390,7 +411,7 @@ NodeSummary 字段：
   - `region` string（可选）
   - `country` string（可选）
   - `isp` string（可选）
-  - `status` string（可选）
+  - `status` int（可选，见状态码：NodeStatus）
   - `tags` []string（可选）
   - `capacity_mbps` int（可选）
   - `description` string（可选）
@@ -420,7 +441,7 @@ NodeSummary 字段：
   "region": "hk",
   "country": "HK",
   "isp": "HKT",
-  "status": "online",
+  "status": 1,
   "tags": ["edge"],
   "capacity_mbps": 1000,
   "description": "HK edge",
@@ -438,7 +459,7 @@ NodeSummary 字段：
   - `region` string（可选）
   - `country` string（可选）
   - `isp` string（可选）
-  - `status` string（可选）
+  - `status` int（可选，见状态码：NodeStatus）
   - `tags` []string（可选）
   - `capacity_mbps` int（可选）
   - `description` string（可选）
@@ -463,7 +484,7 @@ NodeSummary 字段：
 - 示例请求体：
 ```json
 {
-  "status": "maintenance",
+  "status": 3,
   "tags": ["edge", "maintenance"],
   "capacity_mbps": 500
 }
@@ -519,9 +540,9 @@ NodeKernelSummary 字段：
 NodeStatusSyncResult 字段：
 
 - `node_id`、`status`、`message`、`synced_at`
-- `status` 可能为 `online` / `offline` / `skipped` / `error`
-- `skipped` 表示节点已 `disabled`
-- `error` 表示节点不存在或控制面地址缺失
+- `status` 可能为 `1`（online）/ `2`（offline）/ `3`（skipped）/ `4`（error）
+- `3` 表示节点已 `4`（disabled）
+- `4` 表示节点不存在或控制面地址缺失
 
 #### GET /api/v1/{adminPrefix}/protocol-entries
 
@@ -550,7 +571,7 @@ ProtocolEntrySummary 字段：
   - `entry_address` string
   - `entry_port` int
   - `protocol` string（可选，默认继承绑定协议）
-  - `status` string（可选）
+  - `status` int（可选，见状态码：ProtocolEntryStatus）
   - `tags` []string（可选）
   - `description` string（可选）
   - `profile` map（可选，对外公开配置）
@@ -602,7 +623,7 @@ ProtocolBindingSummary 字段：
   - `listen` string（可选）
   - `connect` string（可选）
   - `access_port` int（可选，内核监听端口）
-  - `status` string（可选）
+  - `status` int（可选，见状态码：ProtocolBindingStatus）
   - `kernel_id` string（必填，内核协议标识，通常为字符串）
   - `tags` []string（可选）
   - `description` string（可选）
@@ -651,7 +672,7 @@ ProtocolBindingSummary 字段：
 ProtocolBindingStatusSyncResult 字段：
 
 - `node_id`、`status`、`message`、`synced_at`、`updated`
-- `status` 可能为 `synced` / `error` / `skipped`
+- `status` 可能为 `1`（synced）/ `2`（error）/ `3`（skipped）
 
 #### GET /api/v1/{adminPrefix}/subscriptions
 
@@ -690,7 +711,7 @@ AdminSubscriptionSummary 字段：
   - `name` string
   - `plan_name` string（可选）
   - `plan_id` uint64
-  - `status` string（可选）
+  - `status` int（可选，见状态码：SubscriptionStatus）
   - `template_id` uint64
   - `available_template_ids` []uint64（可选）
   - `token` string（可选）
@@ -858,7 +879,7 @@ PlanBillingOptionSummary 字段：
   - `traffic_multipliers` map（可选，协议流量倍数）
   - `devices_limit` int（可选）
   - `sort_order` int（可选）
-  - `status` string（可选，默认 draft）
+  - `status` int（可选，默认 1，见状态码：PlanStatus）
   - `visible` bool（可选）
 - 响应：PlanSummary
 
@@ -892,7 +913,7 @@ PlanBillingOptionSummary 字段：
   - `price_cents` int64
   - `currency` string（可选）
   - `sort_order` int（可选）
-  - `status` string（可选，默认 draft）
+  - `status` int（可选，默认 1，见状态码：PlanBillingOptionStatus）
   - `visible` bool（可选）
 - 响应：PlanBillingOptionSummary
 
@@ -922,7 +943,7 @@ PlanBillingOptionSummary 字段：
   - `code` string
   - `name` string
   - `description` string（可选）
-  - `status` string（可选，默认 active）
+  - `status` int（可选，默认 1，见状态码：CouponStatus）
   - `discount_type` string（percent 或 fixed）
   - `discount_value` int64
   - `currency` string（可选，fixed 折扣必填）
@@ -1008,8 +1029,8 @@ PaymentChannelSummary 字段：
       "status": "data.status"
     },
     "status_map": {
-      "success": "succeeded",
-      "failed": "failed"
+      "success": "2",
+      "failed": "3"
     }
   },
   "reconcile": {
@@ -1026,9 +1047,9 @@ PaymentChannelSummary 字段：
       "reference": "data.reference"
     },
     "status_map": {
-      "paid": "succeeded",
-      "failed": "failed",
-      "processing": "pending"
+      "paid": "2",
+      "failed": "3",
+      "processing": "1"
     }
   }
 }
@@ -1259,7 +1280,7 @@ AdminOrderDetail 字段：
 - 请求体：
   - `order_id` uint64
   - `payment_id` uint64
-  - `status` string
+  - `status` int（见状态码：OrderPaymentStatus）
   - `reference` string（可选）
   - `failure_code` string（可选）
   - `failure_message` string（可选）
@@ -1310,7 +1331,7 @@ AdminOrderDetail 字段：
   - `Content-Type`：`text/plain` 或 `application/json`（取决于模板格式）
   - `ETag`：内容哈希
 - 规则：
-  - 仅 `status=active` 且未过期的订阅可拉取
+  - 仅 `status=1` 且未过期的订阅可拉取
   - `User-Agent` 关键词匹配客户端类型，忽略大小写；命中后优先选择对应 `client_type` 的默认模板
   - 未命中则回退订阅默认模板
 
@@ -1322,8 +1343,8 @@ AdminOrderDetail 字段：
 - 查询参数：`page`、`per_page`、`sort`、`direction`、`q`、`status`
 - `sort` 可选：`name`、`plan_name`、`status`、`expires_at`、`created_at`
 - 说明：
-  - 用户侧默认不返回 `disabled` 状态订阅
-  - `expired` 状态仍会返回，便于续费
+  - 用户侧默认不返回 `status=2`（disabled）订阅
+  - `status=3`（expired）仍会返回，便于续费
 - 响应：
   - `subscriptions` []UserSubscriptionSummary
   - `pagination` PaginationMeta
@@ -1340,7 +1361,7 @@ UserSubscriptionSummary 字段：
 - 说明：订阅预览
 - 路径参数：`id` uint64
 - 查询参数：`template_id`（可选）
-- 说明：`disabled` 状态订阅返回 404
+- 说明：`status=2`（disabled）订阅返回 404
 - 响应：
   - `subscription_id` uint64
   - `template_id` uint64
@@ -1355,7 +1376,7 @@ UserSubscriptionSummary 字段：
 - 路径参数：`id` uint64
 - 请求体：
   - `template_id` uint64
-- 说明：`disabled` 状态订阅返回 404
+- 说明：`status=2`（disabled）订阅返回 404
 - 响应：
   - `subscription_id` uint64
   - `template_id` uint64
@@ -1367,7 +1388,7 @@ UserSubscriptionSummary 字段：
 - 路径参数：`id` uint64
 - 查询参数：`page`、`per_page`、`protocol`、`node_id`、`binding_id`、`from`、`to`
 - `from`/`to` 为 Unix 秒
-- 说明：`disabled` 状态订阅返回 404
+- 说明：`status=2`（disabled）订阅返回 404
 - 响应：
   - `summary` UserSubscriptionTrafficSummary
   - `records` []UserTrafficUsageRecord
@@ -1424,8 +1445,8 @@ UserNodeProtocolStatusSummary 字段：
 - `health_status`、`last_heartbeat_at`
 
 说明：
-- `status` 与节点状态枚举一致（`online`/`offline`/`maintenance`/`disabled`）。
-- `kernel_statuses.status` 表示同步记录状态（如 `synced`、`configured`）。
+- `status` 与节点状态枚举一致（1=online/2=offline/3=maintenance/4=disabled）。
+- `kernel_statuses.status` 表示同步记录状态（0=unknown/1=configured/2=synced）。
 
 响应示例：
 ```json
@@ -1437,15 +1458,15 @@ UserNodeProtocolStatusSummary 字段：
       "region": "hk",
       "country": "HK",
       "isp": "HKT",
-      "status": "online",
+      "status": 1,
       "tags": ["edge"],
       "capacity_mbps": 1000,
       "description": "HK edge",
       "last_synced_at": 1734001010,
       "updated_at": 1734001010,
       "kernel_statuses": [
-        {"protocol": "vless", "status": "synced", "last_synced_at": 1734001010},
-        {"protocol": "ss", "status": "synced", "last_synced_at": 1734001001}
+        {"protocol": "vless", "status": 2, "last_synced_at": 1734001010},
+        {"protocol": "ss", "status": 2, "last_synced_at": 1734001001}
       ]
     }
   ],
@@ -1620,8 +1641,8 @@ UserPaymentChannelSummary 字段：
 - 路径参数：`id` uint64
 - 响应：
   - `order_id` uint64
-  - `status` string
-  - `payment_status` string
+  - `status` int（见状态码：OrderStatus）
+  - `payment_status` int（见状态码：OrderPaymentStatus）
   - `payment_method` string
   - `payment_intent_id` string（可选）
   - `payment_reference` string（可选）

@@ -16,13 +16,13 @@ service znp {
 type UserNodeStatusListRequest {
 	page     int    `form:"page,optional" json:"page,optional"`
 	per_page int    `form:"per_page,optional" json:"per_page,optional"`
-	status   string `form:"status,optional" json:"status,optional"`
+	status   int    `form:"status,optional" json:"status,optional"`
 	protocol string `form:"protocol,optional" json:"protocol,optional"`
 }
 
 type UserNodeKernelStatusSummary {
 	protocol       string
-	status         string
+	status         int
 	last_synced_at int64
 }
 
@@ -30,8 +30,8 @@ type UserNodeProtocolStatusSummary {
 	binding_id        uint64
 	protocol          string
 	role              string
-	status            string
-	health_status     string
+	status            int
+	health_status     int
 	last_heartbeat_at int64
 }
 
@@ -41,7 +41,7 @@ type UserNodeStatusSummary {
 	region            string
 	country           string
 	isp               string
-	status            string
+	status            int
 	tags              []string
 	capacity_mbps     int
 	description       string

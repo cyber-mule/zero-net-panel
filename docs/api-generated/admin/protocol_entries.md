@@ -18,7 +18,7 @@ type AdminListProtocolEntriesRequest struct {
 	Sort string `form:"sort,optional" json:"sort,optional"`
 	Direction string `form:"direction,optional" json:"direction,optional"`
 	Q string `form:"q,optional" json:"q,optional"`
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 	Protocol string `form:"protocol,optional" json:"protocol,optional"`
 	Binding_id uint64 `form:"binding_id,optional" json:"binding_id,optional"`
 }
@@ -62,7 +62,7 @@ type AdminCreateProtocolEntryRequest struct {
 	Name string `form:"name,optional" json:"name,optional"`
 	Binding_id uint64 
 	Protocol string `form:"protocol,optional" json:"protocol,optional"`
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 	Entry_address string `form:"entry_address" json:"entry_address"`
 	Entry_port int `form:"entry_port" json:"entry_port"`
 	Tags []string `form:"tags,optional" json:"tags,optional"`
@@ -85,9 +85,9 @@ type ProtocolEntrySummary struct {
 	Node_id uint64 
 	Node_name string 
 	Protocol string 
-	Status string 
-	Binding_status string 
-	Health_status string 
+	Status int 
+	Binding_status int 
+	Health_status int 
 	Entry_address string 
 	Entry_port int 
 	Tags []string 
@@ -117,7 +117,7 @@ type AdminUpdateProtocolEntryRequest struct {
 	Name string `form:"name,optional" json:"name,optional"`
 	Binding_id uint64 `form:"binding_id,optional" json:"binding_id,optional"`
 	Protocol string `form:"protocol,optional" json:"protocol,optional"`
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 	Entry_address string `form:"entry_address,optional" json:"entry_address,optional"`
 	Entry_port int `form:"entry_port,optional" json:"entry_port,optional"`
 	Tags []string `form:"tags,optional" json:"tags,optional"`
@@ -140,9 +140,9 @@ type ProtocolEntrySummary struct {
 	Node_id uint64 
 	Node_name string 
 	Protocol string 
-	Status string 
-	Binding_status string 
-	Health_status string 
+	Status int 
+	Binding_status int 
+	Health_status int 
 	Entry_address string 
 	Entry_port int 
 	Tags []string 

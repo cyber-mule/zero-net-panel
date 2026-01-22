@@ -41,7 +41,7 @@ type AdminListUsersRequest {
 	page     int    `form:"page,optional" json:"page,optional"`
 	per_page int    `form:"per_page,optional" json:"per_page,optional"`
 	q        string `form:"q,optional" json:"q,optional"`
-	status   string `form:"status,optional" json:"status,optional"`
+	status   int    `form:"status,optional" json:"status,optional"`
 	role     string `form:"role,optional" json:"role,optional"`
 }
 
@@ -50,7 +50,7 @@ type AdminUserSummary {
 	email                 string
 	display_name          string
 	roles                 []string
-	status                string
+	status                int
 	email_verified_at     int64 `form:"email_verified_at,optional" json:"email_verified_at,optional"`
 	failed_login_attempts int
 	locked_until          int64 `form:"locked_until,optional" json:"locked_until,optional"`
@@ -73,13 +73,13 @@ type AdminCreateUserRequest {
 	password       string
 	display_name   string   `form:"display_name,optional" json:"display_name,optional"`
 	roles          []string `form:"roles,optional" json:"roles,optional"`
-	status         string   `form:"status,optional" json:"status,optional"`
+	status         int      `form:"status,optional" json:"status,optional"`
 	email_verified bool     `form:"email_verified,optional" json:"email_verified,optional"`
 }
 
 type AdminUpdateUserStatusRequest {
 	id     uint64 `path:"id"`
-	status string
+	status int
 }
 
 type AdminUpdateUserRolesRequest {

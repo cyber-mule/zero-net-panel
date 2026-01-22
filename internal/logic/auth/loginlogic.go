@@ -11,6 +11,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
 )
@@ -47,7 +48,7 @@ func (l *LoginLogic) Login(req *types.AuthLoginRequest) (*types.AuthLoginRespons
 	}
 
 	now := time.Now().UTC()
-	if !strings.EqualFold(user.Status, "active") {
+	if user.Status != status.UserStatusActive {
 		return nil, repository.ErrForbidden
 	}
 	if !user.LockedUntil.IsZero() && user.LockedUntil.After(now) {

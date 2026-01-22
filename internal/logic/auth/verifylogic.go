@@ -10,6 +10,7 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
 )
@@ -54,13 +55,13 @@ func (l *VerifyLogic) Verify(req *types.AuthVerifyRequest) (*types.AuthVerifyRes
 		return nil, err
 	}
 
-	status := user.Status
-	if strings.EqualFold(status, "pending") || status == "" {
-		status = "active"
+	statusCode := user.Status
+	if statusCode == status.UserStatusPending || statusCode == 0 {
+		statusCode = status.UserStatusActive
 	}
 
 	verifiedAt := time.Now().UTC()
-	user, err = l.svcCtx.Repositories.User.UpdateVerification(l.ctx, user.ID, verifiedAt, status)
+	user, err = l.svcCtx.Repositories.User.UpdateVerification(l.ctx, user.ID, verifiedAt, statusCode)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +77,7 @@ func (l *VerifyLogic) Verify(req *types.AuthVerifyRequest) (*types.AuthVerifyRes
 		return nil, err
 	}
 
-	if !strings.EqualFold(user.Status, "active") {
+	if user.Status != status.UserStatusActive {
 		return nil, repository.ErrForbidden
 	}
 

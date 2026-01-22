@@ -71,8 +71,11 @@ func (l *UpdateLogic) Update(req *types.AdminUpdateProtocolBindingRequest) (*typ
 		input.AccessPort = req.AccessPort
 	}
 	if req.Status != nil {
-		status := strings.TrimSpace(*req.Status)
-		input.Status = &status
+		statusCode, err := normalizeBindingStatus(*req.Status)
+		if err != nil {
+			return nil, err
+		}
+		input.Status = &statusCode
 	}
 	if req.KernelID != nil {
 		kernelID := strings.TrimSpace(*req.KernelID)
@@ -82,11 +85,17 @@ func (l *UpdateLogic) Update(req *types.AdminUpdateProtocolBindingRequest) (*typ
 		input.KernelID = &kernelID
 	}
 	if req.SyncStatus != nil {
-		syncStatus := strings.TrimSpace(*req.SyncStatus)
+		syncStatus, err := normalizeBindingSyncStatus(*req.SyncStatus)
+		if err != nil {
+			return nil, err
+		}
 		input.SyncStatus = &syncStatus
 	}
 	if req.HealthStatus != nil {
-		healthStatus := strings.TrimSpace(*req.HealthStatus)
+		healthStatus, err := normalizeBindingHealthStatus(*req.HealthStatus)
+		if err != nil {
+			return nil, err
+		}
 		input.HealthStatus = &healthStatus
 	}
 	if req.LastSyncedAt != nil {

@@ -10,6 +10,7 @@ import (
 
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 	"github.com/zero-net-panel/zero-net-panel/internal/security"
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
 	"github.com/zero-net-panel/zero-net-panel/pkg/kernel"
@@ -48,7 +49,7 @@ func (l *StatusSyncLogic) Sync(req *types.AdminSyncProtocolBindingStatusRequest)
 		indexByID[nodeID] = len(results)
 		results = append(results, types.ProtocolBindingStatusSyncResult{
 			NodeID:   nodeID,
-			Status:   "error",
+			Status:   status.SyncResultStatusError,
 			SyncedAt: startedAt.Unix(),
 		})
 	}
@@ -68,8 +69,8 @@ func (l *StatusSyncLogic) Sync(req *types.AdminSyncProtocolBindingStatusRequest)
 			res.Message = err.Error()
 			continue
 		}
-		if strings.EqualFold(node.Status, "disabled") {
-			res.Status = "skipped"
+		if node.Status == status.NodeStatusDisabled {
+			res.Status = status.SyncResultStatusSkipped
 			res.Message = "node disabled"
 			continue
 		}
@@ -106,27 +107,23 @@ func (l *StatusSyncLogic) Sync(req *types.AdminSyncProtocolBindingStatusRequest)
 			Timeout: key.timeout,
 		})
 		if err != nil {
-			l.markResults(nodeGroup, "error", err.Error(), nil, results, indexByID)
+			l.markResults(nodeGroup, status.SyncResultStatusError, err.Error(), nil, results, indexByID)
 			continue
 		}
 
-		status, err := client.GetStatus(l.ctx)
+		snapshot, err := client.GetStatus(l.ctx)
 		if err != nil {
-			l.markResults(nodeGroup, "error", err.Error(), nil, results, indexByID)
+			l.markResults(nodeGroup, status.SyncResultStatusError, err.Error(), nil, results, indexByID)
 			continue
 		}
 
-		healthByKernel := make(map[string]string)
-		for _, node := range status.Snapshot.Nodes {
+		healthByKernel := make(map[string]int)
+		for _, node := range snapshot.Snapshot.Nodes {
 			kernelID := strings.TrimSpace(node.ID)
 			if kernelID == "" {
 				continue
 			}
-			health := strings.ToLower(strings.TrimSpace(node.Health.Status))
-			if health == "" {
-				health = "unknown"
-			}
-			healthByKernel[kernelID] = health
+			healthByKernel[kernelID] = mapKernelHealthStatus(node.Health.Status)
 		}
 
 		observedAt := time.Now().UTC()
@@ -134,12 +131,12 @@ func (l *StatusSyncLogic) Sync(req *types.AdminSyncProtocolBindingStatusRequest)
 		var updateErr error
 		for _, nodeID := range nodeGroup {
 			for _, binding := range bindingsByNode[nodeID] {
-				if binding.KernelID == "" || strings.ToLower(binding.Status) != "active" {
+				if binding.KernelID == "" || binding.Status != status.ProtocolBindingStatusActive {
 					continue
 				}
 				health, ok := healthByKernel[binding.KernelID]
 				if !ok {
-					health = "offline"
+					health = status.ProtocolBindingHealthStatusOffline
 				}
 				_, err := l.svcCtx.Repositories.ProtocolBinding.UpdateHealthByKernelIDForNodes(
 					l.ctx,
@@ -159,10 +156,10 @@ func (l *StatusSyncLogic) Sync(req *types.AdminSyncProtocolBindingStatusRequest)
 			}
 		}
 
-		statusValue := "synced"
+		statusValue := status.SyncResultStatusSynced
 		message := "ok"
 		if updateErr != nil {
-			statusValue = "error"
+			statusValue = status.SyncResultStatusError
 			message = updateErr.Error()
 		}
 		l.markResults(nodeGroup, statusValue, message, updatedCounts, results, indexByID)
@@ -177,7 +174,7 @@ func (l *StatusSyncLogic) Sync(req *types.AdminSyncProtocolBindingStatusRequest)
 	return &types.AdminSyncProtocolBindingStatusResponse{Results: results}, nil
 }
 
-func (l *StatusSyncLogic) markResults(nodeIDs []uint64, status string, message string, updated map[uint64]int, results []types.ProtocolBindingStatusSyncResult, indexByID map[uint64]int) {
+func (l *StatusSyncLogic) markResults(nodeIDs []uint64, statusCode int, message string, updated map[uint64]int, results []types.ProtocolBindingStatusSyncResult, indexByID map[uint64]int) {
 	if len(nodeIDs) == 0 {
 		return
 	}
@@ -187,12 +184,28 @@ func (l *StatusSyncLogic) markResults(nodeIDs []uint64, status string, message s
 		if !ok {
 			continue
 		}
-		results[idx].Status = status
+		results[idx].Status = statusCode
 		results[idx].Message = message
 		results[idx].SyncedAt = ts
 		if updated != nil {
 			results[idx].Updated = updated[nodeID]
 		}
+	}
+}
+
+func mapKernelHealthStatus(raw string) int {
+	normalized := strings.ToLower(strings.TrimSpace(raw))
+	switch normalized {
+	case "healthy":
+		return status.ProtocolBindingHealthStatusHealthy
+	case "degraded":
+		return status.ProtocolBindingHealthStatusDegraded
+	case "unhealthy":
+		return status.ProtocolBindingHealthStatusUnhealthy
+	case "offline":
+		return status.ProtocolBindingHealthStatusOffline
+	default:
+		return status.ProtocolBindingHealthStatusUnknown
 	}
 }
 

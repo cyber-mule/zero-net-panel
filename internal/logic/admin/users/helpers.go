@@ -3,6 +3,9 @@ package users
 import (
 	"net/mail"
 	"strings"
+
+	"github.com/zero-net-panel/zero-net-panel/internal/repository"
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 )
 
 func normalizeRoles(roles []string) []string {
@@ -22,8 +25,15 @@ func normalizeRoles(roles []string) []string {
 	return normalized
 }
 
-func normalizeStatus(status string) string {
-	return strings.ToLower(strings.TrimSpace(status))
+func normalizeStatus(statusCode int) (int, error) {
+	switch statusCode {
+	case status.UserStatusActive, status.UserStatusDisabled, status.UserStatusPending:
+		return statusCode, nil
+	case 0:
+		return 0, repository.ErrInvalidArgument
+	default:
+		return 0, repository.ErrInvalidArgument
+	}
 }
 
 func isValidEmail(email string) bool {

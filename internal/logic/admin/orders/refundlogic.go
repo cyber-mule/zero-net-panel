@@ -314,7 +314,7 @@ func (l *RefundLogic) refundExternal(order repository.Order, payments []reposito
 }
 
 func updateOrderRefundStatus(ctx context.Context, repo repository.OrderRepository, order repository.Order, totalCents int64, operator string) (repository.Order, error) {
-	if order.RefundedCents > 0 && order.RefundedCents < totalCents && !strings.EqualFold(order.Status, repository.OrderStatusPartiallyRefunded) {
+	if order.RefundedCents > 0 && order.RefundedCents < totalCents && order.Status != repository.OrderStatusPartiallyRefunded {
 		partialStatus := repository.UpdateOrderStatusParams{Status: repository.OrderStatusPartiallyRefunded}
 		partiallyUpdated, err := repo.UpdateStatus(ctx, order.ID, partialStatus)
 		if err != nil {
@@ -323,7 +323,7 @@ func updateOrderRefundStatus(ctx context.Context, repo repository.OrderRepositor
 		order = partiallyUpdated
 	}
 
-	if order.RefundedCents >= totalCents && !strings.EqualFold(order.Status, repository.OrderStatusRefunded) {
+	if order.RefundedCents >= totalCents && order.Status != repository.OrderStatusRefunded {
 		cancelledMetadata := map[string]any{
 			"cancelled_by":  operator,
 			"cancel_reason": "refund_completed",
@@ -346,7 +346,7 @@ func selectLatestSucceededPayment(payments []repository.OrderPayment) (repositor
 	var selected repository.OrderPayment
 	found := false
 	for _, payment := range payments {
-		if !strings.EqualFold(payment.Status, repository.OrderPaymentStatusSucceeded) {
+		if payment.Status != repository.OrderPaymentStatusSucceeded {
 			continue
 		}
 		if !found || payment.UpdatedAt.After(selected.UpdatedAt) {

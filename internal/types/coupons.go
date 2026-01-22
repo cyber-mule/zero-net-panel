@@ -6,7 +6,7 @@ type CouponSummary struct {
 	Code                  string `json:"code"`
 	Name                  string `json:"name"`
 	Description           string `json:"description"`
-	Status                string `json:"status"`
+	Status                int    `json:"status"`
 	DiscountType          string `json:"discount_type"`
 	DiscountValue         int64  `json:"discount_value"`
 	Currency              string `json:"currency"`
@@ -24,7 +24,7 @@ type AdminListCouponsRequest struct {
 	Page      int    `form:"page,optional" json:"page,optional"`
 	PerPage   int    `form:"per_page,optional" json:"per_page,optional"`
 	Query     string `form:"q,optional" json:"q,optional"`
-	Status    string `form:"status,optional" json:"status,optional"`
+	Status    int    `form:"status,optional" json:"status,optional"`
 	Sort      string `form:"sort,optional" json:"sort,optional"`
 	Direction string `form:"direction,optional" json:"direction,optional"`
 }
@@ -40,7 +40,7 @@ type AdminCreateCouponRequest struct {
 	Code                  string `json:"code"`
 	Name                  string `json:"name"`
 	Description           string `json:"description,omitempty,optional"`
-	Status                string `json:"status,omitempty,optional"`
+	Status                int    `json:"status,omitempty,optional"`
 	DiscountType          string `json:"discount_type"`
 	DiscountValue         int64  `json:"discount_value"`
 	Currency              string `json:"currency,omitempty,optional"`
@@ -56,7 +56,7 @@ type AdminUpdateCouponRequest struct {
 	CouponID              uint64  `path:"id"`
 	Name                  *string `json:"name,omitempty,optional"`
 	Description           *string `json:"description,omitempty,optional"`
-	Status                *string `json:"status,omitempty,optional"`
+	Status                *int    `json:"status,omitempty,optional"`
 	DiscountType          *string `json:"discount_type,omitempty,optional"`
 	DiscountValue         *int64  `json:"discount_value,omitempty,optional"`
 	Currency              *string `json:"currency,omitempty,optional"`

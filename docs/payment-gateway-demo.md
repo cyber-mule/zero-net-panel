@@ -61,8 +61,8 @@ curl -X POST http://localhost:8888/api/v1/admin/payment-channels \
           "status": "data.status"
         },
         "status_map": {
-          "success": "succeeded",
-          "failed": "failed"
+          "success": "2",
+          "failed": "3"
         }
       },
       "reconcile": {
@@ -79,9 +79,9 @@ curl -X POST http://localhost:8888/api/v1/admin/payment-channels \
           "reference": "data.reference"
         },
         "status_map": {
-          "paid": "succeeded",
-          "failed": "failed",
-          "processing": "pending"
+          "paid": "2",
+          "failed": "3",
+          "processing": "1"
         }
       }
     }

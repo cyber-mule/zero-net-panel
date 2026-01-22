@@ -10,6 +10,8 @@ import (
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 )
 
 // Node 表示节点元信息。
@@ -19,7 +21,7 @@ type Node struct {
 	Region                                    string         `gorm:"size:128"`
 	Country                                   string         `gorm:"size:8"`
 	ISP                                       string         `gorm:"size:128"`
-	Status                                    string         `gorm:"size:32"`
+	Status                                    int            `gorm:"column:status"`
 	Tags                                      []string       `gorm:"serializer:json"`
 	CapacityMbps                              int            `gorm:"column:capacity_mbps"`
 	Description                               string         `gorm:"type:text"`
@@ -52,7 +54,7 @@ type NodeKernel struct {
 	Protocol     string         `gorm:"primaryKey;size:32"`
 	Endpoint     string         `gorm:"size:512"`
 	Revision     string         `gorm:"size:128"`
-	Status       string         `gorm:"size:32"`
+	Status       int            `gorm:"column:status"`
 	Config       map[string]any `gorm:"serializer:json"`
 	LastSyncedAt time.Time      `gorm:"column:last_synced_at"`
 	UpdatedAt    time.Time
@@ -69,7 +71,7 @@ type ListNodesOptions struct {
 	Sort      string
 	Direction string
 	Query     string
-	Status    string
+	Status    int
 	Protocol  string
 	NodeIDs   []uint64
 }
@@ -81,7 +83,7 @@ type NodeRepository interface {
 	Get(ctx context.Context, nodeID uint64) (Node, error)
 	Create(ctx context.Context, node Node) (Node, error)
 	Update(ctx context.Context, nodeID uint64, input UpdateNodeInput) (Node, error)
-	UpdateStatusByIDs(ctx context.Context, nodeIDs []uint64, status string) error
+	UpdateStatusByIDs(ctx context.Context, nodeIDs []uint64, status int) error
 	Delete(ctx context.Context, nodeID uint64) error
 	GetKernels(ctx context.Context, nodeID uint64) ([]NodeKernel, error)
 	RecordKernelSync(ctx context.Context, nodeID uint64, kernel NodeKernel) (NodeKernel, error)
@@ -113,8 +115,8 @@ func (r *nodeRepository) List(ctx context.Context, opts ListNodesOptions) ([]Nod
 		like := fmt.Sprintf("%%%s%%", query)
 		base = base.Where("(LOWER(name) LIKE ? OR LOWER(region) LIKE ? OR LOWER(description) LIKE ?)", like, like, like)
 	}
-	if status := strings.TrimSpace(strings.ToLower(opts.Status)); status != "" {
-		base = base.Where("LOWER(status) = ?", status)
+	if opts.Status != 0 {
+		base = base.Where("status = ?", opts.Status)
 	}
 	if len(opts.NodeIDs) > 0 {
 		base = base.Where("id IN ?", opts.NodeIDs)
@@ -183,7 +185,6 @@ func (r *nodeRepository) Create(ctx context.Context, node Node) (Node, error) {
 	node.Region = strings.TrimSpace(node.Region)
 	node.Country = strings.TrimSpace(node.Country)
 	node.ISP = strings.TrimSpace(node.ISP)
-	node.Status = strings.TrimSpace(node.Status)
 	node.Description = strings.TrimSpace(node.Description)
 	node.AccessAddress = strings.TrimSpace(node.AccessAddress)
 	node.ControlEndpoint = strings.TrimSpace(node.ControlEndpoint)
@@ -198,6 +199,7 @@ func (r *nodeRepository) Create(ctx context.Context, node Node) (Node, error) {
 		node.CreatedAt = now
 	}
 	node.UpdatedAt = now
+	node.LastSyncedAt = NormalizeTime(node.LastSyncedAt)
 
 	if err := r.db.WithContext(ctx).Create(&node).Error; err != nil {
 		return Node{}, translateError(err)
@@ -224,7 +226,7 @@ func (r *nodeRepository) Update(ctx context.Context, nodeID uint64, input Update
 		updates["isp"] = strings.TrimSpace(*input.ISP)
 	}
 	if input.Status != nil {
-		updates["status"] = strings.TrimSpace(*input.Status)
+		updates["status"] = *input.Status
 	}
 	if input.Tags != nil {
 		serialized, err := serializeTags(*input.Tags)
@@ -297,24 +299,23 @@ func (r *nodeRepository) Update(ctx context.Context, nodeID uint64, input Update
 	return r.Get(ctx, nodeID)
 }
 
-func (r *nodeRepository) UpdateStatusByIDs(ctx context.Context, nodeIDs []uint64, status string) error {
+func (r *nodeRepository) UpdateStatusByIDs(ctx context.Context, nodeIDs []uint64, statusCode int) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
 	if len(nodeIDs) == 0 {
 		return nil
 	}
-	status = strings.TrimSpace(status)
-	if status == "" {
+	if statusCode == 0 {
 		return ErrInvalidArgument
 	}
 	return r.db.WithContext(ctx).
 		Model(&Node{}).
 		Where("id IN ?", nodeIDs).
 		Where("status_sync_enabled = ?", true).
-		Where("LOWER(status) != ?", "disabled").
+		Where("status != ?", status.NodeStatusDisabled).
 		Updates(map[string]any{
-			"status":     status,
+			"status":     statusCode,
 			"updated_at": time.Now().UTC(),
 		}).Error
 }
@@ -355,7 +356,7 @@ type UpdateNodeInput struct {
 	Region                                    *string
 	Country                                   *string
 	ISP                                       *string
-	Status                                    *string
+	Status                                    *int
 	Tags                                      *[]string
 	CapacityMbps                              *int
 	Description                               *string
@@ -381,7 +382,7 @@ type UpsertNodeKernelInput struct {
 	Protocol     string
 	Endpoint     string
 	Revision     *string
-	Status       *string
+	Status       *int
 	Config       map[string]any
 	LastSyncedAt *time.Time
 }
@@ -419,8 +420,8 @@ func (r *nodeRepository) RecordKernelSync(ctx context.Context, nodeID uint64, ke
 	kernel.UpdatedAt = now
 	kernel.Protocol = proto
 	kernel.NodeID = nodeID
-	if kernel.Status == "" {
-		kernel.Status = "synced"
+	if kernel.Status == 0 {
+		kernel.Status = status.NodeKernelStatusSynced
 	}
 	if kernel.Config == nil {
 		kernel.Config = map[string]any{}
@@ -460,7 +461,7 @@ func (r *nodeRepository) RecordKernelSync(ctx context.Context, nodeID uint64, ke
 		if kernel.UpdatedAt.After(node.UpdatedAt) {
 			node.UpdatedAt = kernel.UpdatedAt
 		}
-		node.Status = "online"
+		node.Status = status.NodeStatusOnline
 
 		return tx.Save(&node).Error
 	})
@@ -493,7 +494,7 @@ func (r *nodeRepository) UpsertKernel(ctx context.Context, nodeID uint64, input 
 		kernel.Revision = strings.TrimSpace(*input.Revision)
 	}
 	if input.Status != nil {
-		kernel.Status = strings.TrimSpace(*input.Status)
+		kernel.Status = *input.Status
 	}
 	if input.Config != nil {
 		kernel.Config = input.Config
@@ -518,8 +519,9 @@ func (r *nodeRepository) UpsertKernel(ctx context.Context, nodeID uint64, input 
 				kernel.CreatedAt = now
 			}
 			kernel.UpdatedAt = now
-			if kernel.Status == "" {
-				kernel.Status = "configured"
+			kernel.LastSyncedAt = NormalizeTime(kernel.LastSyncedAt)
+			if kernel.Status == 0 {
+				kernel.Status = status.NodeKernelStatusConfigured
 			}
 			if err := tx.Create(&kernel).Error; err != nil {
 				return err

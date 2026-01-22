@@ -31,8 +31,8 @@ type OrderDetail struct {
 	ID                    uint64         `json:"id"`
 	Number                string         `json:"number"`
 	UserID                uint64         `json:"user_id"`
-	Status                string         `json:"status"`
-	PaymentStatus         string         `json:"payment_status"`
+	Status                int            `json:"status"`
+	PaymentStatus         int            `json:"payment_status"`
 	TotalCents            int64          `json:"total_cents"`
 	RefundedCents         int64          `json:"refunded_cents"`
 	Currency              string         `json:"currency"`
@@ -70,9 +70,9 @@ type UserCreateOrderRequest struct {
 type UserOrderListRequest struct {
 	Page          int    `form:"page,optional" json:"page,optional"`
 	PerPage       int    `form:"per_page,optional" json:"per_page,optional"`
-	Status        string `form:"status,optional" json:"status,optional"`
+	Status        int    `form:"status,optional" json:"status,optional"`
 	PaymentMethod string `form:"payment_method,optional" json:"payment_method,optional"`
-	PaymentStatus string `form:"payment_status,optional" json:"payment_status,optional"`
+	PaymentStatus int    `form:"payment_status,optional" json:"payment_status,optional"`
 	Number        string `form:"number,optional" json:"number,optional"`
 	Sort          string `form:"sort,optional" json:"sort,optional"`
 	Direction     string `form:"direction,optional" json:"direction,optional"`
@@ -104,8 +104,8 @@ type UserOrderPaymentStatusRequest struct {
 // UserOrderPaymentStatusResponse 用户订单支付状态响应。
 type UserOrderPaymentStatusResponse struct {
 	OrderID               uint64  `json:"order_id"`
-	Status                string  `json:"status"`
-	PaymentStatus         string  `json:"payment_status"`
+	Status                int     `json:"status"`
+	PaymentStatus         int     `json:"payment_status"`
 	PaymentMethod         string  `json:"payment_method"`
 	PaymentIntentID       *string `json:"payment_intent_id,omitempty"`
 	PaymentReference      *string `json:"payment_reference,omitempty"`
@@ -128,9 +128,9 @@ type UserCancelOrderRequest struct {
 type AdminListOrdersRequest struct {
 	Page          int    `form:"page,optional" json:"page,optional"`
 	PerPage       int    `form:"per_page,optional" json:"per_page,optional"`
-	Status        string `form:"status,optional" json:"status,optional"`
+	Status        int    `form:"status,optional" json:"status,optional"`
 	PaymentMethod string `form:"payment_method,optional" json:"payment_method,optional"`
-	PaymentStatus string `form:"payment_status,optional" json:"payment_status,optional"`
+	PaymentStatus int    `form:"payment_status,optional" json:"payment_status,optional"`
 	Number        string `form:"number,optional" json:"number,optional"`
 	Sort          string `form:"sort,optional" json:"sort,optional"`
 	Direction     string `form:"direction,optional" json:"direction,optional"`
@@ -145,7 +145,7 @@ type OrderPayment struct {
 	Method         string         `json:"method"`
 	IntentID       string         `json:"intent_id"`
 	Reference      string         `json:"reference"`
-	Status         string         `json:"status"`
+	Status         int            `json:"status"`
 	AmountCents    int64          `json:"amount_cents"`
 	Currency       string         `json:"currency"`
 	FailureCode    string         `json:"failure_code"`
@@ -221,7 +221,7 @@ type AdminReconcilePaymentRequest struct {
 type AdminPaymentCallbackRequest struct {
 	OrderID        uint64 `json:"order_id"`
 	PaymentID      uint64 `json:"payment_id"`
-	Status         string `json:"status"`
+	Status         int    `json:"status"`
 	Reference      string `json:"reference,omitempty,optional"`
 	FailureCode    string `json:"failure_code,omitempty,optional"`
 	FailureMessage string `json:"failure_message,omitempty,optional"`

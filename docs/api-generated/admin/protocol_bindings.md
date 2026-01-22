@@ -18,7 +18,7 @@ type AdminListProtocolBindingsRequest struct {
 	Sort string `form:"sort,optional" json:"sort,optional"`
 	Direction string `form:"direction,optional" json:"direction,optional"`
 	Q string `form:"q,optional" json:"q,optional"`
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 	Protocol string `form:"protocol,optional" json:"protocol,optional"`
 	Node_id uint64 `form:"node_id,optional" json:"node_id,optional"`
 }
@@ -67,7 +67,7 @@ type AdminCreateProtocolBindingRequest struct {
 	Listen string `form:"listen,optional" json:"listen,optional"`
 	Connect string `form:"connect,optional" json:"connect,optional"`
 	Access_port int `form:"access_port,optional" json:"access_port,optional"`
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 	Kernel_id string `form:"kernel_id" json:"kernel_id"`
 	Tags []string `form:"tags,optional" json:"tags,optional"`
 	Description string `form:"description,optional" json:"description,optional"`
@@ -91,10 +91,10 @@ type ProtocolBindingSummary struct {
 	Listen string 
 	Connect string 
 	Access_port int 
-	Status string 
+	Status int 
 	Kernel_id string 
-	Sync_status string 
-	Health_status string 
+	Sync_status int 
+	Health_status int 
 	Last_synced_at int64 
 	Last_heartbeat_at int64 
 	Last_sync_error string 
@@ -130,10 +130,10 @@ type AdminUpdateProtocolBindingRequest struct {
 	Listen string `form:"listen,optional" json:"listen,optional"`
 	Connect string `form:"connect,optional" json:"connect,optional"`
 	Access_port int `form:"access_port,optional" json:"access_port,optional"`
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 	Kernel_id string `form:"kernel_id,optional" json:"kernel_id,optional"`
-	Sync_status string `form:"sync_status,optional" json:"sync_status,optional"`
-	Health_status string `form:"health_status,optional" json:"health_status,optional"`
+	Sync_status int `form:"sync_status,optional" json:"sync_status,optional"`
+	Health_status int `form:"health_status,optional" json:"health_status,optional"`
 	Last_synced_at int64 `form:"last_synced_at,optional" json:"last_synced_at,optional"`
 	Last_heartbeat_at int64 `form:"last_heartbeat_at,optional" json:"last_heartbeat_at,optional"`
 	Last_sync_error string `form:"last_sync_error,optional" json:"last_sync_error,optional"`
@@ -160,10 +160,10 @@ type ProtocolBindingSummary struct {
 	Listen string 
 	Connect string 
 	Access_port int 
-	Status string 
+	Status int 
 	Kernel_id string 
-	Sync_status string 
-	Health_status string 
+	Sync_status int 
+	Health_status int 
 	Last_synced_at int64 
 	Last_heartbeat_at int64 
 	Last_sync_error string 
@@ -226,7 +226,7 @@ type AdminSyncProtocolBindingRequest struct {
 ```golang
 type ProtocolBindingSyncResult struct {
 	Binding_id uint64 
-	Status string 
+	Status int 
 	Message string 
 	Synced_at int64 
 }

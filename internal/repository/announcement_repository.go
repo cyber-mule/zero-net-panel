@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 )
 
 // Announcement represents platform level notices aligned with xboard 公告体系。
@@ -16,7 +18,7 @@ type Announcement struct {
 	Title       string     `gorm:"size:255"`
 	Content     string     `gorm:"type:text"`
 	Category    string     `gorm:"size:32"`
-	Status      string     `gorm:"size:32"`
+	Status      int        `gorm:"column:status"`
 	Audience    string     `gorm:"size:32"`
 	IsPinned    bool       `gorm:"column:is_pinned"`
 	Priority    int        `gorm:"column:priority"`
@@ -37,7 +39,7 @@ func (Announcement) TableName() string { return "announcements" }
 type ListAnnouncementsOptions struct {
 	Page      int
 	PerPage   int
-	Status    string
+	Status    int
 	Category  string
 	Audience  string
 	Query     string
@@ -74,8 +76,8 @@ func (r *announcementRepository) List(ctx context.Context, opts ListAnnouncement
 	opts = normalizeListAnnouncementsOptions(opts)
 	base := r.db.WithContext(ctx).Model(&Announcement{})
 
-	if status := strings.TrimSpace(strings.ToLower(opts.Status)); status != "" {
-		base = base.Where("LOWER(status) = ?", status)
+	if opts.Status != 0 {
+		base = base.Where("status = ?", opts.Status)
 	}
 	if category := strings.TrimSpace(strings.ToLower(opts.Category)); category != "" {
 		base = base.Where("LOWER(category) = ?", category)
@@ -116,7 +118,7 @@ func (r *announcementRepository) ListActive(ctx context.Context, audience string
 
 	now := time.Now().UTC()
 	query := r.db.WithContext(ctx).Model(&Announcement{}).
-		Where("status = ?", "published").
+		Where("status = ?", status.AnnouncementStatusPublished).
 		Where("visible_from <= ?", now).
 		Where("visible_to IS NULL OR visible_to >= ?", now).
 		Order("is_pinned DESC, priority DESC, published_at DESC, id DESC")
@@ -142,8 +144,8 @@ func (r *announcementRepository) Create(ctx context.Context, announcement Announ
 	}
 
 	now := time.Now().UTC()
-	if announcement.Status == "" {
-		announcement.Status = "draft"
+	if announcement.Status == 0 {
+		announcement.Status = status.AnnouncementStatusDraft
 	}
 	if announcement.Audience == "" {
 		announcement.Audience = "all"
@@ -164,7 +166,7 @@ func (r *announcementRepository) Publish(ctx context.Context, id uint64, publish
 	}
 
 	updates := map[string]any{
-		"status":       "published",
+		"status":       status.AnnouncementStatusPublished,
 		"published_at": publishAt,
 		"visible_from": publishAt,
 		"updated_at":   publishAt,

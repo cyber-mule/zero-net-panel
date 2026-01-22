@@ -2,13 +2,13 @@ package subscription
 
 import (
 	"context"
-	"strings"
 	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 	"github.com/zero-net-panel/zero-net-panel/internal/security"
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
 )
@@ -43,7 +43,7 @@ func (l *TrafficLogic) Traffic(req *types.UserSubscriptionTrafficRequest) (*type
 	if sub.UserID != user.ID {
 		return nil, repository.ErrForbidden
 	}
-	if strings.EqualFold(sub.Status, "disabled") {
+	if sub.Status == status.SubscriptionStatusDisabled {
 		return nil, repository.ErrNotFound
 	}
 

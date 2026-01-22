@@ -10,7 +10,7 @@ type PlanBillingOptionSummary struct {
 	PriceCents    int64  `json:"price_cents"`
 	Currency      string `json:"currency"`
 	SortOrder     int    `json:"sort_order"`
-	Status        string `json:"status"`
+	Status        int    `json:"status"`
 	Visible       bool   `json:"visible"`
 	CreatedAt     int64  `json:"created_at"`
 	UpdatedAt     int64  `json:"updated_at"`
@@ -19,7 +19,7 @@ type PlanBillingOptionSummary struct {
 // AdminListPlanBillingOptionsRequest 管理端套餐计费选项列表请求。
 type AdminListPlanBillingOptionsRequest struct {
 	PlanID  uint64 `path:"plan_id"`
-	Status  string `form:"status,optional" json:"status,optional"`
+	Status  int    `form:"status,optional" json:"status,optional"`
 	Visible *bool  `form:"visible,optional" json:"visible,optional"`
 }
 
@@ -37,7 +37,7 @@ type AdminCreatePlanBillingOptionRequest struct {
 	PriceCents    int64  `json:"price_cents"`
 	Currency      string `json:"currency,omitempty,optional"`
 	SortOrder     int    `json:"sort_order,omitempty,optional"`
-	Status        string `json:"status,omitempty,optional"`
+	Status        int    `json:"status,omitempty,optional"`
 	Visible       bool   `json:"visible,omitempty,optional"`
 }
 
@@ -51,6 +51,6 @@ type AdminUpdatePlanBillingOptionRequest struct {
 	PriceCents    *int64  `json:"price_cents,omitempty,optional"`
 	Currency      *string `json:"currency,omitempty,optional"`
 	SortOrder     *int    `json:"sort_order,omitempty,optional"`
-	Status        *string `json:"status,omitempty,optional"`
+	Status        *int    `json:"status,omitempty,optional"`
 	Visible       *bool   `json:"visible,omitempty,optional"`
 }

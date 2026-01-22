@@ -52,10 +52,13 @@ func (l *UpsertKernelLogic) Upsert(req *types.AdminUpsertNodeKernelRequest) (*ty
 		revisionPtr = &rev
 	}
 
-	var statusPtr *string
-	if strings.TrimSpace(req.Status) != "" {
-		status := strings.TrimSpace(req.Status)
-		statusPtr = &status
+	var statusPtr *int
+	if req.Status != nil {
+		statusCode, err := normalizeKernelStatus(*req.Status)
+		if err != nil {
+			return nil, err
+		}
+		statusPtr = &statusCode
 	}
 
 	var lastSynced *time.Time

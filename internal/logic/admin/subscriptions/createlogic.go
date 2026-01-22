@@ -11,6 +11,7 @@ import (
 	subscriptionutil "github.com/zero-net-panel/zero-net-panel/internal/logic/subscriptionutil"
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 	"github.com/zero-net-panel/zero-net-panel/internal/security"
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
 )
@@ -42,13 +43,13 @@ func (l *CreateLogic) Create(req *types.AdminCreateSubscriptionRequest) (*types.
 		return nil, err
 	}
 
-	status := "active"
+	statusCode := status.SubscriptionStatusActive
 	if req.Status != nil {
 		normalized, err := normalizeStatus(*req.Status)
 		if err != nil {
 			return nil, err
 		}
-		status = normalized
+		statusCode = normalized
 	}
 
 	available := append([]uint64(nil), req.AvailableTemplateIDs...)
@@ -114,7 +115,7 @@ func (l *CreateLogic) Create(req *types.AdminCreateSubscriptionRequest) (*types.
 		PlanName:             strings.TrimSpace(planName),
 		PlanID:               req.PlanID,
 		PlanSnapshot:         planSnapshot,
-		Status:               status,
+		Status:               statusCode,
 		TemplateID:           req.TemplateID,
 		AvailableTemplateIDs: available,
 		Token:                token,

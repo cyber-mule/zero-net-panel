@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 )
 
 // Plan represents purchasable subscription bundles similar to xboard 套餐。
@@ -25,7 +27,7 @@ type Plan struct {
 	TrafficMultipliers map[string]float64 `gorm:"serializer:json"`
 	DevicesLimit       int                `gorm:"column:devices_limit"`
 	SortOrder          int                `gorm:"column:sort_order"`
-	Status             string             `gorm:"size:32"`
+	Status             int                `gorm:"column:status"`
 	Visible            bool               `gorm:"column:is_visible"`
 	CreatedAt          time.Time
 	UpdatedAt          time.Time
@@ -41,7 +43,7 @@ type ListPlansOptions struct {
 	Sort      string
 	Direction string
 	Query     string
-	Status    string
+	Status    int
 	Visible   *bool
 }
 
@@ -79,8 +81,8 @@ func (r *planRepository) List(ctx context.Context, opts ListPlansOptions) ([]Pla
 		like := fmt.Sprintf("%%%s%%", query)
 		base = base.Where("(LOWER(name) LIKE ? OR LOWER(description) LIKE ?)", like, like)
 	}
-	if status := strings.TrimSpace(strings.ToLower(opts.Status)); status != "" {
-		base = base.Where("LOWER(status) = ?", status)
+	if opts.Status != 0 {
+		base = base.Where("status = ?", opts.Status)
 	}
 	if opts.Visible != nil {
 		base = base.Where("is_visible = ?", *opts.Visible)
@@ -118,8 +120,8 @@ func (r *planRepository) Create(ctx context.Context, plan Plan) (Plan, error) {
 	}
 	plan.UpdatedAt = now
 	plan.Slug = normalizeSlug(plan.Slug, plan.Name)
-	if plan.Status == "" {
-		plan.Status = "draft"
+	if plan.Status == 0 {
+		plan.Status = status.PlanStatusDraft
 	}
 	if plan.TrafficMultipliers == nil {
 		plan.TrafficMultipliers = map[string]float64{}

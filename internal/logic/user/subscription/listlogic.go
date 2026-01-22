@@ -7,6 +7,7 @@ import (
 
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 	"github.com/zero-net-panel/zero-net-panel/internal/security"
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
 )
@@ -41,7 +42,7 @@ func (l *ListLogic) List(req *types.UserListSubscriptionsRequest) (*types.UserSu
 		Direction:     req.Direction,
 		Query:         req.Query,
 		Status:        req.Status,
-		ExcludeStatus: []string{"disabled"},
+		ExcludeStatus: []int{status.SubscriptionStatusDisabled},
 	}
 
 	subs, total, err := l.svcCtx.Repositories.Subscription.ListByUser(l.ctx, user.ID, opts)

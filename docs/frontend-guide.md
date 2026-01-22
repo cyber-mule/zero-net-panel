@@ -80,7 +80,7 @@ async function request(url, options = {}) {
 
 账号生命周期提示：
 
-- 注册后若 `RequireEmailVerification=true`，返回 `requires_verification=true`，账号处于 `pending` 状态，需调用 `POST /auth/verify` 激活。
+- 注册后若 `RequireEmailVerification=true`，返回 `requires_verification=true`，账号处于 `status=2`（pending），需调用 `POST /auth/verify` 激活。
 - 账号被禁用或锁定时会返回 `403`，需提示联系管理员或稍后重试。
 - 账号被重置密码或强制下线时会返回 `401`，前端需清理令牌并引导重新登录。
 
@@ -155,7 +155,7 @@ Content-Type: application/json
 
 **节点状态同步**
 
-- 状态自动同步：服务按内置轮询间隔拉取内核 `/v1/status`，节点是否参与由 `status_sync_enabled` 控制，更新 `online/offline`。
+- 状态自动同步：服务按内置轮询间隔拉取内核 `/v1/status`，节点是否参与由 `status_sync_enabled` 控制，更新 `1/2`（online/offline）。
 
 - `POST /api/v1/{adminPrefix}/nodes/status/sync`
 - 请求体：
@@ -166,17 +166,17 @@ Content-Type: application/json
 ```json
 {
   "results": [
-    {"node_id":3,"status":"online","message":"ok","synced_at":1719766500},
-    {"node_id":4,"status":"offline","message":"kernel control: 401 Unauthorized","synced_at":1719766500}
+    {"node_id":3,"status":1,"message":"ok","synced_at":1719766500},
+    {"node_id":4,"status":2,"message":"kernel control: 401 Unauthorized","synced_at":1719766500}
   ]
 }
 ```
 
 状态约定：
 
-- `status=online|offline` 表示节点状态同步完成
-- `status=skipped` 表示节点已 `disabled`
-- `status=error` 表示节点不存在或控制面地址缺失
+- `status=1/2` 表示节点状态同步完成（online/offline）
+- `status=3` 表示节点已 `4`（disabled）
+- `status=4` 表示节点不存在或控制面地址缺失
 
 ### 6.2 管理端协议绑定下发
 
@@ -187,7 +187,7 @@ Content-Type: application/json
 响应：
 
 ```json
-{"binding_id":3,"status":"synced","message":"ok","synced_at":1719766500}
+{"binding_id":3,"status":1,"message":"ok","synced_at":1719766500}
 ```
 
 **批量下发**
@@ -202,16 +202,16 @@ Content-Type: application/json
 ```json
 {
   "results": [
-    {"binding_id":3,"status":"synced","message":"ok","synced_at":1719766500},
-    {"binding_id":4,"status":"error","message":"kernel control not configured","synced_at":1719766500}
+    {"binding_id":3,"status":1,"message":"ok","synced_at":1719766500},
+    {"binding_id":4,"status":2,"message":"kernel control not configured","synced_at":1719766500}
   ]
 }
 ```
 
 **状态约定**
 
-- `status=synced` 表示下发成功
-- `status=error` 表示失败（`message` 描述原因）
+- `status=1` 表示下发成功（synced）
+- `status=2` 表示失败（error，`message` 描述原因）
 - 创建协议绑定时必须提供 `kernel_id`（字符串），应与内核侧协议 ID 保持一致
 - 节点必须配置 `control_endpoint`，下发仅使用节点控制面地址
 - 鉴权优先级：`control_access_key` + `control_secret_key` → `control_token`（无全局兜底）
@@ -230,17 +230,17 @@ Content-Type: application/json
 ```json
 {
   "results": [
-    {"node_id":3,"status":"synced","message":"ok","synced_at":1719766500,"updated":8},
-    {"node_id":4,"status":"error","message":"kernel control: 401 Unauthorized","synced_at":1719766500,"updated":0}
+    {"node_id":3,"status":1,"message":"ok","synced_at":1719766500,"updated":8},
+    {"node_id":4,"status":2,"message":"kernel control: 401 Unauthorized","synced_at":1719766500,"updated":0}
   ]
 }
 ```
 
 状态约定：
 
-- `status=synced` 表示反向同步成功
-- `status=error` 表示反向同步失败
-- `status=skipped` 表示节点已 `disabled`
+- `status=1` 表示反向同步成功（synced）
+- `status=2` 表示反向同步失败（error）
+- `status=3` 表示节点已 `4`（disabled）
 
 ### 6.3 用户侧节点状态
 
@@ -249,12 +249,12 @@ Content-Type: application/json
 
 关键字段说明：
 
-- `nodes[].status`：管理端状态（手动禁用为 `disabled`）；运行态健康度请看 `protocol_statuses[].health_status`
-- 当 `status_sync_enabled=true` 时，后端会定时更新 `nodes[].status` 为 `online`/`offline`
+- `nodes[].status`：管理端状态（手动禁用为 `4`（disabled））；运行态健康度请看 `protocol_statuses[].health_status`
+- 当 `status_sync_enabled=true` 时，后端会定时更新 `nodes[].status` 为 `1/2`（online/offline）
 - `kernel_statuses[]`：节点同步摘要（来自最近一次同步记录）
 - `protocol_statuses[]`：协议绑定健康状态
-  - `health_status`：`healthy`/`degraded`/`unhealthy`/`offline`/`unknown`
-- 节点范围来自当前生效订阅（`active` 且未过期）绑定的协议；无生效订阅时返回空数组
+  - `health_status`：`1/2/3/4/0`（healthy/degraded/unhealthy/offline/unknown）
+- 节点范围来自当前生效订阅（`status=1` 且未过期）绑定的协议；无生效订阅时返回空数组
 - `protocol` 过滤时仅在套餐允许的协议绑定中筛选
 
 提示：`kernel_statuses` 表示同步记录状态，不是实时心跳。
@@ -263,7 +263,7 @@ Content-Type: application/json
 
 - `GET /api/v1/user/subscriptions/{id}/preview`
 - 查询参数：`template_id`（可选）
-  - 用户侧订阅列表默认不返回 `disabled` 状态，`expired` 仍可展示用于续费
+  - 用户侧订阅列表默认不返回 `status=2`（disabled），`status=3`（expired）仍可展示用于续费
 
 响应字段：
 
@@ -277,13 +277,13 @@ Content-Type: application/json
 - `user_identity.account_id` / `user_identity.password`
 - `user_identity.account` / `user_identity.id` / `user_identity.uuid`
 
-当订阅 `status != active` 时：
+当订阅 `status != 1` 时：
 
 - `nodes`/`protocol_bindings` 输出为空数组
 - `user_identity` 字段为空字符串
-  - `status=disabled` 时接口返回 `404`
+  - `status=2`（disabled）时接口返回 `404`
 
-当订阅 `status = active` 时：
+当订阅 `status = 1` 时：
 
 - `nodes`/`protocol_bindings` 仅包含套餐绑定的协议
   - `nodes[].access_address` / `nodes[].access_port` 作为客户端入口地址优先使用
@@ -301,7 +301,7 @@ Content-Type: application/json
   - 命中 `sing-box` 客户端 → `client_type=sing-box`
   - 常见识别关键字：`mihomo`、`clash-verge`、`surge`、`quantumult`、`stash`、`shadowrocket`、`loon`、`nekobox`、`v2rayn`、`v2rayng`
 - 未识别则回退订阅默认模板
-- 订阅非 `active` 或已过期时返回 `404`
+- 订阅 `status!=1` 或已过期时返回 `404`
 
 ## 7. 数据格式与展示建议
 
@@ -309,9 +309,9 @@ Content-Type: application/json
 - **流量**：`traffic_limit_bytes`、`traffic_used_bytes` 建议使用二进制单位（GB/TB）。
 - **时间**：所有 `*_at` 字段为 Unix 秒（UTC），前端需本地化显示。
 - **订单状态**：
-  - `status`：`pending_payment`、`paid`、`payment_failed`、`cancelled`、`partially_refunded`、`refunded`
-  - `payment_status`：`pending`、`succeeded`、`failed`
-- **套餐状态**：`draft`、`active`（未激活套餐前端可隐藏）
+  - `status`：`1..6`（pending_payment/paid/payment_failed/cancelled/partially_refunded/refunded）
+  - `payment_status`：`1..3`（pending/succeeded/failed）
+- **套餐状态**：`1`（draft）、`2`（active，未激活套餐前端可隐藏）
 
 ## 8. 订单与支付流程提示
 

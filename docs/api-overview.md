@@ -35,13 +35,13 @@
 - `/api/v1/user/account/password`：用户自主改密。
 - `/api/v1/user/account/email`：用户自主改邮箱（验证码流程）。
 - `/api/v1/user/orders`：创建、查询订单并支持取消待支付或零元订单，返回计划快照、条目与余额快照（可选 `billing_option_id`）。
-  - 用户侧默认不返回 `disabled` 状态订阅，`expired` 仍可展示用于续费。
+- 用户侧默认不返回 `status=2`（disabled）订阅，`status=3`（expired）仍可展示用于续费。
 
 ### 订单操作补充说明
 
 - 用户端 `POST /api/v1/user/orders` 新增 `payment_method`、`payment_channel`、`payment_return_url`、`coupon_code` 字段：
-  - 默认 `payment_method = balance`，系统直接扣减余额、记录 `balance_transactions`，订单状态立即变为 `paid`、`payment_status = succeeded`。
-  - 当 `payment_method = external` 且金额大于零时，会生成 `pending_payment` 订单，创建 `order_payments` 预订单记录，并按支付通道 `config` 发起支付；响应包含 `payment_intent_id` 与 `payments`，其中 `payments[].metadata.pay_url`/`qr_code` 可用于跳转或展示二维码，余额不会变动。
+- 默认 `payment_method = balance`，系统直接扣减余额、记录 `balance_transactions`，订单状态立即变为 `status=2`（paid）、`payment_status=2`（succeeded）。
+- 当 `payment_method = external` 且金额大于零时，会生成 `status=1`（pending_payment）订单，创建 `order_payments` 预订单记录，并按支付通道 `config` 发起支付；响应包含 `payment_intent_id` 与 `payments`，其中 `payments[].metadata.pay_url`/`qr_code` 可用于跳转或展示二维码，余额不会变动。
   - 当 `payment_method = manual` 时，会生成待支付订单；需管理员通过 `/api/v1/{admin}/orders/{id}/pay` 标记已支付。
 - 若命中优惠券，`order.items` 会追加 `item_type=discount` 条目并在 `order.metadata` 回填折扣信息。
 - 用户端 `POST /api/v1/user/orders/{id}/cancel` 仅允许取消待支付或零金额订单，不触发余额回滚。
@@ -49,7 +49,7 @@
 - 管理端提供 `POST /api/v1/{admin}/orders/{id}/pay`、`/cancel`、`/refund` 与 `/orders/payments/reconcile`，需管理员角色；外部支付退款会按通道 `config.refund` 发起并记录退款流水。
 - 所有用户端接口默认需要 JWT 鉴权，同时可选启用第三方加密认证中间件，对请求进行签名验证与 AES-GCM 解密。
 - 外部支付回调可按以下流程接入：
-  1. 网关回调携带支付状态后，通过内部逻辑 `PaymentCallbackLogic`（或后续开放的专用接口）调用 `UpdatePaymentState`、`UpdatePaymentRecord`，将订单状态从 `pending_payment` 更新为 `paid`/`payment_failed`，并填充 `payment_reference`、`payment_failure_*` 字段。
+1. 网关回调携带支付状态后，通过内部逻辑 `PaymentCallbackLogic`（或后续开放的专用接口）调用 `UpdatePaymentState`、`UpdatePaymentRecord`，将订单状态从 `status=1`（pending_payment）更新为 `status=2`（paid）/`status=3`（payment_failed），并填充 `payment_reference`、`payment_failure_*` 字段。
   2. 回调完成后，`GET /api/v1/user/orders/:id` 与 `/admin/orders/:id` 均会返回最新的 `payment_status`、`payments` 明细，方便前端落地扫码/轮询场景。
 
 ## 端到端流程
@@ -79,7 +79,7 @@
 - `POST /api/v1/{admin}/nodes`：创建节点基础信息与控制面信息（`control_endpoint`/AK-SK/`control_token`）。
 - `PATCH /api/v1/{admin}/nodes/{id}`：更新节点元数据、控制面地址与标签（节点控制面必填，不再回退全局）。
 - `status_sync_enabled`：控制是否允许节点状态自动同步（默认 true）。
-- 启用后，服务会定时调用内核 `GET /v1/status`，将节点 `status` 更新为 `online`/`offline`。
+- 启用后，服务会定时调用内核 `GET /v1/status`，将节点 `status` 更新为 `1`（online）/`2`（offline）。
 - `POST /api/v1/{admin}/nodes/{id}/disable`：下线/禁用节点（替代物理删除）。
 - `POST /api/v1/{admin}/nodes/{id}/kernels/sync`：触发节点内核配置同步（`protocol` 可选）。
 - `POST /api/v1/{admin}/nodes/status/sync`：手动同步节点状态（仅处理指定 `node_ids`）。
@@ -101,14 +101,14 @@
 
 ### 节点状态同步流程
 
-1. 定时任务按内置轮询间隔访问 `/v1/status`，节点是否参与由 `status_sync_enabled` 控制，成功更新 `status=online`，失败更新为 `offline`。
+1. 定时任务按内置轮询间隔访问 `/v1/status`，节点是否参与由 `status_sync_enabled` 控制，成功更新 `status=1`（online），失败更新为 `2`（offline）。
 2. 需要即时更新时，可调用 `POST /api/v1/{admin}/nodes/status/sync` 并传入 `node_ids`。
 3. 响应中返回每个节点的 `status` 与 `message`，便于定位控制面鉴权或地址问题。
 
 ### 协议健康反向同步流程
 
 1. 调用 `POST /api/v1/{admin}/protocol-bindings/status/sync` 并传入 `node_ids`。
-2. 服务端按节点控制面分组拉取 `/v1/status`，将协议绑定 `health_status` 更新为 `healthy/degraded/unhealthy/offline/unknown`。
+2. 服务端按节点控制面分组拉取 `/v1/status`，将协议绑定 `health_status` 更新为 `1/2/3/4/0`（healthy/degraded/unhealthy/offline/unknown）。
 3. 响应中返回每个节点的同步结果与更新数量。
 
 | 接口 | HTTP 状态码 | 说明 | 排障建议 |
@@ -134,7 +134,7 @@
 1. 管理端创建协议绑定与发布（`/protocol-bindings`、`/protocol-entries`）。
 2. 触发单条或批量下发：`POST /api/v1/{admin}/protocol-bindings/{id}/sync` 或 `/protocol-bindings/sync`。
 3. 同步结果直接返回，包含 `binding_id`、`status`、`message`、`synced_at`。
-4. 若未配置内核控制面，返回 `status=error` 且 `message` 提示配置缺失。
+4. 若未配置内核控制面，返回 `status=2`（error）且 `message` 提示配置缺失。
 
 批量下发示例：
 ```json
@@ -145,7 +145,7 @@
 
 1. 管理端 `POST /api/v1/{admin}/plans` 创建套餐：必填 `name`、`price_cents`、`currency`、`duration_days`；可选 `binding_ids`、`traffic_limit_bytes`、`devices_limit`。
 2. （可选）为套餐添加计费选项 `POST /api/v1/{admin}/plans/{plan_id}/billing-options`。
-3. 前端或第三方调用 `GET /api/v1/user/plans` 验证套餐是否对终端可见（需 `status=active` 且 `visible=true`）。
+3. 前端或第三方调用 `GET /api/v1/user/plans` 验证套餐是否对终端可见（需 `status=2`（active）且 `visible=true`）。
 4. 订单创建时，`POST /api/v1/user/orders` 会读取套餐快照、扣减余额并返回结果。
 
 ### 订阅创建与交付流程
@@ -163,7 +163,7 @@
 | 同上 | `409201` | 套餐名称已存在 | 更换名称或在更新接口中使用已有套餐 ID。 |
 | `GET /api/v1/user/plans` | `503001` | 套餐缓存构建失败 | 查看缓存服务状态，必要时执行 `znp cache purge`（后续计划）或重启服务。 |
 | `POST /api/v1/user/orders` | `402001` | 余额不足 | 提示用户充值或调整套餐价格。 |
-| 同上 | `409301` | 套餐不可用 | 确认套餐状态为 `active` 且 `visible=true`，或检查权限配置。 |
+| 同上 | `409301` | 套餐不可用 | 确认套餐状态为 `status=2`（active）且 `visible=true`，或检查权限配置。 |
 
 ## 第三方认证与加密
 

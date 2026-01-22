@@ -31,7 +31,7 @@ type AdminListProtocolEntriesRequest {
 	sort       string `form:"sort,optional" json:"sort,optional"`
 	direction  string `form:"direction,optional" json:"direction,optional"`
 	q          string `form:"q,optional" json:"q,optional"`
-	status     string `form:"status,optional" json:"status,optional"`
+	status     int    `form:"status,optional" json:"status,optional"`
 	protocol   string `form:"protocol,optional" json:"protocol,optional"`
 	binding_id uint64 `form:"binding_id,optional" json:"binding_id,optional"`
 }
@@ -44,9 +44,9 @@ type ProtocolEntrySummary {
 	node_id        uint64
 	node_name      string
 	protocol       string
-	status         string
-	binding_status string
-	health_status  string
+	status         int
+	binding_status int
+	health_status  int
 	entry_address  string
 	entry_port     int
 	tags           []string
@@ -65,7 +65,7 @@ type AdminCreateProtocolEntryRequest {
 	name          string `form:"name,optional" json:"name,optional"`
 	binding_id    uint64
 	protocol      string                 `form:"protocol,optional" json:"protocol,optional"`
-	status        string                 `form:"status,optional" json:"status,optional"`
+	status        int                    `form:"status,optional" json:"status,optional"`
 	entry_address string                 `form:"entry_address" json:"entry_address"`
 	entry_port    int                    `form:"entry_port" json:"entry_port"`
 	tags          []string               `form:"tags,optional" json:"tags,optional"`
@@ -78,7 +78,7 @@ type AdminUpdateProtocolEntryRequest {
 	name          string                 `form:"name,optional" json:"name,optional"`
 	binding_id    uint64                 `form:"binding_id,optional" json:"binding_id,optional"`
 	protocol      string                 `form:"protocol,optional" json:"protocol,optional"`
-	status        string                 `form:"status,optional" json:"status,optional"`
+	status        int                    `form:"status,optional" json:"status,optional"`
 	entry_address string                 `form:"entry_address,optional" json:"entry_address,optional"`
 	entry_port    int                    `form:"entry_port,optional" json:"entry_port,optional"`
 	tags          []string               `form:"tags,optional" json:"tags,optional"`

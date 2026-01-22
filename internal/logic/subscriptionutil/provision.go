@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 )
 
 const (
@@ -45,7 +46,7 @@ func EnsureOrderSubscription(ctx context.Context, repos *repository.Repositories
 		return result, err
 	}
 
-	if !strings.EqualFold(lockedOrder.Status, repository.OrderStatusPaid) {
+	if lockedOrder.Status != repository.OrderStatusPaid {
 		return result, repository.ErrInvalidArgument
 	}
 
@@ -310,7 +311,7 @@ func findEligibleSubscription(ctx context.Context, repos *repository.Repositorie
 }
 
 func isEligible(sub repository.Subscription) bool {
-	return !strings.EqualFold(sub.Status, "disabled")
+	return sub.Status != status.SubscriptionStatusDisabled
 }
 
 func normalizeDurationUnit(unit string) string {
@@ -361,12 +362,12 @@ func renewSubscription(ctx context.Context, repos *repository.Repositories, sub 
 		expiresAt = updated
 	}
 
-	status := sub.Status
-	if status == "" || strings.EqualFold(status, "expired") {
-		status = "active"
+	statusCode := sub.Status
+	if statusCode == 0 || statusCode == status.SubscriptionStatusExpired {
+		statusCode = status.SubscriptionStatusActive
 	}
 	if !expiresAt.IsZero() && expiresAt.After(now) {
-		status = "active"
+		statusCode = status.SubscriptionStatusActive
 	}
 
 	trafficTotal := info.TrafficLimitBytes * int64(info.Quantity)
@@ -418,7 +419,7 @@ func renewSubscription(ctx context.Context, repos *repository.Repositories, sub 
 	}
 
 	input := repository.UpdateSubscriptionInput{
-		Status:               &status,
+		Status:               &statusCode,
 		Name:                 &name,
 		PlanName:             &planName,
 		PlanID:               &planID,
@@ -471,7 +472,7 @@ func createSubscription(ctx context.Context, repos *repository.Repositories, use
 		PlanName:             strings.TrimSpace(info.PlanName),
 		PlanID:               info.PlanID,
 		PlanSnapshot:         ClonePlanSnapshot(info.PlanSnapshot),
-		Status:               "active",
+		Status:               status.SubscriptionStatusActive,
 		TemplateID:           defaultTemplateID,
 		AvailableTemplateIDs: append([]uint64(nil), available...),
 		Token:                token,

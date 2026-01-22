@@ -9,23 +9,25 @@ import (
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 )
 
 const (
-	OrderStatusPendingPayment    = "pending_payment"
-	OrderStatusPaid              = "paid"
-	OrderStatusPaymentFailed     = "payment_failed"
-	OrderStatusCancelled         = "cancelled"
-	OrderStatusPartiallyRefunded = "partially_refunded"
-	OrderStatusRefunded          = "refunded"
+	OrderStatusPendingPayment    = status.OrderStatusPendingPayment
+	OrderStatusPaid              = status.OrderStatusPaid
+	OrderStatusPaymentFailed     = status.OrderStatusPaymentFailed
+	OrderStatusCancelled         = status.OrderStatusCancelled
+	OrderStatusPartiallyRefunded = status.OrderStatusPartiallyRefunded
+	OrderStatusRefunded          = status.OrderStatusRefunded
 
 	PaymentMethodBalance  = "balance"
 	PaymentMethodManual   = "manual"
 	PaymentMethodExternal = "external"
 
-	OrderPaymentStatusPending   = "pending"
-	OrderPaymentStatusSucceeded = "succeeded"
-	OrderPaymentStatusFailed    = "failed"
+	OrderPaymentStatusPending   = status.OrderPaymentStatusPending
+	OrderPaymentStatusSucceeded = status.OrderPaymentStatusSucceeded
+	OrderPaymentStatusFailed    = status.OrderPaymentStatusFailed
 )
 
 const OrderStatusPending = OrderStatusPendingPayment
@@ -37,9 +39,9 @@ type Order struct {
 	UserID               uint64         `gorm:"index;index:idx_order_user_idempotency,unique"`
 	IdempotencyKey       *string        `gorm:"size:128;index:idx_order_user_idempotency,unique"`
 	PlanID               *uint64        `gorm:"column:plan_id"`
-	Status               string         `gorm:"size:32"`
+	Status               int            `gorm:"column:status"`
 	PaymentMethod        string         `gorm:"size:32"`
-	PaymentStatus        string         `gorm:"size:32"`
+	PaymentStatus        int            `gorm:"column:payment_status"`
 	TotalCents           int64          `gorm:"column:total_cents"`
 	Currency             string         `gorm:"size:16"`
 	RefundedCents        int64          `gorm:"column:refunded_cents"`
@@ -99,7 +101,7 @@ type OrderPayment struct {
 	Method         string         `gorm:"size:64"`
 	IntentID       string         `gorm:"size:64"`
 	Reference      string         `gorm:"size:64"`
-	Status         string         `gorm:"size:32"`
+	Status         int            `gorm:"column:status"`
 	AmountCents    int64          `gorm:"column:amount_cents"`
 	Currency       string         `gorm:"size:16"`
 	FailureCode    string         `gorm:"size:64"`
@@ -116,9 +118,9 @@ func (OrderPayment) TableName() string { return "order_payments" }
 type ListOrdersOptions struct {
 	Page          int
 	PerPage       int
-	Status        string
+	Status        int
 	PaymentMethod string
-	PaymentStatus string
+	PaymentStatus int
 	Number        string
 	UserID        *uint64
 	Sort          string
@@ -177,13 +179,13 @@ func (r *orderRepository) Create(ctx context.Context, order Order, items []Order
 	if order.Number == "" {
 		order.Number = GenerateOrderNumber()
 	}
-	if order.Status == "" {
+	if order.Status == 0 {
 		order.Status = OrderStatusPendingPayment
 	}
 	if order.PaymentMethod == "" {
 		order.PaymentMethod = PaymentMethodBalance
 	}
-	if order.PaymentStatus == "" {
+	if order.PaymentStatus == 0 {
 		order.PaymentStatus = OrderPaymentStatusPending
 	}
 
@@ -297,14 +299,14 @@ func (r *orderRepository) List(ctx context.Context, opts ListOrdersOptions) ([]O
 	if opts.UserID != nil {
 		base = base.Where("user_id = ?", *opts.UserID)
 	}
-	if opts.Status != "" {
-		base = base.Where("LOWER(status) = ?", strings.ToLower(opts.Status))
+	if opts.Status != 0 {
+		base = base.Where("status = ?", opts.Status)
 	}
 	if opts.PaymentMethod != "" {
 		base = base.Where("LOWER(payment_method) = ?", strings.ToLower(opts.PaymentMethod))
 	}
-	if opts.PaymentStatus != "" {
-		base = base.Where("LOWER(payment_status) = ?", strings.ToLower(opts.PaymentStatus))
+	if opts.PaymentStatus != 0 {
+		base = base.Where("payment_status = ?", opts.PaymentStatus)
 	}
 	if opts.Number != "" {
 		like := fmt.Sprintf("%%%s%%", strings.TrimSpace(opts.Number))
@@ -456,7 +458,7 @@ func (r *orderRepository) CreatePayment(ctx context.Context, payment OrderPaymen
 	if payment.UpdatedAt.IsZero() {
 		payment.UpdatedAt = now
 	}
-	if payment.Status == "" {
+	if payment.Status == 0 {
 		payment.Status = OrderPaymentStatusPending
 	}
 
@@ -474,9 +476,7 @@ func normalizeListOrdersOptions(opts ListOrdersOptions) ListOrdersOptions {
 	if opts.PerPage <= 0 || opts.PerPage > 100 {
 		opts.PerPage = 20
 	}
-	opts.Status = strings.TrimSpace(strings.ToLower(opts.Status))
 	opts.PaymentMethod = strings.TrimSpace(strings.ToLower(opts.PaymentMethod))
-	opts.PaymentStatus = strings.TrimSpace(strings.ToLower(opts.PaymentStatus))
 	opts.Sort = strings.TrimSpace(strings.ToLower(opts.Sort))
 	opts.Direction = strings.TrimSpace(strings.ToLower(opts.Direction))
 	return opts

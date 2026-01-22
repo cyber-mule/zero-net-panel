@@ -16,7 +16,7 @@ type AdminListUsersRequest struct {
 	Page int `form:"page,optional" json:"page,optional"`
 	Per_page int `form:"per_page,optional" json:"per_page,optional"`
 	Q string `form:"q,optional" json:"q,optional"`
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 	Role string `form:"role,optional" json:"role,optional"`
 }
 ```
@@ -60,7 +60,7 @@ type AdminCreateUserRequest struct {
 	Password string 
 	Display_name string `form:"display_name,optional" json:"display_name,optional"`
 	Roles []string `form:"roles,optional" json:"roles,optional"`
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 	Email_verified bool `form:"email_verified,optional" json:"email_verified,optional"`
 }
 ```
@@ -80,7 +80,7 @@ type AdminUserSummary struct {
 	Email string 
 	Display_name string 
 	Roles []string 
-	Status string 
+	Status int 
 	Email_verified_at int64 `form:"email_verified_at,optional" json:"email_verified_at,optional"`
 	Failed_login_attempts int 
 	Locked_until int64 `form:"locked_until,optional" json:"locked_until,optional"`
@@ -122,7 +122,7 @@ type AdminRotateUserCredentialResponse struct {
 
 type CredentialSummary struct {
 	Version int 
-	Status string 
+	Status int 
 	Issued_at int64 
 	Deprecated_at *int64 
 	Revoked_at *int64 
@@ -226,7 +226,7 @@ type AdminUserSummary struct {
 	Email string 
 	Display_name string 
 	Roles []string 
-	Status string 
+	Status int 
 	Email_verified_at int64 `form:"email_verified_at,optional" json:"email_verified_at,optional"`
 	Failed_login_attempts int 
 	Locked_until int64 `form:"locked_until,optional" json:"locked_until,optional"`
@@ -252,7 +252,7 @@ type AdminUserSummary struct {
 ```golang
 type AdminUpdateUserStatusRequest struct {
 	Id uint64 `path:"id"`
-	Status string 
+	Status int 
 }
 ```
 
@@ -271,7 +271,7 @@ type AdminUserSummary struct {
 	Email string 
 	Display_name string 
 	Roles []string 
-	Status string 
+	Status int 
 	Email_verified_at int64 `form:"email_verified_at,optional" json:"email_verified_at,optional"`
 	Failed_login_attempts int 
 	Locked_until int64 `form:"locked_until,optional" json:"locked_until,optional"`

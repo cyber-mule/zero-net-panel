@@ -16,7 +16,7 @@ type AdminListSubscriptionsRequest struct {
 	Page int `form:"page,optional" json:"page,optional"`
 	Per_page int `form:"per_page,optional" json:"per_page,optional"`
 	Q string `form:"q,optional" json:"q,optional"`
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 	User_id uint64 `form:"user_id,optional" json:"user_id,optional"`
 	Plan_name string `form:"plan_name,optional" json:"plan_name,optional"`
 	Plan_id uint64 `form:"plan_id,optional" json:"plan_id,optional"`
@@ -63,7 +63,7 @@ type AdminCreateSubscriptionRequest struct {
 	Name string 
 	Plan_name string `form:"plan_name,optional" json:"plan_name,optional"`
 	Plan_id uint64 
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 	Template_id uint64 
 	Available_template_ids []uint64 `form:"available_template_ids,optional" json:"available_template_ids,optional"`
 	Token string `form:"token,optional" json:"token,optional"`
@@ -91,7 +91,7 @@ type AdminSubscriptionSummary struct {
 	Plan_name string 
 	Plan_id uint64 
 	Plan_snapshot map[string]interface{} 
-	Status string 
+	Status int 
 	Template_id uint64 
 	Available_template_ids []uint64 
 	Token string 
@@ -144,7 +144,7 @@ type AdminSubscriptionSummary struct {
 	Plan_name string 
 	Plan_id uint64 
 	Plan_snapshot map[string]interface{} 
-	Status string 
+	Status int 
 	Template_id uint64 
 	Available_template_ids []uint64 
 	Token string 
@@ -180,7 +180,7 @@ type AdminUpdateSubscriptionRequest struct {
 	Name string `form:"name,optional" json:"name,optional"`
 	Plan_name string `form:"plan_name,optional" json:"plan_name,optional"`
 	Plan_id uint64 `form:"plan_id,optional" json:"plan_id,optional"`
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 	Template_id uint64 `form:"template_id,optional" json:"template_id,optional"`
 	Available_template_ids []uint64 `form:"available_template_ids,optional" json:"available_template_ids,optional"`
 	Token string `form:"token,optional" json:"token,optional"`
@@ -208,7 +208,7 @@ type AdminSubscriptionSummary struct {
 	Plan_name string 
 	Plan_id uint64 
 	Plan_snapshot map[string]interface{} 
-	Status string 
+	Status int 
 	Template_id uint64 
 	Available_template_ids []uint64 
 	Token string 
@@ -262,7 +262,7 @@ type AdminSubscriptionSummary struct {
 	Plan_name string 
 	Plan_id uint64 
 	Plan_snapshot map[string]interface{} 
-	Status string 
+	Status int 
 	Template_id uint64 
 	Available_template_ids []uint64 
 	Token string 
@@ -318,7 +318,7 @@ type AdminSubscriptionSummary struct {
 	Plan_name string 
 	Plan_id uint64 
 	Plan_snapshot map[string]interface{} 
-	Status string 
+	Status int 
 	Template_id uint64 
 	Available_template_ids []uint64 
 	Token string 

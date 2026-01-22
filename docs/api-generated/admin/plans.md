@@ -18,7 +18,7 @@ type AdminListPlansRequest struct {
 	Sort string `form:"sort,optional" json:"sort,optional"`
 	Direction string `form:"direction,optional" json:"direction,optional"`
 	Q string `form:"q,optional" json:"q,optional"`
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 	Visible bool `form:"visible,optional" json:"visible,optional"`
 }
 ```
@@ -71,7 +71,7 @@ type AdminCreatePlanRequest struct {
 	Traffic_multipliers map[string]float64 `form:"traffic_multipliers,optional" json:"traffic_multipliers,optional"`
 	Devices_limit int `form:"devices_limit,optional" json:"devices_limit,optional"`
 	Sort_order int `form:"sort_order,optional" json:"sort_order,optional"`
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 	Visible bool `form:"visible,optional" json:"visible,optional"`
 }
 ```
@@ -98,7 +98,7 @@ type PlanSummary struct {
 	Traffic_multipliers map[string]float64 
 	Devices_limit int 
 	Sort_order int 
-	Status string 
+	Status int 
 	Visible bool 
 	Created_at int64 
 	Updated_at int64 
@@ -134,7 +134,7 @@ type AdminUpdatePlanRequest struct {
 	Traffic_multipliers map[string]float64 `form:"traffic_multipliers,optional" json:"traffic_multipliers,optional"`
 	Devices_limit int `form:"devices_limit,optional" json:"devices_limit,optional"`
 	Sort_order int `form:"sort_order,optional" json:"sort_order,optional"`
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 	Visible bool `form:"visible,optional" json:"visible,optional"`
 }
 ```
@@ -161,7 +161,7 @@ type PlanSummary struct {
 	Traffic_multipliers map[string]float64 
 	Devices_limit int 
 	Sort_order int 
-	Status string 
+	Status int 
 	Visible bool 
 	Created_at int64 
 	Updated_at int64 

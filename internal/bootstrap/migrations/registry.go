@@ -5,11 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"gorm.io/gorm"
 
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 )
 
 // SchemaMigration stores executed migration metadata.
@@ -130,6 +132,202 @@ var migrationRegistry = []Migration{
 			return nil
 		},
 	},
+	{
+		Version: 2026030101,
+		Name:    "status-code-migration",
+		Up: func(ctx context.Context, db *gorm.DB) error {
+			columns := []statusColumn{
+				{table: "users", column: "status", mapping: map[string]int{
+					"active":   status.UserStatusActive,
+					"pending":  status.UserStatusPending,
+					"disabled": status.UserStatusDisabled,
+				}},
+				{table: "user_credentials", column: "status", mapping: map[string]int{
+					"active":     status.UserCredentialStatusActive,
+					"deprecated": status.UserCredentialStatusDeprecated,
+					"revoked":    status.UserCredentialStatusRevoked,
+				}},
+				{table: "announcements", column: "status", mapping: map[string]int{
+					"draft":     status.AnnouncementStatusDraft,
+					"published": status.AnnouncementStatusPublished,
+					"archived":  status.AnnouncementStatusArchived,
+				}},
+				{table: "coupons", column: "status", mapping: map[string]int{
+					"active":   status.CouponStatusActive,
+					"disabled": status.CouponStatusDisabled,
+				}},
+				{table: "coupon_redemptions", column: "status", mapping: map[string]int{
+					"reserved": status.CouponRedemptionStatusReserved,
+					"applied":  status.CouponRedemptionStatusApplied,
+					"released": status.CouponRedemptionStatusReleased,
+				}},
+				{table: "plans", column: "status", mapping: map[string]int{
+					"draft":    status.PlanStatusDraft,
+					"active":   status.PlanStatusActive,
+					"archived": status.PlanStatusArchived,
+				}},
+				{table: "plan_billing_options", column: "status", mapping: map[string]int{
+					"draft":    status.PlanBillingOptionStatusDraft,
+					"active":   status.PlanBillingOptionStatusActive,
+					"archived": status.PlanBillingOptionStatusArchived,
+				}},
+				{table: "subscriptions", column: "status", mapping: map[string]int{
+					"active":   status.SubscriptionStatusActive,
+					"disabled": status.SubscriptionStatusDisabled,
+					"expired":  status.SubscriptionStatusExpired,
+					"pending":  status.SubscriptionStatusUnknown,
+				}},
+				{table: "nodes", column: "status", mapping: map[string]int{
+					"online":      status.NodeStatusOnline,
+					"offline":     status.NodeStatusOffline,
+					"maintenance": status.NodeStatusMaintenance,
+					"disabled":    status.NodeStatusDisabled,
+				}},
+				{table: "node_kernels", column: "status", mapping: map[string]int{
+					"configured": status.NodeKernelStatusConfigured,
+					"synced":     status.NodeKernelStatusSynced,
+				}},
+				{table: "protocol_bindings", column: "status", mapping: map[string]int{
+					"active":   status.ProtocolBindingStatusActive,
+					"disabled": status.ProtocolBindingStatusDisabled,
+				}},
+				{table: "protocol_bindings", column: "sync_status", mapping: map[string]int{
+					"pending": status.ProtocolBindingSyncStatusPending,
+					"synced":  status.ProtocolBindingSyncStatusSynced,
+					"error":   status.ProtocolBindingSyncStatusError,
+				}},
+				{table: "protocol_bindings", column: "health_status", mapping: map[string]int{
+					"unknown":   status.ProtocolBindingHealthStatusUnknown,
+					"healthy":   status.ProtocolBindingHealthStatusHealthy,
+					"degraded":  status.ProtocolBindingHealthStatusDegraded,
+					"unhealthy": status.ProtocolBindingHealthStatusUnhealthy,
+					"offline":   status.ProtocolBindingHealthStatusOffline,
+				}},
+				{table: "protocol_entries", column: "status", mapping: map[string]int{
+					"active":   status.ProtocolEntryStatusActive,
+					"disabled": status.ProtocolEntryStatusDisabled,
+				}},
+				{table: "orders", column: "status", mapping: map[string]int{
+					"pending_payment":    status.OrderStatusPendingPayment,
+					"pending":            status.OrderStatusPendingPayment,
+					"paid":               status.OrderStatusPaid,
+					"payment_failed":     status.OrderStatusPaymentFailed,
+					"cancelled":          status.OrderStatusCancelled,
+					"canceled":           status.OrderStatusCancelled,
+					"partially_refunded": status.OrderStatusPartiallyRefunded,
+					"refunded":           status.OrderStatusRefunded,
+				}},
+				{table: "orders", column: "payment_status", mapping: map[string]int{
+					"pending":   status.OrderPaymentStatusPending,
+					"succeeded": status.OrderPaymentStatusSucceeded,
+					"failed":    status.OrderPaymentStatusFailed,
+				}},
+				{table: "order_payments", column: "status", mapping: map[string]int{
+					"pending":   status.OrderPaymentStatusPending,
+					"succeeded": status.OrderPaymentStatusSucceeded,
+					"failed":    status.OrderPaymentStatusFailed,
+				}},
+			}
+
+			for _, column := range columns {
+				if err := updateStatusColumn(ctx, db, column); err != nil {
+					return err
+				}
+			}
+
+			switch db.Dialector.Name() {
+			case "postgres", "mysql":
+				for _, column := range columns {
+					if err := alterStatusColumn(ctx, db, column); err != nil {
+						return err
+					}
+				}
+			}
+
+			return nil
+		},
+		Down: func(ctx context.Context, db *gorm.DB) error {
+			return nil
+		},
+	},
+}
+
+type statusColumn struct {
+	table   string
+	column  string
+	mapping map[string]int
+}
+
+func updateStatusColumn(ctx context.Context, db *gorm.DB, column statusColumn) error {
+	if db == nil {
+		return fmt.Errorf("migrations: database connection is required")
+	}
+	if column.table == "" || column.column == "" {
+		return fmt.Errorf("migrations: invalid status column")
+	}
+
+	dialect := db.Dialector.Name()
+	valueExpr := column.column
+	switch dialect {
+	case "mysql":
+		valueExpr = fmt.Sprintf("LOWER(CAST(%s AS CHAR))", column.column)
+	default:
+		valueExpr = fmt.Sprintf("LOWER(CAST(%s AS TEXT))", column.column)
+	}
+
+	codes := collectStatusCodes(column.mapping)
+	clauses := make([]string, 0, len(column.mapping)+len(codes))
+	for key, value := range column.mapping {
+		clauses = append(clauses, fmt.Sprintf("WHEN %s = '%s' THEN %d", valueExpr, key, value))
+	}
+	for _, code := range codes {
+		clauses = append(clauses, fmt.Sprintf("WHEN %s = '%d' THEN %d", valueExpr, code, code))
+	}
+
+	statement := fmt.Sprintf(
+		"UPDATE %s SET %s = CASE %s ELSE 0 END",
+		column.table,
+		column.column,
+		strings.Join(clauses, " "),
+	)
+
+	return db.WithContext(ctx).Exec(statement).Error
+}
+
+func alterStatusColumn(ctx context.Context, db *gorm.DB, column statusColumn) error {
+	if db == nil {
+		return fmt.Errorf("migrations: database connection is required")
+	}
+
+	switch db.Dialector.Name() {
+	case "postgres":
+		statement := fmt.Sprintf(
+			"ALTER TABLE %s ALTER COLUMN %s TYPE INTEGER USING (%s::integer)",
+			column.table,
+			column.column,
+			column.column,
+		)
+		return db.WithContext(ctx).Exec(statement).Error
+	case "mysql":
+		statement := fmt.Sprintf("ALTER TABLE %s MODIFY COLUMN %s INT", column.table, column.column)
+		return db.WithContext(ctx).Exec(statement).Error
+	default:
+		return nil
+	}
+}
+
+func collectStatusCodes(mapping map[string]int) []int {
+	seen := make(map[int]struct{}, len(mapping)+1)
+	seen[0] = struct{}{}
+	for _, value := range mapping {
+		seen[value] = struct{}{}
+	}
+	codes := make([]int, 0, len(seen))
+	for value := range seen {
+		codes = append(codes, value)
+	}
+	sort.Ints(codes)
+	return codes
 }
 
 func init() {

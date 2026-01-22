@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"gorm.io/gorm"
+
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 )
 
 const (
@@ -27,7 +28,7 @@ type PlanBillingOption struct {
 	PriceCents    int64  `gorm:"column:price_cents"`
 	Currency      string `gorm:"size:16"`
 	SortOrder     int    `gorm:"column:sort_order"`
-	Status        string `gorm:"size:32"`
+	Status        int    `gorm:"column:status"`
 	Visible       bool   `gorm:"column:is_visible"`
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
@@ -40,7 +41,7 @@ func (PlanBillingOption) TableName() string { return "plan_billing_options" }
 type ListPlanBillingOptionsOptions struct {
 	PlanID  uint64
 	PlanIDs []uint64
-	Status  string
+	Status  int
 	Visible *bool
 }
 
@@ -76,8 +77,8 @@ func (r *planBillingOptionRepository) List(ctx context.Context, opts ListPlanBil
 	if len(opts.PlanIDs) > 0 {
 		base = base.Where("plan_id IN ?", opts.PlanIDs)
 	}
-	if status := strings.TrimSpace(strings.ToLower(opts.Status)); status != "" {
-		base = base.Where("LOWER(status) = ?", status)
+	if opts.Status != 0 {
+		base = base.Where("status = ?", opts.Status)
 	}
 	if opts.Visible != nil {
 		base = base.Where("is_visible = ?", *opts.Visible)
@@ -100,8 +101,8 @@ func (r *planBillingOptionRepository) Create(ctx context.Context, option PlanBil
 		option.CreatedAt = now
 	}
 	option.UpdatedAt = now
-	if option.Status == "" {
-		option.Status = "draft"
+	if option.Status == 0 {
+		option.Status = status.PlanBillingOptionStatusDraft
 	}
 
 	if err := r.db.WithContext(ctx).Create(&option).Error; err != nil {

@@ -15,7 +15,7 @@
 type AdminListAnnouncementsRequest struct {
 	Page int `form:"page,optional" json:"page,optional"`
 	Per_page int `form:"per_page,optional" json:"per_page,optional"`
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 	Category string `form:"category,optional" json:"category,optional"`
 	Audience string `form:"audience,optional" json:"audience,optional"`
 	Q string `form:"q,optional" json:"q,optional"`
@@ -80,7 +80,7 @@ type AnnouncementSummary struct {
 	Title string 
 	Content string 
 	Category string 
-	Status string 
+	Status int 
 	Audience string 
 	Is_pinned bool 
 	Priority int 
@@ -127,7 +127,7 @@ type AnnouncementSummary struct {
 	Title string 
 	Content string 
 	Category string 
-	Status string 
+	Status int 
 	Audience string 
 	Is_pinned bool 
 	Priority int 
@@ -246,7 +246,7 @@ type AdminListCouponsRequest struct {
 	Page int `form:"page,optional" json:"page,optional"`
 	Per_page int `form:"per_page,optional" json:"per_page,optional"`
 	Q string `form:"q,optional" json:"q,optional"`
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 	Sort string `form:"sort,optional" json:"sort,optional"`
 	Direction string `form:"direction,optional" json:"direction,optional"`
 }
@@ -290,7 +290,7 @@ type AdminCreateCouponRequest struct {
 	Code string 
 	Name string 
 	Description string `form:"description,optional" json:"description,optional"`
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 	Discount_type string 
 	Discount_value int64 
 	Currency string `form:"currency,optional" json:"currency,optional"`
@@ -313,7 +313,7 @@ type CouponSummary struct {
 	Code string 
 	Name string 
 	Description string 
-	Status string 
+	Status int 
 	Discount_type string 
 	Discount_value int64 
 	Currency string 
@@ -345,7 +345,7 @@ type AdminUpdateCouponRequest struct {
 	Id uint64 `path:"id"`
 	Name string `form:"name,optional" json:"name,optional"`
 	Description string `form:"description,optional" json:"description,optional"`
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 	Discount_type string `form:"discount_type,optional" json:"discount_type,optional"`
 	Discount_value int64 `form:"discount_value,optional" json:"discount_value,optional"`
 	Currency string `form:"currency,optional" json:"currency,optional"`
@@ -368,7 +368,7 @@ type CouponSummary struct {
 	Code string 
 	Name string 
 	Description string 
-	Status string 
+	Status int 
 	Discount_type string 
 	Discount_value int64 
 	Currency string 
@@ -448,7 +448,7 @@ type AdminListNodesRequest struct {
 	Sort string `form:"sort,optional" json:"sort,optional"`
 	Direction string `form:"direction,optional" json:"direction,optional"`
 	Q string `form:"q,optional" json:"q,optional"`
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 	Protocol string `form:"protocol,optional" json:"protocol,optional"`
 }
 ```
@@ -492,7 +492,7 @@ type AdminCreateNodeRequest struct {
 	Region string `form:"region,optional" json:"region,optional"`
 	Country string `form:"country,optional" json:"country,optional"`
 	Isp string `form:"isp,optional" json:"isp,optional"`
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 	Tags []string `form:"tags,optional" json:"tags,optional"`
 	Capacity_mbps int `form:"capacity_mbps,optional" json:"capacity_mbps,optional"`
 	Description string `form:"description,optional" json:"description,optional"`
@@ -531,7 +531,7 @@ type NodeSummary struct {
 	Region string 
 	Country string 
 	Isp string 
-	Status string 
+	Status int 
 	Tags []string 
 	Capacity_mbps int 
 	Description string 
@@ -571,7 +571,7 @@ type AdminUpdateNodeRequest struct {
 	Region string `form:"region,optional" json:"region,optional"`
 	Country string `form:"country,optional" json:"country,optional"`
 	Isp string `form:"isp,optional" json:"isp,optional"`
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 	Tags []string `form:"tags,optional" json:"tags,optional"`
 	Capacity_mbps int `form:"capacity_mbps,optional" json:"capacity_mbps,optional"`
 	Description string `form:"description,optional" json:"description,optional"`
@@ -610,7 +610,7 @@ type NodeSummary struct {
 	Region string 
 	Country string 
 	Isp string 
-	Status string 
+	Status int 
 	Tags []string 
 	Capacity_mbps int 
 	Description string 
@@ -688,7 +688,7 @@ type NodeSummary struct {
 	Region string 
 	Country string 
 	Isp string 
-	Status string 
+	Status int 
 	Tags []string 
 	Capacity_mbps int 
 	Description string 
@@ -758,7 +758,7 @@ type AdminUpsertNodeKernelRequest struct {
 	Protocol string 
 	Endpoint string 
 	Revision string `form:"revision,optional" json:"revision,optional"`
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 	Config map[string]interface{} `form:"config,optional" json:"config,optional"`
 	Last_synced_at int64 `form:"last_synced_at,optional" json:"last_synced_at,optional"`
 }
@@ -779,7 +779,7 @@ type NodeKernelSummary struct {
 	Protocol string 
 	Endpoint string 
 	Revision string 
-	Status string 
+	Status int 
 	Config map[string]interface{} 
 	Last_synced_at int64 
 }
@@ -867,9 +867,9 @@ type AdminSyncNodeStatusResponse struct {
 type AdminListOrdersRequest struct {
 	Page int 
 	Per_page int 
-	Status string 
+	Status int 
 	Payment_method string 
-	Payment_status string 
+	Payment_status int 
 	Number string 
 	Sort string 
 	Direction string 
@@ -930,8 +930,8 @@ type AdminOrderDetail struct {
 	Id uint64 
 	Number string 
 	User_id uint64 
-	Status string 
-	Payment_status string 
+	Status int 
+	Payment_status int 
 	Payment_intent_id *string 
 	Payment_reference *string 
 	Payment_failure_code *string 
@@ -993,8 +993,8 @@ type AdminOrderDetail struct {
 	Id uint64 
 	Number string 
 	User_id uint64 
-	Status string 
-	Payment_status string 
+	Status int 
+	Payment_status int 
 	Payment_intent_id *string 
 	Payment_reference *string 
 	Payment_failure_code *string 
@@ -1059,8 +1059,8 @@ type AdminOrderDetail struct {
 	Id uint64 
 	Number string 
 	User_id uint64 
-	Status string 
-	Payment_status string 
+	Status int 
+	Payment_status int 
 	Payment_intent_id *string 
 	Payment_reference *string 
 	Payment_failure_code *string 
@@ -1125,8 +1125,8 @@ type AdminOrderDetail struct {
 	Id uint64 
 	Number string 
 	User_id uint64 
-	Status string 
-	Payment_status string 
+	Status int 
+	Payment_status int 
 	Payment_intent_id *string 
 	Payment_reference *string 
 	Payment_failure_code *string 
@@ -1170,7 +1170,7 @@ type OrderUserSummary struct {
 type AdminPaymentCallbackRequest struct {
 	Order_id uint64 
 	Payment_id uint64 
-	Status string 
+	Status int 
 	Reference string `form:"reference,optional" json:"reference,optional"`
 	Failure_code string `form:"failure_code,optional" json:"failure_code,optional"`
 	Failure_message string `form:"failure_message,optional" json:"failure_message,optional"`
@@ -1192,8 +1192,8 @@ type AdminOrderDetail struct {
 	Id uint64 
 	Number string 
 	User_id uint64 
-	Status string 
-	Payment_status string 
+	Status int 
+	Payment_status int 
 	Payment_intent_id *string 
 	Payment_reference *string 
 	Payment_failure_code *string 
@@ -1254,8 +1254,8 @@ type AdminOrderDetail struct {
 	Id uint64 
 	Number string 
 	User_id uint64 
-	Status string 
-	Payment_status string 
+	Status int 
+	Payment_status int 
 	Payment_intent_id *string 
 	Payment_reference *string 
 	Payment_failure_code *string 
@@ -1299,7 +1299,7 @@ type OrderUserSummary struct {
 type AdminPaymentCallbackRequest struct {
 	Order_id uint64 
 	Payment_id uint64 
-	Status string 
+	Status int 
 	Reference string `form:"reference,optional" json:"reference,optional"`
 	Failure_code string `form:"failure_code,optional" json:"failure_code,optional"`
 	Failure_message string `form:"failure_message,optional" json:"failure_message,optional"`
@@ -1321,8 +1321,8 @@ type AdminOrderDetail struct {
 	Id uint64 
 	Number string 
 	User_id uint64 
-	Status string 
-	Payment_status string 
+	Status int 
+	Payment_status int 
 	Payment_intent_id *string 
 	Payment_reference *string 
 	Payment_failure_code *string 
@@ -1535,7 +1535,7 @@ type PaymentChannelSummary struct {
 ```golang
 type AdminListPlanBillingOptionsRequest struct {
 	Plan_id uint64 `path:"plan_id"`
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 	Visible bool `form:"visible,optional" json:"visible,optional"`
 }
 ```
@@ -1573,7 +1573,7 @@ type AdminCreatePlanBillingOptionRequest struct {
 	Price_cents int64 
 	Currency string `form:"currency,optional" json:"currency,optional"`
 	Sort_order int `form:"sort_order,optional" json:"sort_order,optional"`
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 	Visible bool `form:"visible,optional" json:"visible,optional"`
 }
 ```
@@ -1593,7 +1593,7 @@ type PlanBillingOptionSummary struct {
 	Price_cents int64 
 	Currency string 
 	Sort_order int 
-	Status string 
+	Status int 
 	Visible bool 
 	Created_at int64 
 	Updated_at int64 
@@ -1623,7 +1623,7 @@ type AdminUpdatePlanBillingOptionRequest struct {
 	Price_cents int64 `form:"price_cents,optional" json:"price_cents,optional"`
 	Currency string `form:"currency,optional" json:"currency,optional"`
 	Sort_order int `form:"sort_order,optional" json:"sort_order,optional"`
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 	Visible bool `form:"visible,optional" json:"visible,optional"`
 }
 ```
@@ -1643,7 +1643,7 @@ type PlanBillingOptionSummary struct {
 	Price_cents int64 
 	Currency string 
 	Sort_order int 
-	Status string 
+	Status int 
 	Visible bool 
 	Created_at int64 
 	Updated_at int64 
@@ -1670,7 +1670,7 @@ type AdminListPlansRequest struct {
 	Sort string `form:"sort,optional" json:"sort,optional"`
 	Direction string `form:"direction,optional" json:"direction,optional"`
 	Q string `form:"q,optional" json:"q,optional"`
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 	Visible bool `form:"visible,optional" json:"visible,optional"`
 }
 ```
@@ -1723,7 +1723,7 @@ type AdminCreatePlanRequest struct {
 	Traffic_multipliers map[string]float64 `form:"traffic_multipliers,optional" json:"traffic_multipliers,optional"`
 	Devices_limit int `form:"devices_limit,optional" json:"devices_limit,optional"`
 	Sort_order int `form:"sort_order,optional" json:"sort_order,optional"`
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 	Visible bool `form:"visible,optional" json:"visible,optional"`
 }
 ```
@@ -1750,7 +1750,7 @@ type PlanSummary struct {
 	Traffic_multipliers map[string]float64 
 	Devices_limit int 
 	Sort_order int 
-	Status string 
+	Status int 
 	Visible bool 
 	Created_at int64 
 	Updated_at int64 
@@ -1786,7 +1786,7 @@ type AdminUpdatePlanRequest struct {
 	Traffic_multipliers map[string]float64 `form:"traffic_multipliers,optional" json:"traffic_multipliers,optional"`
 	Devices_limit int `form:"devices_limit,optional" json:"devices_limit,optional"`
 	Sort_order int `form:"sort_order,optional" json:"sort_order,optional"`
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 	Visible bool `form:"visible,optional" json:"visible,optional"`
 }
 ```
@@ -1813,7 +1813,7 @@ type PlanSummary struct {
 	Traffic_multipliers map[string]float64 
 	Devices_limit int 
 	Sort_order int 
-	Status string 
+	Status int 
 	Visible bool 
 	Created_at int64 
 	Updated_at int64 
@@ -1840,7 +1840,7 @@ type AdminListProtocolBindingsRequest struct {
 	Sort string `form:"sort,optional" json:"sort,optional"`
 	Direction string `form:"direction,optional" json:"direction,optional"`
 	Q string `form:"q,optional" json:"q,optional"`
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 	Protocol string `form:"protocol,optional" json:"protocol,optional"`
 	Node_id uint64 `form:"node_id,optional" json:"node_id,optional"`
 }
@@ -1889,7 +1889,7 @@ type AdminCreateProtocolBindingRequest struct {
 	Listen string `form:"listen,optional" json:"listen,optional"`
 	Connect string `form:"connect,optional" json:"connect,optional"`
 	Access_port int `form:"access_port,optional" json:"access_port,optional"`
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 	Kernel_id string `form:"kernel_id" json:"kernel_id"`
 	Tags []string `form:"tags,optional" json:"tags,optional"`
 	Description string `form:"description,optional" json:"description,optional"`
@@ -1913,10 +1913,10 @@ type ProtocolBindingSummary struct {
 	Listen string 
 	Connect string 
 	Access_port int 
-	Status string 
+	Status int 
 	Kernel_id string 
-	Sync_status string 
-	Health_status string 
+	Sync_status int 
+	Health_status int 
 	Last_synced_at int64 
 	Last_heartbeat_at int64 
 	Last_sync_error string 
@@ -1952,10 +1952,10 @@ type AdminUpdateProtocolBindingRequest struct {
 	Listen string `form:"listen,optional" json:"listen,optional"`
 	Connect string `form:"connect,optional" json:"connect,optional"`
 	Access_port int `form:"access_port,optional" json:"access_port,optional"`
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 	Kernel_id string `form:"kernel_id,optional" json:"kernel_id,optional"`
-	Sync_status string `form:"sync_status,optional" json:"sync_status,optional"`
-	Health_status string `form:"health_status,optional" json:"health_status,optional"`
+	Sync_status int `form:"sync_status,optional" json:"sync_status,optional"`
+	Health_status int `form:"health_status,optional" json:"health_status,optional"`
 	Last_synced_at int64 `form:"last_synced_at,optional" json:"last_synced_at,optional"`
 	Last_heartbeat_at int64 `form:"last_heartbeat_at,optional" json:"last_heartbeat_at,optional"`
 	Last_sync_error string `form:"last_sync_error,optional" json:"last_sync_error,optional"`
@@ -1982,10 +1982,10 @@ type ProtocolBindingSummary struct {
 	Listen string 
 	Connect string 
 	Access_port int 
-	Status string 
+	Status int 
 	Kernel_id string 
-	Sync_status string 
-	Health_status string 
+	Sync_status int 
+	Health_status int 
 	Last_synced_at int64 
 	Last_heartbeat_at int64 
 	Last_sync_error string 
@@ -2048,7 +2048,7 @@ type AdminSyncProtocolBindingRequest struct {
 ```golang
 type ProtocolBindingSyncResult struct {
 	Binding_id uint64 
-	Status string 
+	Status int 
 	Message string 
 	Synced_at int64 
 }
@@ -2135,7 +2135,7 @@ type AdminListProtocolEntriesRequest struct {
 	Sort string `form:"sort,optional" json:"sort,optional"`
 	Direction string `form:"direction,optional" json:"direction,optional"`
 	Q string `form:"q,optional" json:"q,optional"`
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 	Protocol string `form:"protocol,optional" json:"protocol,optional"`
 	Binding_id uint64 `form:"binding_id,optional" json:"binding_id,optional"`
 }
@@ -2179,7 +2179,7 @@ type AdminCreateProtocolEntryRequest struct {
 	Name string `form:"name,optional" json:"name,optional"`
 	Binding_id uint64 
 	Protocol string `form:"protocol,optional" json:"protocol,optional"`
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 	Entry_address string `form:"entry_address" json:"entry_address"`
 	Entry_port int `form:"entry_port" json:"entry_port"`
 	Tags []string `form:"tags,optional" json:"tags,optional"`
@@ -2202,9 +2202,9 @@ type ProtocolEntrySummary struct {
 	Node_id uint64 
 	Node_name string 
 	Protocol string 
-	Status string 
-	Binding_status string 
-	Health_status string 
+	Status int 
+	Binding_status int 
+	Health_status int 
 	Entry_address string 
 	Entry_port int 
 	Tags []string 
@@ -2234,7 +2234,7 @@ type AdminUpdateProtocolEntryRequest struct {
 	Name string `form:"name,optional" json:"name,optional"`
 	Binding_id uint64 `form:"binding_id,optional" json:"binding_id,optional"`
 	Protocol string `form:"protocol,optional" json:"protocol,optional"`
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 	Entry_address string `form:"entry_address,optional" json:"entry_address,optional"`
 	Entry_port int `form:"entry_port,optional" json:"entry_port,optional"`
 	Tags []string `form:"tags,optional" json:"tags,optional"`
@@ -2257,9 +2257,9 @@ type ProtocolEntrySummary struct {
 	Node_id uint64 
 	Node_name string 
 	Protocol string 
-	Status string 
-	Binding_status string 
-	Health_status string 
+	Status int 
+	Binding_status int 
+	Health_status int 
 	Entry_address string 
 	Entry_port int 
 	Tags []string 
@@ -2463,7 +2463,7 @@ type AdminListSubscriptionsRequest struct {
 	Page int `form:"page,optional" json:"page,optional"`
 	Per_page int `form:"per_page,optional" json:"per_page,optional"`
 	Q string `form:"q,optional" json:"q,optional"`
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 	User_id uint64 `form:"user_id,optional" json:"user_id,optional"`
 	Plan_name string `form:"plan_name,optional" json:"plan_name,optional"`
 	Plan_id uint64 `form:"plan_id,optional" json:"plan_id,optional"`
@@ -2510,7 +2510,7 @@ type AdminCreateSubscriptionRequest struct {
 	Name string 
 	Plan_name string `form:"plan_name,optional" json:"plan_name,optional"`
 	Plan_id uint64 
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 	Template_id uint64 
 	Available_template_ids []uint64 `form:"available_template_ids,optional" json:"available_template_ids,optional"`
 	Token string `form:"token,optional" json:"token,optional"`
@@ -2538,7 +2538,7 @@ type AdminSubscriptionSummary struct {
 	Plan_name string 
 	Plan_id uint64 
 	Plan_snapshot map[string]interface{} 
-	Status string 
+	Status int 
 	Template_id uint64 
 	Available_template_ids []uint64 
 	Token string 
@@ -2591,7 +2591,7 @@ type AdminSubscriptionSummary struct {
 	Plan_name string 
 	Plan_id uint64 
 	Plan_snapshot map[string]interface{} 
-	Status string 
+	Status int 
 	Template_id uint64 
 	Available_template_ids []uint64 
 	Token string 
@@ -2627,7 +2627,7 @@ type AdminUpdateSubscriptionRequest struct {
 	Name string `form:"name,optional" json:"name,optional"`
 	Plan_name string `form:"plan_name,optional" json:"plan_name,optional"`
 	Plan_id uint64 `form:"plan_id,optional" json:"plan_id,optional"`
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 	Template_id uint64 `form:"template_id,optional" json:"template_id,optional"`
 	Available_template_ids []uint64 `form:"available_template_ids,optional" json:"available_template_ids,optional"`
 	Token string `form:"token,optional" json:"token,optional"`
@@ -2655,7 +2655,7 @@ type AdminSubscriptionSummary struct {
 	Plan_name string 
 	Plan_id uint64 
 	Plan_snapshot map[string]interface{} 
-	Status string 
+	Status int 
 	Template_id uint64 
 	Available_template_ids []uint64 
 	Token string 
@@ -2709,7 +2709,7 @@ type AdminSubscriptionSummary struct {
 	Plan_name string 
 	Plan_id uint64 
 	Plan_snapshot map[string]interface{} 
-	Status string 
+	Status int 
 	Template_id uint64 
 	Available_template_ids []uint64 
 	Token string 
@@ -2765,7 +2765,7 @@ type AdminSubscriptionSummary struct {
 	Plan_name string 
 	Plan_id uint64 
 	Plan_snapshot map[string]interface{} 
-	Status string 
+	Status int 
 	Template_id uint64 
 	Available_template_ids []uint64 
 	Token string 
@@ -3027,7 +3027,7 @@ type AdminListUsersRequest struct {
 	Page int `form:"page,optional" json:"page,optional"`
 	Per_page int `form:"per_page,optional" json:"per_page,optional"`
 	Q string `form:"q,optional" json:"q,optional"`
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 	Role string `form:"role,optional" json:"role,optional"`
 }
 ```
@@ -3071,7 +3071,7 @@ type AdminCreateUserRequest struct {
 	Password string 
 	Display_name string `form:"display_name,optional" json:"display_name,optional"`
 	Roles []string `form:"roles,optional" json:"roles,optional"`
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 	Email_verified bool `form:"email_verified,optional" json:"email_verified,optional"`
 }
 ```
@@ -3091,7 +3091,7 @@ type AdminUserSummary struct {
 	Email string 
 	Display_name string 
 	Roles []string 
-	Status string 
+	Status int 
 	Email_verified_at int64 `form:"email_verified_at,optional" json:"email_verified_at,optional"`
 	Failed_login_attempts int 
 	Locked_until int64 `form:"locked_until,optional" json:"locked_until,optional"`
@@ -3133,7 +3133,7 @@ type AdminRotateUserCredentialResponse struct {
 
 type CredentialSummary struct {
 	Version int 
-	Status string 
+	Status int 
 	Issued_at int64 
 	Deprecated_at *int64 
 	Revoked_at *int64 
@@ -3237,7 +3237,7 @@ type AdminUserSummary struct {
 	Email string 
 	Display_name string 
 	Roles []string 
-	Status string 
+	Status int 
 	Email_verified_at int64 `form:"email_verified_at,optional" json:"email_verified_at,optional"`
 	Failed_login_attempts int 
 	Locked_until int64 `form:"locked_until,optional" json:"locked_until,optional"`
@@ -3263,7 +3263,7 @@ type AdminUserSummary struct {
 ```golang
 type AdminUpdateUserStatusRequest struct {
 	Id uint64 `path:"id"`
-	Status string 
+	Status int 
 }
 ```
 
@@ -3282,7 +3282,7 @@ type AdminUserSummary struct {
 	Email string 
 	Display_name string 
 	Roles []string 
-	Status string 
+	Status int 
 	Email_verified_at int64 `form:"email_verified_at,optional" json:"email_verified_at,optional"`
 	Failed_login_attempts int 
 	Locked_until int64 `form:"locked_until,optional" json:"locked_until,optional"`
@@ -3639,7 +3639,7 @@ type UserRotateCredentialResponse struct {
 
 type CredentialSummary struct {
 	Version int 
-	Status string 
+	Status int 
 	Issued_at int64 
 	Deprecated_at *int64 
 	Revoked_at *int64 
@@ -3682,7 +3682,7 @@ type UserProfile struct {
 	Id uint64 
 	Email string 
 	Display_name string 
-	Status string 
+	Status int 
 	Email_verified_at *int64 
 	Created_at int64 
 	Updated_at int64 
@@ -3782,7 +3782,7 @@ type UserProfile struct {
 	Id uint64 
 	Email string 
 	Display_name string 
-	Status string 
+	Status int 
 	Email_verified_at *int64 
 	Created_at int64 
 	Updated_at int64 
@@ -3822,7 +3822,7 @@ type UserProfile struct {
 	Id uint64 
 	Email string 
 	Display_name string 
-	Status string 
+	Status int 
 	Email_verified_at *int64 
 	Created_at int64 
 	Updated_at int64 
@@ -3877,7 +3877,7 @@ type UserAnnouncementListResponse struct {
 type UserNodeStatusListRequest struct {
 	Page int `form:"page,optional" json:"page,optional"`
 	Per_page int `form:"per_page,optional" json:"per_page,optional"`
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 	Protocol string `form:"protocol,optional" json:"protocol,optional"`
 }
 ```
@@ -3944,8 +3944,8 @@ type OrderDetail struct {
 	Id uint64 
 	Number string 
 	User_id uint64 
-	Status string 
-	Payment_status string 
+	Status int 
+	Payment_status int 
 	Payment_intent_id *string 
 	Payment_reference *string 
 	Payment_failure_code *string 
@@ -3992,9 +3992,9 @@ type BalanceSnapshot struct {
 type UserOrderListRequest struct {
 	Page int 
 	Per_page int 
-	Status string 
+	Status int 
 	Payment_method string 
-	Payment_status string 
+	Payment_status int 
 	Number string 
 	Sort string 
 	Direction string 
@@ -4056,8 +4056,8 @@ type OrderDetail struct {
 	Id uint64 
 	Number string 
 	User_id uint64 
-	Status string 
-	Payment_status string 
+	Status int 
+	Payment_status int 
 	Payment_intent_id *string 
 	Payment_reference *string 
 	Payment_failure_code *string 
@@ -4123,8 +4123,8 @@ type OrderDetail struct {
 	Id uint64 
 	Number string 
 	User_id uint64 
-	Status string 
-	Payment_status string 
+	Status int 
+	Payment_status int 
 	Payment_intent_id *string 
 	Payment_reference *string 
 	Payment_failure_code *string 
@@ -4181,8 +4181,8 @@ type UserOrderPaymentStatusRequest struct {
 ```golang
 type UserOrderPaymentStatusResponse struct {
 	Order_id uint64 
-	Status string 
-	Payment_status string 
+	Status int 
+	Payment_status int 
 	Payment_method string 
 	Payment_intent_id *string 
 	Payment_reference *string 
@@ -4276,7 +4276,7 @@ type UserListSubscriptionsRequest struct {
 	Sort string `form:"sort,optional" json:"sort,optional"`
 	Direction string `form:"direction,optional" json:"direction,optional"`
 	Q string `form:"q,optional" json:"q,optional"`
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 }
 ```
 

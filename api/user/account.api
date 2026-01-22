@@ -58,7 +58,7 @@ type UserProfile {
 	id                uint64
 	email             string
 	display_name      string
-	status            string
+	status            int
 	email_verified_at *int64
 	created_at        int64
 	updated_at        int64

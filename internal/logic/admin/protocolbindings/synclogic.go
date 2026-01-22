@@ -14,6 +14,7 @@ import (
 	"github.com/zero-net-panel/zero-net-panel/internal/logic/credentialutil"
 	"github.com/zero-net-panel/zero-net-panel/internal/logic/subscriptionutil"
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
 	"github.com/zero-net-panel/zero-net-panel/pkg/kernel"
@@ -117,7 +118,7 @@ func (l *SyncLogic) resolveBindings(req *types.AdminSyncProtocolBindingsRequest)
 func (l *SyncLogic) syncBinding(binding repository.ProtocolBinding) types.ProtocolBindingSyncResult {
 	result := types.ProtocolBindingSyncResult{
 		BindingID: binding.ID,
-		Status:    "error",
+		Status:    status.SyncResultStatusError,
 		SyncedAt:  time.Now().UTC().Unix(),
 	}
 
@@ -131,7 +132,7 @@ func (l *SyncLogic) syncBinding(binding repository.ProtocolBinding) types.Protoc
 	control, err := l.resolveControlClient(binding)
 	if err != nil {
 		result.Message = err.Error()
-		_, _ = l.updateSyncState(binding, result.Status, result.Message)
+		_, _ = l.updateSyncState(binding, status.ProtocolBindingSyncStatusError, result.Message)
 		return result
 	}
 
@@ -149,14 +150,14 @@ func (l *SyncLogic) syncBinding(binding repository.ProtocolBinding) types.Protoc
 
 	if profile.ID == "" {
 		result.Message = "kernel_id is required"
-		_, _ = l.updateSyncState(binding, result.Status, result.Message)
+		_, _ = l.updateSyncState(binding, status.ProtocolBindingSyncStatusError, result.Message)
 		return result
 	}
 
 	users, err := l.buildKernelUsers(binding)
 	if err != nil {
 		result.Message = err.Error()
-		_, _ = l.updateSyncState(binding, result.Status, result.Message)
+		_, _ = l.updateSyncState(binding, status.ProtocolBindingSyncStatusError, result.Message)
 		return result
 	}
 
@@ -170,13 +171,13 @@ func (l *SyncLogic) syncBinding(binding repository.ProtocolBinding) types.Protoc
 	_, err = control.UpsertProtocol(l.ctx, req)
 	if err != nil {
 		result.Message = err.Error()
-		_, _ = l.updateSyncState(binding, result.Status, result.Message)
+		_, _ = l.updateSyncState(binding, status.ProtocolBindingSyncStatusError, result.Message)
 		return result
 	}
 
-	result.Status = "synced"
+	result.Status = status.SyncResultStatusSynced
 	result.Message = "ok"
-	_, _ = l.updateSyncState(binding, result.Status, "")
+	_, _ = l.updateSyncState(binding, status.ProtocolBindingSyncStatusSynced, "")
 	return result
 }
 
@@ -459,10 +460,10 @@ func resolveControlToken(node repository.Node) string {
 	return ""
 }
 
-func (l *SyncLogic) updateSyncState(binding repository.ProtocolBinding, status string, message string) (repository.ProtocolBinding, error) {
+func (l *SyncLogic) updateSyncState(binding repository.ProtocolBinding, syncStatus int, message string) (repository.ProtocolBinding, error) {
 	ts := time.Now().UTC()
 	input := repository.UpdateProtocolBindingInput{
-		SyncStatus:    &status,
+		SyncStatus:    &syncStatus,
 		LastSyncedAt:  &ts,
 		LastSyncError: &message,
 	}

@@ -7,6 +7,7 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
 )
@@ -49,9 +50,13 @@ func (l *CreateLogic) Create(req *types.AdminCreateProtocolBindingRequest) (*typ
 		return nil, repository.ErrInvalidArgument
 	}
 
-	status := strings.TrimSpace(req.Status)
-	if status == "" {
-		status = "active"
+	statusCode := status.ProtocolBindingStatusActive
+	if req.Status != 0 {
+		normalized, err := normalizeBindingStatus(req.Status)
+		if err != nil {
+			return nil, err
+		}
+		statusCode = normalized
 	}
 
 	if req.Profile == nil {
@@ -67,7 +72,7 @@ func (l *CreateLogic) Create(req *types.AdminCreateProtocolBindingRequest) (*typ
 		Listen:      strings.TrimSpace(req.Listen),
 		Connect:     strings.TrimSpace(req.Connect),
 		AccessPort:  req.AccessPort,
-		Status:      status,
+		Status:      statusCode,
 		KernelID:    kernelID,
 		Tags:        append([]string(nil), req.Tags...),
 		Description: strings.TrimSpace(req.Description),

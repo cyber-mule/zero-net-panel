@@ -28,8 +28,15 @@ func toCouponSummary(coupon repository.Coupon) types.CouponSummary {
 	}
 }
 
-func normalizeStatus(status string) string {
-	return strings.ToLower(strings.TrimSpace(status))
+func normalizeStatus(statusCode int) (int, error) {
+	switch statusCode {
+	case repository.CouponStatusActive, repository.CouponStatusDisabled:
+		return statusCode, nil
+	case 0:
+		return 0, repository.ErrInvalidArgument
+	default:
+		return 0, repository.ErrInvalidArgument
+	}
 }
 
 func toUnixOrZero(ts time.Time) int64 {

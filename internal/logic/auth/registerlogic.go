@@ -13,6 +13,7 @@ import (
 	"github.com/zero-net-panel/zero-net-panel/internal/config"
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 	"github.com/zero-net-panel/zero-net-panel/internal/security"
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
 )
@@ -62,7 +63,7 @@ func (l *RegisterLogic) Register(req *types.AuthRegisterRequest) (*types.AuthReg
 
 	existing, err := l.svcCtx.Repositories.User.GetByEmail(l.ctx, email)
 	if err == nil {
-		if strings.EqualFold(existing.Status, "pending") && repository.IsZeroTime(existing.EmailVerifiedAt) {
+		if existing.Status == status.UserStatusPending && repository.IsZeroTime(existing.EmailVerifiedAt) {
 			if err := l.sendVerificationCode(email, authCfg.Verification); err != nil {
 				return nil, err
 			}
@@ -88,10 +89,10 @@ func (l *RegisterLogic) Register(req *types.AuthRegisterRequest) (*types.AuthReg
 	}
 
 	requiresVerification := authCfg.Registration.RequireEmailVerification
-	status := "active"
+	statusCode := status.UserStatusActive
 	verifiedAt := repository.ZeroTime()
 	if requiresVerification {
-		status = "pending"
+		statusCode = status.UserStatusPending
 	} else {
 		verifiedAt = time.Now().UTC()
 	}
@@ -106,7 +107,7 @@ func (l *RegisterLogic) Register(req *types.AuthRegisterRequest) (*types.AuthReg
 		DisplayName:     displayName,
 		PasswordHash:    string(passwordHash),
 		Roles:           roles,
-		Status:          status,
+		Status:          statusCode,
 		EmailVerifiedAt: verifiedAt,
 	}
 
@@ -118,12 +119,12 @@ func (l *RegisterLogic) Register(req *types.AuthRegisterRequest) (*types.AuthReg
 	if _, err := l.svcCtx.Repositories.AuditLog.Create(l.ctx, repository.AuditLog{
 		ActorEmail:   email,
 		Action:       "auth.register",
-		ResourceType: "user",
-		ResourceID:   fmt.Sprintf("%d", created.ID),
-		Metadata: map[string]any{
-			"status": status,
-		},
-	}); err != nil {
+			ResourceType: "user",
+			ResourceID:   fmt.Sprintf("%d", created.ID),
+			Metadata: map[string]any{
+				"status": statusCode,
+			},
+		}); err != nil {
 		return nil, err
 	}
 

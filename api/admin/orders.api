@@ -44,9 +44,9 @@ service znp {
 type AdminListOrdersRequest {
 	page           int
 	per_page       int
-	status         string
+	status         int
 	payment_method string
-	payment_status string
+	payment_status int
 	number         string
 	sort           string
 	direction      string
@@ -63,8 +63,8 @@ type AdminOrderDetail {
 	id                      uint64
 	number                  string
 	user_id                 uint64
-	status                  string
-	payment_status          string
+	status                  int
+	payment_status          int
 	payment_intent_id       *string
 	payment_reference       *string
 	payment_failure_code    *string
@@ -132,7 +132,7 @@ type AdminReconcilePaymentRequest {
 type AdminPaymentCallbackRequest {
 	order_id        uint64
 	payment_id      uint64
-	status          string
+	status          int
 	reference       string `form:"reference,optional" json:"reference,optional"`
 	failure_code    string `form:"failure_code,optional" json:"failure_code,optional"`
 	failure_message string `form:"failure_message,optional" json:"failure_message,optional"`

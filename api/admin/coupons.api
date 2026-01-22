@@ -29,7 +29,7 @@ type AdminListCouponsRequest {
 	page      int    `form:"page,optional" json:"page,optional"`
 	per_page  int    `form:"per_page,optional" json:"per_page,optional"`
 	q         string `form:"q,optional" json:"q,optional"`
-	status    string `form:"status,optional" json:"status,optional"`
+	status    int    `form:"status,optional" json:"status,optional"`
 	sort      string `form:"sort,optional" json:"sort,optional"`
 	direction string `form:"direction,optional" json:"direction,optional"`
 }
@@ -39,7 +39,7 @@ type CouponSummary {
 	code                     string
 	name                     string
 	description              string
-	status                   string
+	status                   int
 	discount_type            string
 	discount_value           int64
 	currency                 string
@@ -61,7 +61,7 @@ type AdminCreateCouponRequest {
 	code                     string
 	name                     string
 	description              string `form:"description,optional" json:"description,optional"`
-	status                   string `form:"status,optional" json:"status,optional"`
+	status                   int    `form:"status,optional" json:"status,optional"`
 	discount_type            string
 	discount_value           int64
 	currency                 string `form:"currency,optional" json:"currency,optional"`
@@ -76,7 +76,7 @@ type AdminUpdateCouponRequest {
 	id                       uint64 `path:"id"`
 	name                     string `form:"name,optional" json:"name,optional"`
 	description              string `form:"description,optional" json:"description,optional"`
-	status                   string `form:"status,optional" json:"status,optional"`
+	status                   int    `form:"status,optional" json:"status,optional"`
 	discount_type            string `form:"discount_type,optional" json:"discount_type,optional"`
 	discount_value           int64  `form:"discount_value,optional" json:"discount_value,optional"`
 	currency                 string `form:"currency,optional" json:"currency,optional"`

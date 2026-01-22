@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 )
 
 // UserCredential stores per-user authentication material (encrypted).
@@ -14,7 +16,7 @@ type UserCredential struct {
 	ID               uint64    `gorm:"primaryKey"`
 	UserID           uint64    `gorm:"index"`
 	Version          int       `gorm:"index"`
-	Status           string    `gorm:"size:32;index"`
+	Status           int       `gorm:"column:status;index"`
 	MasterKeyID      string    `gorm:"size:64"`
 	SecretCiphertext string    `gorm:"type:text"`
 	SecretNonce      string    `gorm:"size:64"`
@@ -33,7 +35,7 @@ func (UserCredential) TableName() string { return "user_credentials" }
 
 // UpdateUserCredentialInput defines mutable credential fields.
 type UpdateUserCredentialInput struct {
-	Status       *string
+	Status       *int
 	DeprecatedAt *time.Time
 	RevokedAt    *time.Time
 	LastSeenAt   *time.Time
@@ -68,7 +70,7 @@ func (r *userCredentialRepository) GetActiveByUser(ctx context.Context, userID u
 
 	var credential UserCredential
 	if err := r.db.WithContext(ctx).
-		Where("user_id = ? AND status = ?", userID, "active").
+		Where("user_id = ? AND status = ?", userID, status.UserCredentialStatusActive).
 		Order("version DESC").
 		First(&credential).Error; err != nil {
 		return UserCredential{}, translateError(err)
@@ -81,12 +83,11 @@ func (r *userCredentialRepository) Create(ctx context.Context, credential UserCr
 		return UserCredential{}, err
 	}
 
-	credential.Status = strings.TrimSpace(credential.Status)
 	credential.MasterKeyID = strings.TrimSpace(credential.MasterKeyID)
 	credential.SecretCiphertext = strings.TrimSpace(credential.SecretCiphertext)
 	credential.SecretNonce = strings.TrimSpace(credential.SecretNonce)
 	credential.Fingerprint = strings.TrimSpace(credential.Fingerprint)
-	if credential.UserID == 0 || credential.Version <= 0 || credential.Status == "" {
+	if credential.UserID == 0 || credential.Version <= 0 || credential.Status == 0 {
 		return UserCredential{}, ErrInvalidArgument
 	}
 	if credential.SecretCiphertext == "" || credential.SecretNonce == "" || credential.Fingerprint == "" {
@@ -118,7 +119,7 @@ func (r *userCredentialRepository) Update(ctx context.Context, id uint64, input 
 
 	updates := map[string]any{}
 	if input.Status != nil {
-		updates["status"] = strings.TrimSpace(*input.Status)
+		updates["status"] = *input.Status
 	}
 	if input.DeprecatedAt != nil {
 		updates["deprecated_at"] = input.DeprecatedAt.UTC()

@@ -5,7 +5,7 @@ type AdminListUsersRequest struct {
 	Page    int    `form:"page,optional" json:"page,optional"`
 	PerPage int    `form:"per_page,optional" json:"per_page,optional"`
 	Query   string `form:"q,optional" json:"q,optional"`
-	Status  string `form:"status,optional" json:"status,optional"`
+	Status  int    `form:"status,optional" json:"status,optional"`
 	Role    string `form:"role,optional" json:"role,optional"`
 }
 
@@ -15,7 +15,7 @@ type AdminUserSummary struct {
 	Email               string   `json:"email"`
 	DisplayName         string   `json:"display_name"`
 	Roles               []string `json:"roles"`
-	Status              string   `json:"status"`
+	Status              int      `json:"status"`
 	EmailVerifiedAt     *int64   `json:"email_verified_at,omitempty"`
 	FailedLoginAttempts int      `json:"failed_login_attempts"`
 	LockedUntil         *int64   `json:"locked_until,omitempty"`
@@ -41,14 +41,14 @@ type AdminCreateUserRequest struct {
 	Password      string   `json:"password"`
 	DisplayName   *string  `json:"display_name,omitempty,optional"`
 	Roles         []string `json:"roles,omitempty,optional"`
-	Status        *string  `json:"status,omitempty,optional"`
+	Status        *int     `json:"status,omitempty,optional"`
 	EmailVerified *bool    `json:"email_verified,omitempty,optional"`
 }
 
 // AdminUpdateUserStatusRequest updates user status.
 type AdminUpdateUserStatusRequest struct {
 	UserID uint64 `path:"id"`
-	Status string `json:"status"`
+	Status int    `json:"status"`
 }
 
 // AdminUpdateUserRolesRequest updates user roles.

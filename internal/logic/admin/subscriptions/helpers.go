@@ -3,30 +3,31 @@ package subscriptions
 import (
 	"crypto/rand"
 	"encoding/hex"
-	"strings"
 	"time"
 
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 )
 
-func normalizeStatus(status string) (string, error) {
-	status = strings.ToLower(strings.TrimSpace(status))
-	if status == "" {
-		return "", repository.ErrInvalidArgument
+func normalizeStatus(statusCode int) (int, error) {
+	if statusCode == 0 {
+		return 0, repository.ErrInvalidArgument
 	}
-	switch status {
-	case "active", "disabled", "expired", "pending":
-		return status, nil
+	switch statusCode {
+	case status.SubscriptionStatusActive,
+		status.SubscriptionStatusDisabled,
+		status.SubscriptionStatusExpired:
+		return statusCode, nil
 	default:
-		return "", repository.ErrInvalidArgument
+		return 0, repository.ErrInvalidArgument
 	}
 }
 
-func normalizeOptionalStatus(status *string) (*string, error) {
-	if status == nil {
+func normalizeOptionalStatus(statusCode *int) (*int, error) {
+	if statusCode == nil {
 		return nil, nil
 	}
-	normalized, err := normalizeStatus(*status)
+	normalized, err := normalizeStatus(*statusCode)
 	if err != nil {
 		return nil, err
 	}

@@ -24,7 +24,7 @@ service znp {
 type AdminListAnnouncementsRequest {
 	page      int    `form:"page,optional" json:"page,optional"`
 	per_page  int    `form:"per_page,optional" json:"per_page,optional"`
-	status    string `form:"status,optional" json:"status,optional"`
+	status    int    `form:"status,optional" json:"status,optional"`
 	category  string `form:"category,optional" json:"category,optional"`
 	audience  string `form:"audience,optional" json:"audience,optional"`
 	q         string `form:"q,optional" json:"q,optional"`
@@ -53,7 +53,7 @@ type AnnouncementSummary {
 	title        string
 	content      string
 	category     string
-	status       string
+	status       int
 	audience     string
 	is_pinned    bool
 	priority     int

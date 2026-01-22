@@ -111,7 +111,7 @@
 面板侧会优先使用 `subscription_id`，否则使用 `user_id`（需与面板用户 ID 对齐）来更新订阅已用流量（`current.used`）。
 
 当内核无法推送事件时，面板会按内置轮询间隔调用
-`GET /v1/status` 判断节点控制面可达性，并将节点 `status` 更新为 `online`/`offline`。节点是否参与由 `status_sync_enabled` 控制。
+`GET /v1/status` 判断节点控制面可达性，并将节点 `status` 更新为 `1/2`（online/offline）。节点是否参与由 `status_sync_enabled` 控制。
 
 如需即时刷新某些节点的在线状态，可调用管理端：
 

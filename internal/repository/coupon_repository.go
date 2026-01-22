@@ -9,18 +9,20 @@ import (
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 )
 
 const (
-	CouponStatusActive   = "active"
-	CouponStatusDisabled = "disabled"
+	CouponStatusActive   = status.CouponStatusActive
+	CouponStatusDisabled = status.CouponStatusDisabled
 
 	CouponTypePercent = "percent"
 	CouponTypeFixed   = "fixed"
 
-	CouponRedemptionReserved = "reserved"
-	CouponRedemptionApplied  = "applied"
-	CouponRedemptionReleased = "released"
+	CouponRedemptionReserved = status.CouponRedemptionStatusReserved
+	CouponRedemptionApplied  = status.CouponRedemptionStatusApplied
+	CouponRedemptionReleased = status.CouponRedemptionStatusReleased
 )
 
 // Coupon defines a discount rule.
@@ -29,7 +31,7 @@ type Coupon struct {
 	Code                  string    `gorm:"size:64;uniqueIndex"`
 	Name                  string    `gorm:"size:255"`
 	Description           string    `gorm:"type:text"`
-	Status                string    `gorm:"size:32;index"`
+	Status                int       `gorm:"column:status;index"`
 	DiscountType          string    `gorm:"size:32"`
 	DiscountValue         int64     `gorm:"column:discount_value"`
 	Currency              string    `gorm:"size:16"`
@@ -51,7 +53,7 @@ type CouponRedemption struct {
 	CouponID    uint64 `gorm:"index"`
 	UserID      uint64 `gorm:"index"`
 	OrderID     uint64 `gorm:"index"`
-	Status      string `gorm:"size:32;index"`
+	Status      int    `gorm:"column:status;index"`
 	AmountCents int64  `gorm:"column:amount_cents"`
 	Currency    string `gorm:"size:16"`
 	CreatedAt   time.Time
@@ -68,14 +70,14 @@ type ListCouponsOptions struct {
 	Sort      string
 	Direction string
 	Query     string
-	Status    string
+	Status    int
 }
 
 // UpdateCouponInput defines mutable coupon fields.
 type UpdateCouponInput struct {
 	Name                  *string
 	Description           *string
-	Status                *string
+	Status                *int
 	DiscountType          *string
 	DiscountValue         *int64
 	Currency              *string
@@ -99,7 +101,7 @@ type CouponRepository interface {
 	CountRedemptions(ctx context.Context, couponID uint64) (int64, error)
 	CountRedemptionsByUser(ctx context.Context, couponID, userID uint64) (int64, error)
 	CreateRedemption(ctx context.Context, redemption CouponRedemption) (CouponRedemption, error)
-	UpdateRedemptionStatusByOrder(ctx context.Context, orderID uint64, status string) error
+	UpdateRedemptionStatusByOrder(ctx context.Context, orderID uint64, status int) error
 }
 
 type couponRepository struct {
@@ -126,8 +128,8 @@ func (r *couponRepository) List(ctx context.Context, opts ListCouponsOptions) ([
 		like := fmt.Sprintf("%%%s%%", query)
 		base = base.Where("(LOWER(code) LIKE ? OR LOWER(name) LIKE ?)", like, like)
 	}
-	if status := strings.TrimSpace(strings.ToLower(opts.Status)); status != "" {
-		base = base.Where("LOWER(status) = ?", status)
+	if opts.Status != 0 {
+		base = base.Where("status = ?", opts.Status)
 	}
 
 	countQuery := base.Session(&gorm.Session{})
@@ -197,14 +199,13 @@ func (r *couponRepository) Create(ctx context.Context, coupon Coupon) (Coupon, e
 	coupon.Code = normalizeCouponCode(coupon.Code)
 	coupon.Name = strings.TrimSpace(coupon.Name)
 	coupon.Description = strings.TrimSpace(coupon.Description)
-	coupon.Status = strings.TrimSpace(coupon.Status)
 	coupon.DiscountType = strings.ToLower(strings.TrimSpace(coupon.DiscountType))
 	coupon.Currency = strings.ToUpper(strings.TrimSpace(coupon.Currency))
 
 	if coupon.Code == "" || coupon.DiscountType == "" || coupon.DiscountValue <= 0 {
 		return Coupon{}, ErrInvalidArgument
 	}
-	if coupon.Status == "" {
+	if coupon.Status == 0 {
 		coupon.Status = CouponStatusActive
 	}
 	if coupon.DiscountType != CouponTypePercent && coupon.DiscountType != CouponTypeFixed {
@@ -242,7 +243,7 @@ func (r *couponRepository) Update(ctx context.Context, id uint64, input UpdateCo
 		updates["description"] = strings.TrimSpace(*input.Description)
 	}
 	if input.Status != nil {
-		updates["status"] = strings.TrimSpace(*input.Status)
+		updates["status"] = *input.Status
 	}
 	if input.DiscountType != nil {
 		updates["discount_type"] = strings.ToLower(strings.TrimSpace(*input.DiscountType))
@@ -330,12 +331,11 @@ func (r *couponRepository) CreateRedemption(ctx context.Context, redemption Coup
 		return CouponRedemption{}, err
 	}
 
-	redemption.Status = strings.TrimSpace(redemption.Status)
 	redemption.Currency = strings.ToUpper(strings.TrimSpace(redemption.Currency))
 	if redemption.CouponID == 0 || redemption.UserID == 0 || redemption.OrderID == 0 {
 		return CouponRedemption{}, ErrInvalidArgument
 	}
-	if redemption.Status == "" {
+	if redemption.Status == 0 {
 		redemption.Status = CouponRedemptionReserved
 	}
 	if redemption.AmountCents <= 0 {
@@ -356,15 +356,14 @@ func (r *couponRepository) CreateRedemption(ctx context.Context, redemption Coup
 	return redemption, nil
 }
 
-func (r *couponRepository) UpdateRedemptionStatusByOrder(ctx context.Context, orderID uint64, status string) error {
+func (r *couponRepository) UpdateRedemptionStatusByOrder(ctx context.Context, orderID uint64, status int) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
 	if orderID == 0 {
 		return ErrInvalidArgument
 	}
-	status = strings.TrimSpace(status)
-	if status == "" {
+	if status == 0 {
 		return ErrInvalidArgument
 	}
 

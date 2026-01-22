@@ -7,6 +7,7 @@ import (
 
 	"github.com/zero-net-panel/zero-net-panel/internal/nodecfg"
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
 )
 
@@ -48,16 +49,31 @@ func mapKernelSummary(kernel repository.NodeKernel) types.NodeKernelSummary {
 	}
 }
 
-func normalizeNodeStatus(status string) (string, error) {
-	normalized := strings.ToLower(strings.TrimSpace(status))
-	if normalized == "" {
-		return "", repository.ErrInvalidArgument
+func normalizeNodeStatus(statusCode int) (int, error) {
+	if statusCode == 0 {
+		return 0, repository.ErrInvalidArgument
 	}
-	switch normalized {
-	case "online", "offline", "maintenance", "disabled":
-		return normalized, nil
+	switch statusCode {
+	case status.NodeStatusOnline,
+		status.NodeStatusOffline,
+		status.NodeStatusMaintenance,
+		status.NodeStatusDisabled:
+		return statusCode, nil
 	default:
-		return "", repository.ErrInvalidArgument
+		return 0, repository.ErrInvalidArgument
+	}
+}
+
+func normalizeKernelStatus(statusCode int) (int, error) {
+	if statusCode == 0 {
+		return 0, repository.ErrInvalidArgument
+	}
+	switch statusCode {
+	case status.NodeKernelStatusConfigured,
+		status.NodeKernelStatusSynced:
+		return statusCode, nil
+	default:
+		return 0, repository.ErrInvalidArgument
 	}
 }
 

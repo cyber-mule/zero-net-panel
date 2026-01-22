@@ -12,6 +12,7 @@ import (
 	"github.com/zero-net-panel/zero-net-panel/internal/bootstrap/migrations"
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 	"github.com/zero-net-panel/zero-net-panel/internal/security"
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/internal/testutil"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
@@ -57,7 +58,7 @@ func TestUserCancelOrder_SucceedsForPending(t *testing.T) {
 		Email:       "member@example.com",
 		DisplayName: "Member",
 		Roles:       []string{"user"},
-		Status:      "active",
+		Status:      status.UserStatusActive,
 		CreatedAt:   now,
 		UpdatedAt:   now,
 	}
@@ -69,7 +70,7 @@ func TestUserCancelOrder_SucceedsForPending(t *testing.T) {
 		PriceCents:   1000,
 		Currency:     "CNY",
 		DurationDays: 30,
-		Status:       "active",
+		Status:       status.PlanStatusActive,
 		Visible:      true,
 		CreatedAt:    now,
 		UpdatedAt:    now,
@@ -138,7 +139,7 @@ func TestUserCancelOrder_RejectsPaidOrder(t *testing.T) {
 		Email:       "member2@example.com",
 		DisplayName: "Member2",
 		Roles:       []string{"user"},
-		Status:      "active",
+		Status:      status.UserStatusActive,
 		CreatedAt:   now,
 		UpdatedAt:   now,
 	}

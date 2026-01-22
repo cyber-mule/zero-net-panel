@@ -10,6 +10,7 @@ import (
 
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 	"github.com/zero-net-panel/zero-net-panel/internal/security"
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
 	"github.com/zero-net-panel/zero-net-panel/pkg/kernel"
@@ -48,7 +49,7 @@ func (l *SyncStatusLogic) Sync(req *types.AdminSyncNodeStatusRequest) (*types.Ad
 		indexByID[nodeID] = len(results)
 		results = append(results, types.NodeStatusSyncResult{
 			NodeID:   nodeID,
-			Status:   "error",
+			Status:   status.NodeSyncResultStatusError,
 			SyncedAt: startedAt.Unix(),
 		})
 	}
@@ -67,8 +68,8 @@ func (l *SyncStatusLogic) Sync(req *types.AdminSyncNodeStatusRequest) (*types.Ad
 			res.Message = err.Error()
 			continue
 		}
-		if strings.EqualFold(node.Status, "disabled") {
-			res.Status = "skipped"
+		if node.Status == status.NodeStatusDisabled {
+			res.Status = status.NodeSyncResultStatusSkipped
 			res.Message = "node disabled"
 			continue
 		}
@@ -93,17 +94,17 @@ func (l *SyncStatusLogic) Sync(req *types.AdminSyncNodeStatusRequest) (*types.Ad
 			Timeout: key.timeout,
 		})
 		if err != nil {
-			l.markNodeGroup(nodeGroup, "offline", err.Error(), results, indexByID)
+			l.markNodeGroup(nodeGroup, status.NodeStatusOffline, status.NodeSyncResultStatusOffline, err.Error(), results, indexByID)
 			continue
 		}
 
 		_, err = client.GetStatus(l.ctx)
 		if err != nil {
-			l.markNodeGroup(nodeGroup, "offline", err.Error(), results, indexByID)
+			l.markNodeGroup(nodeGroup, status.NodeStatusOffline, status.NodeSyncResultStatusOffline, err.Error(), results, indexByID)
 			continue
 		}
 
-		l.markNodeGroup(nodeGroup, "online", "ok", results, indexByID)
+		l.markNodeGroup(nodeGroup, status.NodeStatusOnline, status.NodeSyncResultStatusOnline, "ok", results, indexByID)
 	}
 
 	if actor, ok := security.UserFromContext(l.ctx); ok {
@@ -115,13 +116,13 @@ func (l *SyncStatusLogic) Sync(req *types.AdminSyncNodeStatusRequest) (*types.Ad
 	return &types.AdminSyncNodeStatusResponse{Results: results}, nil
 }
 
-func (l *SyncStatusLogic) markNodeGroup(nodeIDs []uint64, status string, message string, results []types.NodeStatusSyncResult, indexByID map[uint64]int) {
+func (l *SyncStatusLogic) markNodeGroup(nodeIDs []uint64, nodeStatus int, resultStatus int, message string, results []types.NodeStatusSyncResult, indexByID map[uint64]int) {
 	if len(nodeIDs) == 0 {
 		return
 	}
 
-	if err := l.svcCtx.Repositories.Node.UpdateStatusByIDs(l.ctx, nodeIDs, status); err != nil && !errors.Is(err, repository.ErrNotFound) {
-		l.Errorf("node status update failed (%s): %v", status, err)
+	if err := l.svcCtx.Repositories.Node.UpdateStatusByIDs(l.ctx, nodeIDs, nodeStatus); err != nil && !errors.Is(err, repository.ErrNotFound) {
+		l.Errorf("node status update failed (%d): %v", nodeStatus, err)
 	}
 
 	ts := time.Now().UTC().Unix()
@@ -130,7 +131,7 @@ func (l *SyncStatusLogic) markNodeGroup(nodeIDs []uint64, status string, message
 		if !ok {
 			continue
 		}
-		results[idx].Status = status
+		results[idx].Status = resultStatus
 		results[idx].Message = message
 		results[idx].SyncedAt = ts
 	}

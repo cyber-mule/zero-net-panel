@@ -10,6 +10,7 @@ import (
 
 	"github.com/zeromicro/go-zero/core/logx"
 
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/pkg/kernel"
 )
@@ -65,8 +66,7 @@ func (m *OfflineProbeManager) listOfflineTargets(ctx context.Context) ([]offline
 
 	targets := make(map[controlKey]*offlineTarget)
 	for _, node := range nodes {
-		status := strings.ToLower(strings.TrimSpace(node.Status))
-		if status != "offline" {
+		if node.Status != status.NodeStatusOffline {
 			continue
 		}
 		if !node.StatusSyncEnabled {
@@ -306,21 +306,21 @@ func probeControlEndpoint(ctx context.Context, svcCtx *svc.ServiceContext, key c
 		return fmt.Errorf("offline probe load node status: %w", err)
 	}
 	recovered := resolveRecoveredNodes(nodeIDs, statusByID)
-	markNodeStatus(ctx, svcCtx, nodeIDs, "online")
+	markNodeStatus(ctx, svcCtx, nodeIDs, status.NodeStatusOnline)
 	if len(recovered) > 0 {
 		triggerKernelRecovery(ctx, svcCtx, recovered)
 	}
 	return nil
 }
 
-func loadNodeStatusByID(ctx context.Context, svcCtx *svc.ServiceContext) (map[uint64]string, error) {
+func loadNodeStatusByID(ctx context.Context, svcCtx *svc.ServiceContext) (map[uint64]int, error) {
 	nodes, err := svcCtx.Repositories.Node.ListAll(ctx)
 	if err != nil {
 		return nil, err
 	}
-	statusByID := make(map[uint64]string, len(nodes))
+	statusByID := make(map[uint64]int, len(nodes))
 	for _, node := range nodes {
-		statusByID[node.ID] = strings.ToLower(strings.TrimSpace(node.Status))
+		statusByID[node.ID] = node.Status
 	}
 	return statusByID, nil
 }

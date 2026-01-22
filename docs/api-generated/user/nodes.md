@@ -15,7 +15,7 @@
 type UserNodeStatusListRequest struct {
 	Page int `form:"page,optional" json:"page,optional"`
 	Per_page int `form:"per_page,optional" json:"per_page,optional"`
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 	Protocol string `form:"protocol,optional" json:"protocol,optional"`
 }
 ```

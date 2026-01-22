@@ -37,7 +37,7 @@ type AdminListSubscriptionsRequest {
 	page        int    `form:"page,optional" json:"page,optional"`
 	per_page    int    `form:"per_page,optional" json:"per_page,optional"`
 	q           string `form:"q,optional" json:"q,optional"`
-	status      string `form:"status,optional" json:"status,optional"`
+	status      int    `form:"status,optional" json:"status,optional"`
 	user_id     uint64 `form:"user_id,optional" json:"user_id,optional"`
 	plan_name   string `form:"plan_name,optional" json:"plan_name,optional"`
 	plan_id     uint64 `form:"plan_id,optional" json:"plan_id,optional"`
@@ -57,7 +57,7 @@ type AdminSubscriptionSummary {
 	plan_name              string
 	plan_id                uint64
 	plan_snapshot          map[string]interface{}
-	status                 string
+	status                 int
 	template_id            uint64
 	available_template_ids []uint64
 	token                  string
@@ -88,7 +88,7 @@ type AdminCreateSubscriptionRequest {
 	name                   string
 	plan_name              string `form:"plan_name,optional" json:"plan_name,optional"`
 	plan_id                uint64
-	status                 string `form:"status,optional" json:"status,optional"`
+	status                 int    `form:"status,optional" json:"status,optional"`
 	template_id            uint64
 	available_template_ids []uint64 `form:"available_template_ids,optional" json:"available_template_ids,optional"`
 	token                  string   `form:"token,optional" json:"token,optional"`
@@ -103,7 +103,7 @@ type AdminUpdateSubscriptionRequest {
 	name                   string   `form:"name,optional" json:"name,optional"`
 	plan_name              string   `form:"plan_name,optional" json:"plan_name,optional"`
 	plan_id                uint64   `form:"plan_id,optional" json:"plan_id,optional"`
-	status                 string   `form:"status,optional" json:"status,optional"`
+	status                 int      `form:"status,optional" json:"status,optional"`
 	template_id            uint64   `form:"template_id,optional" json:"template_id,optional"`
 	available_template_ids []uint64 `form:"available_template_ids,optional" json:"available_template_ids,optional"`
 	token                  string   `form:"token,optional" json:"token,optional"`

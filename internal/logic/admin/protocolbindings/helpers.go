@@ -8,6 +8,7 @@ import (
 
 	"github.com/zero-net-panel/zero-net-panel/internal/nodecfg"
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
 )
 
@@ -82,4 +83,47 @@ func resolveKernelHTTPTimeout(node repository.Node) time.Duration {
 		timeoutSeconds = nodecfg.DefaultKernelHTTPTimeoutSeconds
 	}
 	return time.Duration(timeoutSeconds) * time.Second
+}
+
+func normalizeBindingStatus(statusCode int) (int, error) {
+	if statusCode == 0 {
+		return 0, repository.ErrInvalidArgument
+	}
+	switch statusCode {
+	case status.ProtocolBindingStatusActive,
+		status.ProtocolBindingStatusDisabled:
+		return statusCode, nil
+	default:
+		return 0, repository.ErrInvalidArgument
+	}
+}
+
+func normalizeBindingSyncStatus(statusCode int) (int, error) {
+	if statusCode == 0 {
+		return 0, repository.ErrInvalidArgument
+	}
+	switch statusCode {
+	case status.ProtocolBindingSyncStatusPending,
+		status.ProtocolBindingSyncStatusSynced,
+		status.ProtocolBindingSyncStatusError:
+		return statusCode, nil
+	default:
+		return 0, repository.ErrInvalidArgument
+	}
+}
+
+func normalizeBindingHealthStatus(statusCode int) (int, error) {
+	if statusCode == 0 {
+		return 0, repository.ErrInvalidArgument
+	}
+	switch statusCode {
+	case status.ProtocolBindingHealthStatusUnknown,
+		status.ProtocolBindingHealthStatusHealthy,
+		status.ProtocolBindingHealthStatusDegraded,
+		status.ProtocolBindingHealthStatusUnhealthy,
+		status.ProtocolBindingHealthStatusOffline:
+		return statusCode, nil
+	default:
+		return 0, repository.ErrInvalidArgument
+	}
 }

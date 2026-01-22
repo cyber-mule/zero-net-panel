@@ -7,6 +7,7 @@ import (
 
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 	"github.com/zero-net-panel/zero-net-panel/internal/security"
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 )
 
 // EnsureActiveCredential returns the current active credential or creates one.
@@ -55,9 +56,9 @@ func RotateCredential(ctx context.Context, repos *repository.Repositories, manag
 			version = credential.Version + 1
 			rotatedFrom = &credential.ID
 			now := time.Now().UTC()
-			status := "deprecated"
+			statusCode := status.UserCredentialStatusDeprecated
 			_, err = txRepos.UserCredential.Update(ctx, credential.ID, repository.UpdateUserCredentialInput{
-				Status:       &status,
+				Status:       &statusCode,
 				DeprecatedAt: &now,
 			})
 			if err != nil {
@@ -71,7 +72,7 @@ func RotateCredential(ctx context.Context, repos *repository.Repositories, manag
 		}
 		newCredential.Version = version
 		newCredential.IssuedAt = time.Now().UTC()
-		newCredential.Status = "active"
+		newCredential.Status = status.UserCredentialStatusActive
 		newCredential.RotatedFromID = rotatedFrom
 
 		created, err = txRepos.UserCredential.Create(ctx, newCredential)
@@ -105,7 +106,7 @@ func createCredential(manager *security.CredentialManager, userID uint64, rotate
 	return repository.UserCredential{
 		UserID:           userID,
 		Version:          1,
-		Status:           "active",
+		Status:           status.UserCredentialStatusActive,
 		MasterKeyID:      manager.KeyID(),
 		SecretCiphertext: ciphertext,
 		SecretNonce:      nonce,

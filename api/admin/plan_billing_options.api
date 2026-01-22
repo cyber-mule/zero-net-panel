@@ -23,7 +23,7 @@ service znp {
 
 type AdminListPlanBillingOptionsRequest {
 	plan_id uint64 `path:"plan_id"`
-	status  string `form:"status,optional" json:"status,optional"`
+	status  int    `form:"status,optional" json:"status,optional"`
 	visible bool   `form:"visible,optional" json:"visible,optional"`
 }
 
@@ -35,7 +35,7 @@ type AdminCreatePlanBillingOptionRequest {
 	price_cents    int64
 	currency       string `form:"currency,optional" json:"currency,optional"`
 	sort_order     int    `form:"sort_order,optional" json:"sort_order,optional"`
-	status         string `form:"status,optional" json:"status,optional"`
+	status         int    `form:"status,optional" json:"status,optional"`
 	visible        bool   `form:"visible,optional" json:"visible,optional"`
 }
 
@@ -48,7 +48,7 @@ type AdminUpdatePlanBillingOptionRequest {
 	price_cents    int64  `form:"price_cents,optional" json:"price_cents,optional"`
 	currency       string `form:"currency,optional" json:"currency,optional"`
 	sort_order     int    `form:"sort_order,optional" json:"sort_order,optional"`
-	status         string `form:"status,optional" json:"status,optional"`
+	status         int    `form:"status,optional" json:"status,optional"`
 	visible        bool   `form:"visible,optional" json:"visible,optional"`
 }
 

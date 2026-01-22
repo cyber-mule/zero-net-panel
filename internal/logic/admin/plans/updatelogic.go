@@ -83,7 +83,11 @@ func (l *UpdateLogic) Update(req *types.AdminUpdatePlanRequest) (*types.PlanSumm
 		plan.SortOrder = *req.SortOrder
 	}
 	if req.Status != nil {
-		plan.Status = strings.TrimSpace(*req.Status)
+		statusCode, err := normalizePlanStatus(*req.Status)
+		if err != nil {
+			return nil, err
+		}
+		plan.Status = statusCode
 	}
 	if req.Visible != nil {
 		plan.Visible = *req.Visible

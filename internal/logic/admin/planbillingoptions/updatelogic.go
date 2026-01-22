@@ -7,6 +7,7 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
 )
@@ -83,7 +84,14 @@ func (l *UpdateLogic) Update(req *types.AdminUpdatePlanBillingOptionRequest) (*t
 		updates.SortOrder = *req.SortOrder
 	}
 	if req.Status != nil {
-		updates.Status = strings.TrimSpace(*req.Status)
+		switch *req.Status {
+		case status.PlanBillingOptionStatusDraft,
+			status.PlanBillingOptionStatusActive,
+			status.PlanBillingOptionStatusArchived:
+			updates.Status = *req.Status
+		default:
+			return nil, repository.ErrInvalidArgument
+		}
 	}
 	if req.Visible != nil {
 		updates.Visible = *req.Visible

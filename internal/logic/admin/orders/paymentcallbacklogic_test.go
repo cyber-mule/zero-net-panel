@@ -12,6 +12,7 @@ import (
 
 	"github.com/zero-net-panel/zero-net-panel/internal/bootstrap/migrations"
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/internal/testutil"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
@@ -87,7 +88,7 @@ func TestPaymentCallbackLogic_Success(t *testing.T) {
 		Email:       "customer@test.dev",
 		DisplayName: "Customer",
 		Roles:       []string{"user"},
-		Status:      "active",
+		Status:      status.UserStatusActive,
 		CreatedAt:   now,
 		UpdatedAt:   now,
 	}
@@ -102,7 +103,7 @@ func TestPaymentCallbackLogic_Success(t *testing.T) {
 		DurationDays:      30,
 		TrafficLimitBytes: 4096,
 		DevicesLimit:      5,
-		Status:            "active",
+		Status:            status.PlanStatusActive,
 		Visible:           true,
 		CreatedAt:         now,
 		UpdatedAt:         now,
@@ -200,7 +201,7 @@ func TestPaymentCallbackLogic_Failed(t *testing.T) {
 		Email:       "customer2@test.dev",
 		DisplayName: "Customer 2",
 		Roles:       []string{"user"},
-		Status:      "active",
+		Status:      status.UserStatusActive,
 		CreatedAt:   now,
 		UpdatedAt:   now,
 	}
@@ -270,7 +271,7 @@ func TestPaymentCallbackLogic_Idempotent(t *testing.T) {
 		Email:       "customer3@test.dev",
 		DisplayName: "Customer 3",
 		Roles:       []string{"user"},
-		Status:      "active",
+		Status:      status.UserStatusActive,
 		CreatedAt:   now,
 		UpdatedAt:   now,
 	}
@@ -285,7 +286,7 @@ func TestPaymentCallbackLogic_Idempotent(t *testing.T) {
 		DurationDays:      30,
 		TrafficLimitBytes: 1024,
 		DevicesLimit:      2,
-		Status:            "active",
+		Status:            status.PlanStatusActive,
 		Visible:           true,
 		CreatedAt:         now,
 		UpdatedAt:         now,

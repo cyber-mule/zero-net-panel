@@ -9,6 +9,7 @@ import (
 
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 	"github.com/zero-net-panel/zero-net-panel/internal/security"
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
 )
@@ -31,21 +32,21 @@ func NewUpdateStatusLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Upda
 
 // Update updates the user status.
 func (l *UpdateStatusLogic) Update(req *types.AdminUpdateUserStatusRequest) (*types.AdminUserResponse, error) {
-	status := normalizeStatus(req.Status)
-	if status != "active" && status != "disabled" && status != "pending" {
-		return nil, repository.ErrInvalidArgument
+	statusCode, err := normalizeStatus(req.Status)
+	if err != nil {
+		return nil, err
 	}
 
 	var updated repository.User
 	now := time.Now().UTC()
 	if err := l.svcCtx.Repositories.Transaction(l.ctx, func(txRepos *repository.Repositories) error {
-		user, err := txRepos.User.UpdateStatus(l.ctx, req.UserID, status)
+		user, err := txRepos.User.UpdateStatus(l.ctx, req.UserID, statusCode)
 		if err != nil {
 			return err
 		}
 		updated = user
 
-		if status == "disabled" {
+		if statusCode == status.UserStatusDisabled {
 			if err := txRepos.User.UpdateTokenInvalidBefore(l.ctx, req.UserID, now); err != nil {
 				return err
 			}
@@ -64,7 +65,7 @@ func (l *UpdateStatusLogic) Update(req *types.AdminUpdateUserStatusRequest) (*ty
 			ResourceType: "user",
 			ResourceID:   fmt.Sprintf("%d", req.UserID),
 			Metadata: map[string]any{
-				"status": status,
+				"status": statusCode,
 			},
 		})
 		return err

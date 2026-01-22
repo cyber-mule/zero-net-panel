@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 )
 
 // ProtocolEntry publishes a protocol binding to user-facing endpoints.
@@ -16,7 +18,7 @@ type ProtocolEntry struct {
 	Name         string         `gorm:"size:255"`
 	BindingID    uint64         `gorm:"index"`
 	Protocol     string         `gorm:"size:32;index"`
-	Status       string         `gorm:"size:32"`
+	Status       int            `gorm:"column:status"`
 	EntryAddress string         `gorm:"size:512"`
 	EntryPort    int            `gorm:"column:entry_port"`
 	Tags         []string       `gorm:"serializer:json"`
@@ -38,7 +40,7 @@ type ListProtocolEntriesOptions struct {
 	Sort      string
 	Direction string
 	Query     string
-	Status    string
+	Status    int
 	Protocol  string
 	BindingID *uint64
 }
@@ -48,7 +50,7 @@ type UpdateProtocolEntryInput struct {
 	Name         *string
 	BindingID    *uint64
 	Protocol     *string
-	Status       *string
+	Status       *int
 	EntryAddress *string
 	EntryPort    *int
 	Tags         *[]string
@@ -90,8 +92,8 @@ func (r *protocolEntryRepository) List(ctx context.Context, opts ListProtocolEnt
 		like := fmt.Sprintf("%%%s%%", query)
 		base = base.Where("(LOWER(name) LIKE ? OR LOWER(description) LIKE ?)", like, like)
 	}
-	if status := strings.TrimSpace(strings.ToLower(opts.Status)); status != "" {
-		base = base.Where("LOWER(status) = ?", status)
+	if opts.Status != 0 {
+		base = base.Where("status = ?", opts.Status)
 	}
 	if protocol := strings.TrimSpace(strings.ToLower(opts.Protocol)); protocol != "" {
 		base = base.Where("LOWER(protocol) = ?", protocol)
@@ -161,7 +163,6 @@ func (r *protocolEntryRepository) Create(ctx context.Context, entry ProtocolEntr
 
 	entry.Name = strings.TrimSpace(entry.Name)
 	entry.Protocol = strings.ToLower(strings.TrimSpace(entry.Protocol))
-	entry.Status = strings.TrimSpace(entry.Status)
 	entry.EntryAddress = strings.TrimSpace(entry.EntryAddress)
 	entry.Description = strings.TrimSpace(entry.Description)
 
@@ -171,8 +172,8 @@ func (r *protocolEntryRepository) Create(ctx context.Context, entry ProtocolEntr
 	if entry.EntryAddress == "" || entry.EntryPort <= 0 {
 		return ProtocolEntry{}, ErrInvalidArgument
 	}
-	if entry.Status == "" {
-		entry.Status = "active"
+	if entry.Status == 0 {
+		entry.Status = status.ProtocolEntryStatusActive
 	}
 	if entry.EntryPort < 0 {
 		return ProtocolEntry{}, ErrInvalidArgument
@@ -235,7 +236,7 @@ func (r *protocolEntryRepository) buildEntryUpdates(input UpdateProtocolEntryInp
 		updates["protocol"] = strings.ToLower(strings.TrimSpace(*input.Protocol))
 	}
 	if input.Status != nil {
-		updates["status"] = strings.TrimSpace(*input.Status)
+		updates["status"] = *input.Status
 	}
 	if input.EntryAddress != nil {
 		updates["entry_address"] = strings.TrimSpace(*input.EntryAddress)

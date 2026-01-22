@@ -9,6 +9,8 @@ import (
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 )
 
 // User 描述系统用户信息。
@@ -18,7 +20,7 @@ type User struct {
 	DisplayName         string    `gorm:"size:255"`
 	PasswordHash        string    `gorm:"size:255"`
 	Roles               []string  `gorm:"serializer:json"`
-	Status              string    `gorm:"size:32"`
+	Status              int       `gorm:"column:status"`
 	EmailVerifiedAt     time.Time `gorm:"column:email_verified_at"`
 	FailedLoginAttempts int       `gorm:"column:failed_login_attempts"`
 	LockedUntil         time.Time `gorm:"column:locked_until"`
@@ -41,10 +43,10 @@ type UserRepository interface {
 	Create(ctx context.Context, user User) (User, error)
 	UpdateProfile(ctx context.Context, id uint64, input UpdateUserProfileInput) (User, error)
 	UpdateEmail(ctx context.Context, id uint64, email string, verifiedAt *time.Time) (User, error)
-	UpdateStatus(ctx context.Context, id uint64, status string) (User, error)
+	UpdateStatus(ctx context.Context, id uint64, status int) (User, error)
 	UpdateRoles(ctx context.Context, id uint64, roles []string) (User, error)
 	UpdatePassword(ctx context.Context, id uint64, passwordHash string, resetAt *time.Time) error
-	UpdateVerification(ctx context.Context, id uint64, verifiedAt time.Time, status string) (User, error)
+	UpdateVerification(ctx context.Context, id uint64, verifiedAt time.Time, status int) (User, error)
 	UpdateTokenInvalidBefore(ctx context.Context, id uint64, ts time.Time) error
 	RecordLoginFailure(ctx context.Context, id uint64, maxAttempts int, lockDuration time.Duration) (User, error)
 	UpdateLastLogin(ctx context.Context, id uint64, ts time.Time) error
@@ -69,7 +71,7 @@ type ListUsersOptions struct {
 	Sort      string
 	Direction string
 	Query     string
-	Status    string
+	Status    int
 	Role      string
 }
 
@@ -118,8 +120,8 @@ func (r *userRepository) List(ctx context.Context, opts ListUsersOptions) ([]Use
 		like := fmt.Sprintf("%%%s%%", query)
 		base = base.Where("(LOWER(email) LIKE ? OR LOWER(display_name) LIKE ?)", like, like)
 	}
-	if status := strings.TrimSpace(strings.ToLower(opts.Status)); status != "" {
-		base = base.Where("LOWER(status) = ?", status)
+	if opts.Status != 0 {
+		base = base.Where("status = ?", opts.Status)
 	}
 	if role := strings.TrimSpace(strings.ToLower(opts.Role)); role != "" {
 		like := fmt.Sprintf("%%\"%s\"%%", role)
@@ -165,8 +167,8 @@ func (r *userRepository) Create(ctx context.Context, user User) (User, error) {
 	if user.PasswordUpdatedAt.IsZero() {
 		user.PasswordUpdatedAt = now
 	}
-	if user.Status == "" {
-		user.Status = "active"
+	if user.Status == 0 {
+		user.Status = status.UserStatusActive
 	}
 	user.EmailVerifiedAt = NormalizeTime(user.EmailVerifiedAt)
 	user.LockedUntil = NormalizeTime(user.LockedUntil)
@@ -231,18 +233,17 @@ func (r *userRepository) UpdateEmail(ctx context.Context, id uint64, email strin
 	return r.Get(ctx, id)
 }
 
-func (r *userRepository) UpdateStatus(ctx context.Context, id uint64, status string) (User, error) {
+func (r *userRepository) UpdateStatus(ctx context.Context, id uint64, statusCode int) (User, error) {
 	if err := ctx.Err(); err != nil {
 		return User{}, err
 	}
 
-	status = strings.TrimSpace(status)
-	if status == "" {
+	if statusCode == 0 {
 		return User{}, ErrInvalidArgument
 	}
 
 	updates := map[string]any{
-		"status":     status,
+		"status":     statusCode,
 		"updated_at": time.Now().UTC(),
 	}
 	if err := r.db.WithContext(ctx).Model(&User{}).Where("id = ?", id).Updates(updates).Error; err != nil {
@@ -303,7 +304,7 @@ func (r *userRepository) UpdatePassword(ctx context.Context, id uint64, password
 	return nil
 }
 
-func (r *userRepository) UpdateVerification(ctx context.Context, id uint64, verifiedAt time.Time, status string) (User, error) {
+func (r *userRepository) UpdateVerification(ctx context.Context, id uint64, verifiedAt time.Time, statusCode int) (User, error) {
 	if err := ctx.Err(); err != nil {
 		return User{}, err
 	}
@@ -316,8 +317,8 @@ func (r *userRepository) UpdateVerification(ctx context.Context, id uint64, veri
 		"email_verified_at": verifiedAt,
 		"updated_at":        time.Now().UTC(),
 	}
-	if status = strings.TrimSpace(status); status != "" {
-		updates["status"] = status
+	if statusCode != 0 {
+		updates["status"] = statusCode
 	}
 
 	if err := r.db.WithContext(ctx).Model(&User{}).Where("id = ?", id).Updates(updates).Error; err != nil {

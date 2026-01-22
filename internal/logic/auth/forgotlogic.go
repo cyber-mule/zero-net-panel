@@ -10,6 +10,7 @@ import (
 
 	"github.com/zero-net-panel/zero-net-panel/internal/config"
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
 )
@@ -44,7 +45,7 @@ func (l *ForgotLogic) Forgot(req *types.AuthForgotPasswordRequest) (*types.AuthF
 		}
 		return nil, err
 	}
-	if !strings.EqualFold(user.Status, "active") {
+	if user.Status != status.UserStatusActive {
 		return &types.AuthForgotPasswordResponse{Message: "if the account exists, a reset code has been sent"}, nil
 	}
 

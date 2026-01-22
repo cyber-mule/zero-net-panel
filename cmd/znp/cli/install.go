@@ -19,6 +19,7 @@ import (
 	"github.com/zero-net-panel/zero-net-panel/internal/bootstrap"
 	"github.com/zero-net-panel/zero-net-panel/internal/config"
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 	"github.com/zero-net-panel/zero-net-panel/pkg/database"
 )
 
@@ -516,7 +517,7 @@ func (w *InstallWizard) createAdminUserStep() error {
 		DisplayName:        "System Administrator",
 		PasswordHash:       string(hashedPassword),
 		Roles:              []string{"admin", "user"},
-		Status:             "active",
+		Status:             status.UserStatusActive,
 		EmailVerifiedAt:    now,
 		LockedUntil:        repository.ZeroTime(),
 		TokenInvalidBefore: repository.ZeroTime(),

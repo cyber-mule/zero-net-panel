@@ -7,6 +7,7 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
 )
@@ -58,9 +59,13 @@ func (l *CreateLogic) Create(req *types.AdminCreateProtocolEntryRequest) (*types
 		return nil, repository.ErrInvalidArgument
 	}
 
-	status := strings.TrimSpace(req.Status)
-	if status == "" {
-		status = "active"
+	statusCode := status.ProtocolEntryStatusActive
+	if req.Status != 0 {
+		normalized, err := normalizeEntryStatus(req.Status)
+		if err != nil {
+			return nil, err
+		}
+		statusCode = normalized
 	}
 
 	profile := cloneEntryProfile(req.Profile)
@@ -69,7 +74,7 @@ func (l *CreateLogic) Create(req *types.AdminCreateProtocolEntryRequest) (*types
 		Name:         name,
 		BindingID:    binding.ID,
 		Protocol:     protocol,
-		Status:       status,
+		Status:       statusCode,
 		EntryAddress: entryAddress,
 		EntryPort:    req.EntryPort,
 		Tags:         append([]string(nil), req.Tags...),

@@ -16,6 +16,7 @@ import (
 	"github.com/zero-net-panel/zero-net-panel/internal/bootstrap/migrations"
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 	"github.com/zero-net-panel/zero-net-panel/internal/security"
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/internal/testutil"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
@@ -109,7 +110,7 @@ func TestCreateOrderWithBalancePayment(t *testing.T) {
 		Email:       "buyer@test.dev",
 		DisplayName: "Buyer",
 		Roles:       []string{"user"},
-		Status:      "active",
+		Status:      status.UserStatusActive,
 		CreatedAt:   now,
 		UpdatedAt:   now,
 	}
@@ -124,7 +125,7 @@ func TestCreateOrderWithBalancePayment(t *testing.T) {
 		DurationDays:      30,
 		TrafficLimitBytes: 1024,
 		DevicesLimit:      2,
-		Status:            "active",
+		Status:            status.PlanStatusActive,
 		Visible:           true,
 		CreatedAt:         now,
 		UpdatedAt:         now,
@@ -200,7 +201,7 @@ func TestCreateOrderWithExternalPayment(t *testing.T) {
 		Email:       "buyer2@test.dev",
 		DisplayName: "Buyer 2",
 		Roles:       []string{"user"},
-		Status:      "active",
+		Status:      status.UserStatusActive,
 		CreatedAt:   now,
 		UpdatedAt:   now,
 	}
@@ -215,7 +216,7 @@ func TestCreateOrderWithExternalPayment(t *testing.T) {
 		DurationDays:      30,
 		TrafficLimitBytes: 2048,
 		DevicesLimit:      3,
-		Status:            "active",
+		Status:            status.PlanStatusActive,
 		Visible:           true,
 		CreatedAt:         now,
 		UpdatedAt:         now,
@@ -313,7 +314,7 @@ func TestCreateOrderWithExternalPaymentInvalidChannel(t *testing.T) {
 				Email:       "buyer-invalid@test.dev",
 				DisplayName: "Buyer Invalid",
 				Roles:       []string{"user"},
-				Status:      "active",
+				Status:      status.UserStatusActive,
 				CreatedAt:   now,
 				UpdatedAt:   now,
 			}
@@ -328,7 +329,7 @@ func TestCreateOrderWithExternalPaymentInvalidChannel(t *testing.T) {
 				DurationDays:      30,
 				TrafficLimitBytes: 1024,
 				DevicesLimit:      1,
-				Status:            "active",
+				Status:            status.PlanStatusActive,
 				Visible:           true,
 				CreatedAt:         now,
 				UpdatedAt:         now,
@@ -365,7 +366,7 @@ func TestCreateOrderWithManualPayment(t *testing.T) {
 		Email:       "buyer-manual@test.dev",
 		DisplayName: "Buyer Manual",
 		Roles:       []string{"user"},
-		Status:      "active",
+		Status:      status.UserStatusActive,
 		CreatedAt:   now,
 		UpdatedAt:   now,
 	}
@@ -380,7 +381,7 @@ func TestCreateOrderWithManualPayment(t *testing.T) {
 		DurationDays:      30,
 		TrafficLimitBytes: 1024,
 		DevicesLimit:      2,
-		Status:            "active",
+		Status:            status.PlanStatusActive,
 		Visible:           true,
 		CreatedAt:         now,
 		UpdatedAt:         now,
@@ -422,7 +423,7 @@ func TestCreateOrderIdempotent(t *testing.T) {
 		Email:       "buyer3@test.dev",
 		DisplayName: "Buyer 3",
 		Roles:       []string{"user"},
-		Status:      "active",
+		Status:      status.UserStatusActive,
 		CreatedAt:   now,
 		UpdatedAt:   now,
 	}
@@ -437,7 +438,7 @@ func TestCreateOrderIdempotent(t *testing.T) {
 		DurationDays:      30,
 		TrafficLimitBytes: 1024,
 		DevicesLimit:      2,
-		Status:            "active",
+		Status:            status.PlanStatusActive,
 		Visible:           true,
 		CreatedAt:         now,
 		UpdatedAt:         now,

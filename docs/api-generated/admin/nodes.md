@@ -18,7 +18,7 @@ type AdminListNodesRequest struct {
 	Sort string `form:"sort,optional" json:"sort,optional"`
 	Direction string `form:"direction,optional" json:"direction,optional"`
 	Q string `form:"q,optional" json:"q,optional"`
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 	Protocol string `form:"protocol,optional" json:"protocol,optional"`
 }
 ```
@@ -62,7 +62,7 @@ type AdminCreateNodeRequest struct {
 	Region string `form:"region,optional" json:"region,optional"`
 	Country string `form:"country,optional" json:"country,optional"`
 	Isp string `form:"isp,optional" json:"isp,optional"`
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 	Tags []string `form:"tags,optional" json:"tags,optional"`
 	Capacity_mbps int `form:"capacity_mbps,optional" json:"capacity_mbps,optional"`
 	Description string `form:"description,optional" json:"description,optional"`
@@ -101,7 +101,7 @@ type NodeSummary struct {
 	Region string 
 	Country string 
 	Isp string 
-	Status string 
+	Status int 
 	Tags []string 
 	Capacity_mbps int 
 	Description string 
@@ -141,7 +141,7 @@ type AdminUpdateNodeRequest struct {
 	Region string `form:"region,optional" json:"region,optional"`
 	Country string `form:"country,optional" json:"country,optional"`
 	Isp string `form:"isp,optional" json:"isp,optional"`
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 	Tags []string `form:"tags,optional" json:"tags,optional"`
 	Capacity_mbps int `form:"capacity_mbps,optional" json:"capacity_mbps,optional"`
 	Description string `form:"description,optional" json:"description,optional"`
@@ -180,7 +180,7 @@ type NodeSummary struct {
 	Region string 
 	Country string 
 	Isp string 
-	Status string 
+	Status int 
 	Tags []string 
 	Capacity_mbps int 
 	Description string 
@@ -258,7 +258,7 @@ type NodeSummary struct {
 	Region string 
 	Country string 
 	Isp string 
-	Status string 
+	Status int 
 	Tags []string 
 	Capacity_mbps int 
 	Description string 
@@ -328,7 +328,7 @@ type AdminUpsertNodeKernelRequest struct {
 	Protocol string 
 	Endpoint string 
 	Revision string `form:"revision,optional" json:"revision,optional"`
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 	Config map[string]interface{} `form:"config,optional" json:"config,optional"`
 	Last_synced_at int64 `form:"last_synced_at,optional" json:"last_synced_at,optional"`
 }
@@ -349,7 +349,7 @@ type NodeKernelSummary struct {
 	Protocol string 
 	Endpoint string 
 	Revision string 
-	Status string 
+	Status int 
 	Config map[string]interface{} 
 	Last_synced_at int64 
 }

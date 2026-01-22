@@ -9,7 +9,7 @@
 ## Data Model
 Table: `user_credentials`
 - `user_id` (unique per active credential, historical versions retained)
-- `version`, `status` (`active`/`deprecated`/`revoked`)
+- `version`, `status` (`1`=active/`2`=deprecated/`3`=revoked)
 - `secret_ciphertext`, `secret_nonce`, `master_key_id`
 - `fingerprint` (HMAC-SHA256)
 - `issued_at`, `deprecated_at`, `revoked_at`, `last_seen_at`
@@ -29,7 +29,7 @@ Table: `user_credentials`
 3. New seed created and stored as `active` with incremented `version`.
 
 ## Subscription Rendering
-- If subscription status is not `active`, nodes and credentials are omitted.
+- If subscription `status!=1` (active), nodes and credentials are omitted.
 - If active, `user_identity` is injected into the template context.
 - `subscription.token` remains for compatibility, but should not be used for auth.
 

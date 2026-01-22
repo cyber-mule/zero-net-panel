@@ -67,12 +67,12 @@ func (l *UpdateLogic) Update(req *types.AdminUpdateNodeRequest) (*types.AdminNod
 		metadata["isp"] = isp
 	}
 	if req.Status != nil {
-		status, err := normalizeNodeStatus(*req.Status)
+		statusCode, err := normalizeNodeStatus(*req.Status)
 		if err != nil {
 			return nil, err
 		}
-		input.Status = &status
-		metadata["status"] = status
+		input.Status = &statusCode
+		metadata["status"] = statusCode
 	}
 	if req.Tags != nil {
 		tags := normalizeTags(req.Tags)

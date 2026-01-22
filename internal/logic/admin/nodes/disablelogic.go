@@ -8,6 +8,7 @@ import (
 
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 	"github.com/zero-net-panel/zero-net-panel/internal/security"
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
 )
@@ -38,9 +39,9 @@ func (l *DisableLogic) Disable(req *types.AdminDisableNodeRequest) (*types.Admin
 		return nil, repository.ErrForbidden
 	}
 
-	status := "disabled"
+	statusCode := status.NodeStatusDisabled
 	input := repository.UpdateNodeInput{
-		Status: &status,
+		Status: &statusCode,
 	}
 
 	var updated repository.Node
@@ -59,7 +60,7 @@ func (l *DisableLogic) Disable(req *types.AdminDisableNodeRequest) (*types.Admin
 			ResourceType: "node",
 			ResourceID:   fmt.Sprintf("%d", updated.ID),
 			Metadata: map[string]any{
-				"status": status,
+				"status": statusCode,
 			},
 		})
 		return err

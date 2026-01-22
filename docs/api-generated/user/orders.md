@@ -40,8 +40,8 @@ type OrderDetail struct {
 	Id uint64 
 	Number string 
 	User_id uint64 
-	Status string 
-	Payment_status string 
+	Status int 
+	Payment_status int 
 	Payment_intent_id *string 
 	Payment_reference *string 
 	Payment_failure_code *string 
@@ -88,9 +88,9 @@ type BalanceSnapshot struct {
 type UserOrderListRequest struct {
 	Page int 
 	Per_page int 
-	Status string 
+	Status int 
 	Payment_method string 
-	Payment_status string 
+	Payment_status int 
 	Number string 
 	Sort string 
 	Direction string 
@@ -152,8 +152,8 @@ type OrderDetail struct {
 	Id uint64 
 	Number string 
 	User_id uint64 
-	Status string 
-	Payment_status string 
+	Status int 
+	Payment_status int 
 	Payment_intent_id *string 
 	Payment_reference *string 
 	Payment_failure_code *string 
@@ -219,8 +219,8 @@ type OrderDetail struct {
 	Id uint64 
 	Number string 
 	User_id uint64 
-	Status string 
-	Payment_status string 
+	Status int 
+	Payment_status int 
 	Payment_intent_id *string 
 	Payment_reference *string 
 	Payment_failure_code *string 
@@ -277,8 +277,8 @@ type UserOrderPaymentStatusRequest struct {
 ```golang
 type UserOrderPaymentStatusResponse struct {
 	Order_id uint64 
-	Status string 
-	Payment_status string 
+	Status int 
+	Payment_status int 
 	Payment_method string 
 	Payment_intent_id *string 
 	Payment_reference *string 

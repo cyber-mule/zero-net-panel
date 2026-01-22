@@ -12,6 +12,7 @@ import (
 	"github.com/zero-net-panel/zero-net-panel/internal/nodecfg"
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 	"github.com/zero-net-panel/zero-net-panel/internal/security"
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
 	"github.com/zero-net-panel/zero-net-panel/pkg/kernel"
@@ -94,7 +95,7 @@ func (l *SyncLogic) Sync(req *types.AdminSyncNodeKernelRequest) (resp *types.Adm
 		Protocol:     config.Protocol,
 		Endpoint:     config.Endpoint,
 		Revision:     config.Revision,
-		Status:       "synced",
+		Status:       status.NodeKernelStatusSynced,
 		Config:       config.Payload,
 		LastSyncedAt: config.RetrievedAt,
 	}

@@ -51,15 +51,15 @@ func (l *CancelLogic) Cancel(req *types.AdminCancelOrderRequest) (*types.AdminOr
 		return nil, err
 	}
 
-	if strings.EqualFold(order.Status, repository.OrderStatusCancelled) {
+	if order.Status == repository.OrderStatusCancelled {
 		return l.buildResponse(order, items, paymentsMap[order.ID])
 	}
 
-	if strings.EqualFold(order.Status, repository.OrderStatusPaid) {
+	if order.Status == repository.OrderStatusPaid {
 		if order.TotalCents > 0 && order.RefundedCents < order.TotalCents {
 			return nil, repository.ErrInvalidArgument
 		}
-	} else if !strings.EqualFold(order.Status, repository.OrderStatusPending) {
+	} else if order.Status != repository.OrderStatusPending {
 		return nil, repository.ErrInvalidArgument
 	}
 

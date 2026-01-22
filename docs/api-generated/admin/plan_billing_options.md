@@ -14,7 +14,7 @@
 ```golang
 type AdminListPlanBillingOptionsRequest struct {
 	Plan_id uint64 `path:"plan_id"`
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 	Visible bool `form:"visible,optional" json:"visible,optional"`
 }
 ```
@@ -52,7 +52,7 @@ type AdminCreatePlanBillingOptionRequest struct {
 	Price_cents int64 
 	Currency string `form:"currency,optional" json:"currency,optional"`
 	Sort_order int `form:"sort_order,optional" json:"sort_order,optional"`
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 	Visible bool `form:"visible,optional" json:"visible,optional"`
 }
 ```
@@ -72,7 +72,7 @@ type PlanBillingOptionSummary struct {
 	Price_cents int64 
 	Currency string 
 	Sort_order int 
-	Status string 
+	Status int 
 	Visible bool 
 	Created_at int64 
 	Updated_at int64 
@@ -102,7 +102,7 @@ type AdminUpdatePlanBillingOptionRequest struct {
 	Price_cents int64 `form:"price_cents,optional" json:"price_cents,optional"`
 	Currency string `form:"currency,optional" json:"currency,optional"`
 	Sort_order int `form:"sort_order,optional" json:"sort_order,optional"`
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 	Visible bool `form:"visible,optional" json:"visible,optional"`
 }
 ```
@@ -122,7 +122,7 @@ type PlanBillingOptionSummary struct {
 	Price_cents int64 
 	Currency string 
 	Sort_order int 
-	Status string 
+	Status int 
 	Visible bool 
 	Created_at int64 
 	Updated_at int64 

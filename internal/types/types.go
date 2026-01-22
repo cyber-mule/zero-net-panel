@@ -156,7 +156,7 @@ type AdminListNodesRequest struct {
 	Sort      string `form:"sort,optional" json:"sort,optional"`
 	Direction string `form:"direction,optional" json:"direction,optional"`
 	Query     string `form:"q,optional" json:"q,optional"`
-	Status    string `form:"status,optional" json:"status,optional"`
+	Status    int    `form:"status,optional" json:"status,optional"`
 	Protocol  string `form:"protocol,optional" json:"protocol,optional"`
 }
 
@@ -167,7 +167,7 @@ type NodeSummary struct {
 	Region                                    string   `json:"region"`
 	Country                                   string   `json:"country"`
 	ISP                                       string   `json:"isp"`
-	Status                                    string   `json:"status"`
+	Status                                    int      `json:"status"`
 	Tags                                      []string `json:"tags"`
 	CapacityMbps                              int      `json:"capacity_mbps"`
 	Description                               string   `json:"description"`
@@ -197,7 +197,7 @@ type AdminCreateNodeRequest struct {
 	Region                                    string   `json:"region,optional"`
 	Country                                   string   `json:"country,optional"`
 	ISP                                       string   `json:"isp,optional"`
-	Status                                    string   `json:"status,optional"`
+	Status                                    int      `json:"status,optional"`
 	Tags                                      []string `json:"tags,optional"`
 	CapacityMbps                              int      `json:"capacity_mbps,optional"`
 	Description                               string   `json:"description,optional"`
@@ -226,7 +226,7 @@ type AdminUpdateNodeRequest struct {
 	Region                                    *string  `json:"region,optional"`
 	Country                                   *string  `json:"country,optional"`
 	ISP                                       *string  `json:"isp,optional"`
-	Status                                    *string  `json:"status,optional"`
+	Status                                    *int     `json:"status,optional"`
 	Tags                                      []string `json:"tags,optional"`
 	CapacityMbps                              *int     `json:"capacity_mbps,optional"`
 	Description                               *string  `json:"description,optional"`
@@ -274,7 +274,7 @@ type NodeKernelSummary struct {
 	Protocol     string         `json:"protocol"`
 	Endpoint     string         `json:"endpoint"`
 	Revision     string         `json:"revision"`
-	Status       string         `json:"status"`
+	Status       int            `json:"status"`
 	Config       map[string]any `json:"config"`
 	LastSyncedAt int64          `json:"last_synced_at"`
 }
@@ -291,7 +291,7 @@ type AdminUpsertNodeKernelRequest struct {
 	Protocol     string         `json:"protocol"`
 	Endpoint     string         `json:"endpoint"`
 	Revision     string         `json:"revision"`
-	Status       string         `json:"status"`
+	Status       *int           `json:"status,omitempty,optional"`
 	Config       map[string]any `json:"config"`
 	LastSyncedAt *int64         `json:"last_synced_at,omitempty,optional"`
 }
@@ -320,7 +320,7 @@ type AdminSyncNodeKernelResponse struct {
 // NodeStatusSyncResult 节点状态同步结果。
 type NodeStatusSyncResult struct {
 	NodeID   uint64 `json:"node_id"`
-	Status   string `json:"status"`
+	Status   int    `json:"status"`
 	Message  string `json:"message"`
 	SyncedAt int64  `json:"synced_at"`
 }
@@ -342,7 +342,7 @@ type AdminListProtocolBindingsRequest struct {
 	Sort      string  `form:"sort,optional" json:"sort,optional"`
 	Direction string  `form:"direction,optional" json:"direction,optional"`
 	Query     string  `form:"q,optional" json:"q,optional"`
-	Status    string  `form:"status,optional" json:"status,optional"`
+	Status    int     `form:"status,optional" json:"status,optional"`
 	Protocol  string  `form:"protocol,optional" json:"protocol,optional"`
 	NodeID    *uint64 `form:"node_id,optional" json:"node_id,optional"`
 }
@@ -358,10 +358,10 @@ type ProtocolBindingSummary struct {
 	Listen          string         `json:"listen"`
 	Connect         string         `json:"connect"`
 	AccessPort      int            `json:"access_port"`
-	Status          string         `json:"status"`
+	Status          int            `json:"status"`
 	KernelID        string         `json:"kernel_id"`
-	SyncStatus      string         `json:"sync_status"`
-	HealthStatus    string         `json:"health_status"`
+	SyncStatus      int            `json:"sync_status"`
+	HealthStatus    int            `json:"health_status"`
 	LastSyncedAt    int64          `json:"last_synced_at"`
 	LastHeartbeatAt int64          `json:"last_heartbeat_at"`
 	LastSyncError   string         `json:"last_sync_error"`
@@ -388,7 +388,7 @@ type AdminCreateProtocolBindingRequest struct {
 	Listen      string         `json:"listen"`
 	Connect     string         `json:"connect"`
 	AccessPort  int            `json:"access_port"`
-	Status      string         `json:"status"`
+	Status      int            `json:"status"`
 	KernelID    string         `json:"kernel_id"`
 	Tags        []string       `json:"tags"`
 	Description string         `json:"description"`
@@ -406,10 +406,10 @@ type AdminUpdateProtocolBindingRequest struct {
 	Listen          *string        `json:"listen,optional"`
 	Connect         *string        `json:"connect,optional"`
 	AccessPort      *int           `json:"access_port,optional"`
-	Status          *string        `json:"status,optional"`
+	Status          *int           `json:"status,optional"`
 	KernelID        *string        `json:"kernel_id,optional"`
-	SyncStatus      *string        `json:"sync_status,optional"`
-	HealthStatus    *string        `json:"health_status,optional"`
+	SyncStatus      *int           `json:"sync_status,optional"`
+	HealthStatus    *int           `json:"health_status,optional"`
 	LastSyncedAt    *int64         `json:"last_synced_at,omitempty,optional"`
 	LastHeartbeatAt *int64         `json:"last_heartbeat_at,omitempty,optional"`
 	LastSyncError   *string        `json:"last_sync_error,optional"`
@@ -431,7 +431,7 @@ type AdminListProtocolEntriesRequest struct {
 	Sort      string  `form:"sort,optional" json:"sort,optional"`
 	Direction string  `form:"direction,optional" json:"direction,optional"`
 	Query     string  `form:"q,optional" json:"q,optional"`
-	Status    string  `form:"status,optional" json:"status,optional"`
+	Status    int     `form:"status,optional" json:"status,optional"`
 	Protocol  string  `form:"protocol,optional" json:"protocol,optional"`
 	BindingID *uint64 `form:"binding_id,optional" json:"binding_id,optional"`
 }
@@ -445,9 +445,9 @@ type ProtocolEntrySummary struct {
 	NodeID        uint64         `json:"node_id"`
 	NodeName      string         `json:"node_name"`
 	Protocol      string         `json:"protocol"`
-	Status        string         `json:"status"`
-	BindingStatus string         `json:"binding_status"`
-	HealthStatus  string         `json:"health_status"`
+	Status        int            `json:"status"`
+	BindingStatus int            `json:"binding_status"`
+	HealthStatus  int            `json:"health_status"`
 	EntryAddress  string         `json:"entry_address"`
 	EntryPort     int            `json:"entry_port"`
 	Tags          []string       `json:"tags"`
@@ -468,7 +468,7 @@ type AdminCreateProtocolEntryRequest struct {
 	Name         string         `json:"name"`
 	BindingID    uint64         `json:"binding_id"`
 	Protocol     string         `json:"protocol"`
-	Status       string         `json:"status"`
+	Status       int            `json:"status"`
 	EntryAddress string         `json:"entry_address"`
 	EntryPort    int            `json:"entry_port"`
 	Tags         []string       `json:"tags"`
@@ -482,7 +482,7 @@ type AdminUpdateProtocolEntryRequest struct {
 	Name         *string        `json:"name,optional"`
 	BindingID    *uint64        `json:"binding_id,optional"`
 	Protocol     *string        `json:"protocol,optional"`
-	Status       *string        `json:"status,optional"`
+	Status       *int           `json:"status,optional"`
 	EntryAddress *string        `json:"entry_address,optional"`
 	EntryPort    *int           `json:"entry_port,optional"`
 	Tags         []string       `json:"tags,optional"`
@@ -498,7 +498,7 @@ type AdminDeleteProtocolEntryRequest struct {
 // ProtocolBindingSyncResult 单条协议下发结果。
 type ProtocolBindingSyncResult struct {
 	BindingID uint64 `json:"binding_id"`
-	Status    string `json:"status"`
+	Status    int    `json:"status"`
 	Message   string `json:"message"`
 	SyncedAt  int64  `json:"synced_at"`
 }
@@ -522,7 +522,7 @@ type AdminSyncProtocolBindingsResponse struct {
 // ProtocolBindingStatusSyncResult 协议健康状态同步结果。
 type ProtocolBindingStatusSyncResult struct {
 	NodeID   uint64 `json:"node_id"`
-	Status   string `json:"status"`
+	Status   int    `json:"status"`
 	Message  string `json:"message"`
 	SyncedAt int64  `json:"synced_at"`
 	Updated  int    `json:"updated"`
@@ -642,7 +642,7 @@ type UserListSubscriptionsRequest struct {
 	Sort      string `form:"sort,optional" json:"sort,optional"`
 	Direction string `form:"direction,optional" json:"direction,optional"`
 	Query     string `form:"q,optional" json:"q,optional"`
-	Status    string `form:"status,optional" json:"status,optional"`
+	Status    int    `form:"status,optional" json:"status,optional"`
 }
 
 // UserSubscriptionSummary 用户订阅摘要。
@@ -651,7 +651,7 @@ type UserSubscriptionSummary struct {
 	Name                 string   `json:"name"`
 	PlanName             string   `json:"plan_name"`
 	PlanID               uint64   `json:"plan_id"`
-	Status               string   `json:"status"`
+	Status               int      `json:"status"`
 	TemplateID           uint64   `json:"template_id"`
 	AvailableTemplateIDs []uint64 `json:"available_template_ids"`
 	ExpiresAt            int64    `json:"expires_at"`
@@ -742,7 +742,7 @@ type AdminListPlansRequest struct {
 	Sort      string `form:"sort,optional" json:"sort,optional"`
 	Direction string `form:"direction,optional" json:"direction,optional"`
 	Query     string `form:"q,optional" json:"q,optional"`
-	Status    string `form:"status,optional" json:"status,optional"`
+	Status    int    `form:"status,optional" json:"status,optional"`
 	Visible   *bool  `form:"visible,optional" json:"visible,optional"`
 }
 
@@ -761,7 +761,7 @@ type AdminCreatePlanRequest struct {
 	TrafficMultipliers map[string]float64 `json:"traffic_multipliers"`
 	DevicesLimit       int                `json:"devices_limit"`
 	SortOrder          int                `json:"sort_order"`
-	Status             string             `json:"status"`
+	Status             int                `json:"status"`
 	Visible            bool               `json:"visible"`
 }
 
@@ -781,7 +781,7 @@ type AdminUpdatePlanRequest struct {
 	TrafficMultipliers map[string]float64 `json:"traffic_multipliers,optional"`
 	DevicesLimit       *int               `json:"devices_limit,optional"`
 	SortOrder          *int               `json:"sort_order,optional"`
-	Status             *string            `json:"status,optional"`
+	Status             *int               `json:"status,optional"`
 	Visible            *bool              `json:"visible,optional"`
 }
 
@@ -802,7 +802,7 @@ type PlanSummary struct {
 	TrafficMultipliers map[string]float64         `json:"traffic_multipliers"`
 	DevicesLimit       int                        `json:"devices_limit"`
 	SortOrder          int                        `json:"sort_order"`
-	Status             string                     `json:"status"`
+	Status             int                        `json:"status"`
 	Visible            bool                       `json:"visible"`
 	CreatedAt          int64                      `json:"created_at"`
 	UpdatedAt          int64                      `json:"updated_at"`
@@ -818,7 +818,7 @@ type AdminPlanListResponse struct {
 type AdminListAnnouncementsRequest struct {
 	Page      int    `form:"page,optional" json:"page,optional"`
 	PerPage   int    `form:"per_page,optional" json:"per_page,optional"`
-	Status    string `form:"status,optional" json:"status,optional"`
+	Status    int    `form:"status,optional" json:"status,optional"`
 	Category  string `form:"category,optional" json:"category,optional"`
 	Audience  string `form:"audience,optional" json:"audience,optional"`
 	Query     string `form:"q,optional" json:"q,optional"`
@@ -850,7 +850,7 @@ type AnnouncementSummary struct {
 	Title       string `json:"title"`
 	Content     string `json:"content"`
 	Category    string `json:"category"`
-	Status      string `json:"status"`
+	Status      int    `json:"status"`
 	Audience    string `json:"audience"`
 	IsPinned    bool   `json:"is_pinned"`
 	Priority    int    `json:"priority"`
@@ -925,14 +925,14 @@ type UserPlanListResponse struct {
 type UserNodeStatusListRequest struct {
 	Page     int    `form:"page,optional" json:"page,optional"`
 	PerPage  int    `form:"per_page,optional" json:"per_page,optional"`
-	Status   string `form:"status,optional" json:"status,optional"`
+	Status   int    `form:"status,optional" json:"status,optional"`
 	Protocol string `form:"protocol,optional" json:"protocol,optional"`
 }
 
 // UserNodeKernelStatusSummary 用户端节点协议状态摘要（脱敏）。
 type UserNodeKernelStatusSummary struct {
 	Protocol     string `json:"protocol"`
-	Status       string `json:"status"`
+	Status       int    `json:"status"`
 	LastSyncedAt int64  `json:"last_synced_at"`
 }
 
@@ -941,8 +941,8 @@ type UserNodeProtocolStatusSummary struct {
 	BindingID       uint64 `json:"binding_id"`
 	Protocol        string `json:"protocol"`
 	Role            string `json:"role"`
-	Status          string `json:"status"`
-	HealthStatus    string `json:"health_status"`
+	Status          int    `json:"status"`
+	HealthStatus    int    `json:"health_status"`
 	LastHeartbeatAt int64  `json:"last_heartbeat_at"`
 }
 
@@ -953,7 +953,7 @@ type UserNodeStatusSummary struct {
 	Region           string                          `json:"region"`
 	Country          string                          `json:"country"`
 	ISP              string                          `json:"isp"`
-	Status           string                          `json:"status"`
+	Status           int                             `json:"status"`
 	Tags             []string                        `json:"tags"`
 	CapacityMbps     int                             `json:"capacity_mbps"`
 	Description      string                          `json:"description"`
@@ -974,7 +974,7 @@ type UserProfile struct {
 	ID              uint64 `json:"id"`
 	Email           string `json:"email"`
 	DisplayName     string `json:"display_name"`
-	Status          string `json:"status"`
+	Status          int    `json:"status"`
 	EmailVerifiedAt *int64 `json:"email_verified_at"`
 	CreatedAt       int64  `json:"created_at"`
 	UpdatedAt       int64  `json:"updated_at"`
@@ -983,7 +983,7 @@ type UserProfile struct {
 // CredentialSummary summarizes user credential metadata.
 type CredentialSummary struct {
 	Version      int    `json:"version"`
-	Status       string `json:"status"`
+	Status       int    `json:"status"`
 	IssuedAt     int64  `json:"issued_at"`
 	DeprecatedAt *int64 `json:"deprecated_at,omitempty"`
 	RevokedAt    *int64 `json:"revoked_at,omitempty"`

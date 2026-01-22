@@ -11,7 +11,7 @@ import (
 
 // UpdateOrderStatusParams describes fields that can be changed when updating an order state.
 type UpdateOrderStatusParams struct {
-	Status        string
+	Status        int
 	PaymentMethod *string
 	PaidAt        *time.Time
 	CancelledAt   *time.Time
@@ -27,8 +27,8 @@ type AddRefundParams struct {
 
 // UpdateOrderPaymentStateParams describes fields applicable when updating payment state on an order.
 type UpdateOrderPaymentStateParams struct {
-	PaymentStatus    string
-	OrderStatus      *string
+	PaymentStatus    int
+	OrderStatus      *int
 	PaymentIntentID  *string
 	PaymentReference *string
 	FailureCode      *string
@@ -39,7 +39,7 @@ type UpdateOrderPaymentStateParams struct {
 
 // UpdateOrderPaymentParams defines allowed modifications on an order payment record.
 type UpdateOrderPaymentParams struct {
-	Status         string
+	Status         int
 	Reference      *string
 	FailureCode    *string
 	FailureMessage *string
@@ -52,8 +52,8 @@ func (r *orderRepository) UpdateStatus(ctx context.Context, id uint64, params Up
 		return Order{}, err
 	}
 
-	status := strings.TrimSpace(strings.ToLower(params.Status))
-	if status == "" {
+	status := params.Status
+	if status == 0 {
 		return Order{}, ErrInvalidArgument
 	}
 
@@ -119,8 +119,8 @@ func (r *orderRepository) UpdatePaymentState(ctx context.Context, id uint64, par
 		return Order{}, err
 	}
 
-	status := strings.TrimSpace(strings.ToLower(params.PaymentStatus))
-	if status == "" {
+	status := params.PaymentStatus
+	if status == 0 {
 		return Order{}, ErrInvalidArgument
 	}
 
@@ -138,11 +138,8 @@ func (r *orderRepository) UpdatePaymentState(ctx context.Context, id uint64, par
 		fields := []string{"PaymentStatus", "UpdatedAt"}
 
 		if params.OrderStatus != nil {
-			orderStatus := strings.TrimSpace(strings.ToLower(*params.OrderStatus))
-			if orderStatus != "" {
-				order.Status = orderStatus
-				fields = append(fields, "Status")
-			}
+			order.Status = *params.OrderStatus
+			fields = append(fields, "Status")
 		}
 
 		if params.PaymentIntentID != nil {
@@ -250,8 +247,8 @@ func (r *orderRepository) UpdatePaymentRecord(ctx context.Context, id uint64, pa
 		return OrderPayment{}, err
 	}
 
-	status := strings.TrimSpace(strings.ToLower(params.Status))
-	if status == "" {
+	status := params.Status
+	if status == 0 {
 		return OrderPayment{}, ErrInvalidArgument
 	}
 

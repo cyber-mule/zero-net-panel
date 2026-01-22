@@ -116,7 +116,7 @@ type ReconcileParams struct {
 
 // ReconcileResult summarizes reconciliation response.
 type ReconcileResult struct {
-	Status         string
+	Status         int
 	Reference      string
 	FailureCode    string
 	FailureMessage string
@@ -205,7 +205,7 @@ func Refund(ctx context.Context, params RefundParams) (RefundResult, error) {
 	}
 
 	metadata := map[string]any{}
-	if status != "" {
+	if status != 0 {
 		metadata["gateway_refund_status"] = status
 	}
 	if actionResult.Reference != "" {
@@ -242,7 +242,7 @@ func Reconcile(ctx context.Context, params ReconcileParams) (ReconcileResult, er
 		return ReconcileResult{}, err
 	}
 	status := normalizeActionStatus(actionResult.Status, *cfg.Reconcile)
-	if status == "" {
+	if status == 0 {
 		return ReconcileResult{}, repository.ErrInvalidArgument
 	}
 
@@ -498,11 +498,11 @@ func buildBaseVars(channel repository.PaymentChannel, order repository.Order, pa
 	vars := map[string]string{
 		"order_id":          strconv.FormatUint(order.ID, 10),
 		"order_number":      order.Number,
-		"order_status":      order.Status,
+		"order_status":      strconv.Itoa(order.Status),
 		"payment_id":        strconv.FormatUint(payment.ID, 10),
 		"payment_intent_id": order.PaymentIntentID,
 		"payment_reference": order.PaymentReference,
-		"payment_status":    order.PaymentStatus,
+		"payment_status":    strconv.Itoa(order.PaymentStatus),
 		"amount_cents":      strconv.FormatInt(order.TotalCents, 10),
 		"amount":            amount,
 		"currency":          currency,
@@ -696,26 +696,35 @@ func extractActionField(raw string, decoded any, path string) string {
 	return extractByPath(decoded, path)
 }
 
-func normalizeActionStatus(status string, cfg ActionConfig) string {
+func normalizeActionStatus(status string, cfg ActionConfig) int {
 	normalized := strings.ToLower(strings.TrimSpace(status))
 	if normalized == "" {
-		return ""
+		return 0
 	}
 	if len(cfg.StatusMap) > 0 {
 		if mapped, ok := cfg.StatusMap[normalized]; ok {
-			normalized = mapped
+			normalized = strings.ToLower(strings.TrimSpace(mapped))
+		}
+	}
+
+	if code, err := strconv.Atoi(normalized); err == nil {
+		switch code {
+		case repository.OrderPaymentStatusSucceeded,
+			repository.OrderPaymentStatusFailed,
+			repository.OrderPaymentStatusPending:
+			return code
 		}
 	}
 
 	switch normalized {
-	case repository.OrderPaymentStatusSucceeded, "success", "paid", "ok":
+	case "succeeded", "success", "paid", "ok":
 		return repository.OrderPaymentStatusSucceeded
-	case repository.OrderPaymentStatusFailed, "fail", "error", "invalid":
+	case "failed", "fail", "error", "invalid":
 		return repository.OrderPaymentStatusFailed
-	case repository.OrderPaymentStatusPending, "processing", "in_progress":
+	case "pending", "processing", "in_progress":
 		return repository.OrderPaymentStatusPending
 	default:
-		return ""
+		return 0
 	}
 }
 

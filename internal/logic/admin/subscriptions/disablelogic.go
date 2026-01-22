@@ -8,6 +8,7 @@ import (
 
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 	"github.com/zero-net-panel/zero-net-panel/internal/security"
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
 )
@@ -30,12 +31,12 @@ func NewDisableLogic(ctx context.Context, svcCtx *svc.ServiceContext) *DisableLo
 
 // Disable sets the subscription status to disabled.
 func (l *DisableLogic) Disable(req *types.AdminDisableSubscriptionRequest) (*types.AdminSubscriptionResponse, error) {
-	status := "disabled"
+	statusCode := status.SubscriptionStatusDisabled
 
 	var updated repository.Subscription
 	if err := l.svcCtx.Repositories.Transaction(l.ctx, func(txRepos *repository.Repositories) error {
 		result, err := txRepos.Subscription.Update(l.ctx, req.SubscriptionID, repository.UpdateSubscriptionInput{
-			Status: &status,
+			Status: &statusCode,
 		})
 		if err != nil {
 			return err

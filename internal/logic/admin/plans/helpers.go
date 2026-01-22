@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 )
 
 func normalizeTrafficMultipliers(input map[string]float64) map[string]float64 {
@@ -53,4 +54,18 @@ func ensureBindingsExist(ctx context.Context, repo repository.ProtocolBindingRep
 		return repository.ErrInvalidArgument
 	}
 	return nil
+}
+
+func normalizePlanStatus(statusCode int) (int, error) {
+	if statusCode == 0 {
+		return 0, repository.ErrInvalidArgument
+	}
+	switch statusCode {
+	case status.PlanStatusDraft,
+		status.PlanStatusActive,
+		status.PlanStatusArchived:
+		return statusCode, nil
+	default:
+		return 0, repository.ErrInvalidArgument
+	}
 }

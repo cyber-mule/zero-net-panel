@@ -6,6 +6,7 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
 )
@@ -33,7 +34,7 @@ func (l *ListLogic) List(req *types.UserPlanListRequest) (*types.UserPlanListRes
 		Page:    1,
 		PerPage: 100,
 		Query:   req.Query,
-		Status:  "active",
+		Status:  status.PlanStatusActive,
 		Visible: &visible,
 	}
 
@@ -52,7 +53,7 @@ func (l *ListLogic) List(req *types.UserPlanListRequest) (*types.UserPlanListRes
 		visibleOnly := true
 		options, err := l.svcCtx.Repositories.PlanBillingOption.List(l.ctx, repository.ListPlanBillingOptionsOptions{
 			PlanIDs: planIDs,
-			Status:  "active",
+			Status:  status.PlanBillingOptionStatusActive,
 			Visible: &visibleOnly,
 		})
 		if err != nil {

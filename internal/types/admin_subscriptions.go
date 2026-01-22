@@ -5,7 +5,7 @@ type AdminListSubscriptionsRequest struct {
 	Page       int    `form:"page,optional" json:"page,optional"`
 	PerPage    int    `form:"per_page,optional" json:"per_page,optional"`
 	Query      string `form:"q,optional" json:"q,optional"`
-	Status     string `form:"status,optional" json:"status,optional"`
+	Status     int    `form:"status,optional" json:"status,optional"`
 	UserID     uint64 `form:"user_id,optional" json:"user_id,optional"`
 	PlanName   string `form:"plan_name,optional" json:"plan_name,optional"`
 	PlanID     uint64 `form:"plan_id,optional" json:"plan_id,optional"`
@@ -27,7 +27,7 @@ type AdminSubscriptionSummary struct {
 	PlanName             string                       `json:"plan_name"`
 	PlanID               uint64                       `json:"plan_id"`
 	PlanSnapshot         map[string]any               `json:"plan_snapshot"`
-	Status               string                       `json:"status"`
+	Status               int                          `json:"status"`
 	TemplateID           uint64                       `json:"template_id"`
 	AvailableTemplateIDs []uint64                     `json:"available_template_ids"`
 	Token                string                       `json:"token"`
@@ -62,7 +62,7 @@ type AdminCreateSubscriptionRequest struct {
 	Name                 string   `json:"name"`
 	PlanName             string   `json:"plan_name,omitempty,optional"`
 	PlanID               uint64   `json:"plan_id"`
-	Status               *string  `json:"status,omitempty,optional"`
+	Status               *int     `json:"status,omitempty,optional"`
 	TemplateID           uint64   `json:"template_id"`
 	AvailableTemplateIDs []uint64 `json:"available_template_ids,omitempty,optional"`
 	Token                *string  `json:"token,omitempty,optional"`
@@ -78,7 +78,7 @@ type AdminUpdateSubscriptionRequest struct {
 	Name                 *string   `json:"name,omitempty,optional"`
 	PlanName             *string   `json:"plan_name,omitempty,optional"`
 	PlanID               *uint64   `json:"plan_id,omitempty,optional"`
-	Status               *string   `json:"status,omitempty,optional"`
+	Status               *int      `json:"status,omitempty,optional"`
 	TemplateID           *uint64   `json:"template_id,omitempty,optional"`
 	AvailableTemplateIDs *[]uint64 `json:"available_template_ids,omitempty,optional"`
 	Token                *string   `json:"token,omitempty,optional"`

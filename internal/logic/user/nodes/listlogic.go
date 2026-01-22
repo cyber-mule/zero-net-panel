@@ -10,6 +10,7 @@ import (
 	subscriptionutil "github.com/zero-net-panel/zero-net-panel/internal/logic/subscriptionutil"
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 	"github.com/zero-net-panel/zero-net-panel/internal/security"
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
 )
@@ -54,7 +55,7 @@ func (l *ListLogic) List(req *types.UserNodeStatusListRequest) (*types.UserNodeS
 	bindingsByNode := make(map[uint64][]repository.ProtocolBinding)
 	seen := make(map[uint64]struct{})
 	for _, entry := range entries {
-		if strings.ToLower(entry.Status) != "active" || strings.ToLower(entry.Binding.Status) != "active" {
+		if entry.Status != status.ProtocolEntryStatusActive || entry.Binding.Status != status.ProtocolBindingStatusActive {
 			continue
 		}
 		binding := entry.Binding

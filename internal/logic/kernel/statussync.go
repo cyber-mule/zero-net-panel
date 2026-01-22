@@ -14,6 +14,7 @@ import (
 	adminprotocolbindings "github.com/zero-net-panel/zero-net-panel/internal/logic/admin/protocolbindings"
 	"github.com/zero-net-panel/zero-net-panel/internal/nodecfg"
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
 	"github.com/zero-net-panel/zero-net-panel/pkg/kernel"
@@ -30,11 +31,11 @@ func SyncStatus(ctx context.Context, svcCtx *svc.ServiceContext) error {
 		return err
 	}
 
-	statusByID := make(map[uint64]string, len(nodes))
+	statusByID := make(map[uint64]int, len(nodes))
 	pairs := make(map[controlKey][]uint64)
 	metaByKey := make(map[controlKey]authDebug)
 	for _, node := range nodes {
-		statusByID[node.ID] = strings.ToLower(strings.TrimSpace(node.Status))
+		statusByID[node.ID] = node.Status
 		if !node.StatusSyncEnabled {
 			continue
 		}
@@ -62,7 +63,7 @@ func SyncStatus(ctx context.Context, svcCtx *svc.ServiceContext) error {
 		if err != nil {
 			lastErr = err
 			logx.WithContext(ctx).Errorf("kernel control client init failed for %s: %v", key.endpoint, err)
-			markNodeStatus(ctx, svcCtx, nodeIDs, "offline")
+			markNodeStatus(ctx, svcCtx, nodeIDs, status.NodeStatusOffline)
 			continue
 		}
 
@@ -82,12 +83,12 @@ func SyncStatus(ctx context.Context, svcCtx *svc.ServiceContext) error {
 					nodeIDs,
 				)
 			}
-			markNodeStatus(ctx, svcCtx, nodeIDs, "offline")
+			markNodeStatus(ctx, svcCtx, nodeIDs, status.NodeStatusOffline)
 			continue
 		}
 
 		hadSuccess = true
-		markNodeStatus(ctx, svcCtx, nodeIDs, "online")
+		markNodeStatus(ctx, svcCtx, nodeIDs, status.NodeStatusOnline)
 		recovered := resolveRecoveredNodes(nodeIDs, statusByID)
 		if len(recovered) > 0 {
 			triggerKernelRecovery(ctx, svcCtx, recovered)
@@ -100,11 +101,11 @@ func SyncStatus(ctx context.Context, svcCtx *svc.ServiceContext) error {
 	return nil
 }
 
-func resolveRecoveredNodes(nodeIDs []uint64, statusByID map[uint64]string) []uint64 {
+func resolveRecoveredNodes(nodeIDs []uint64, statusByID map[uint64]int) []uint64 {
 	recovered := make([]uint64, 0, len(nodeIDs))
 	for _, id := range nodeIDs {
-		status := statusByID[id]
-		if status == "online" || status == "disabled" {
+		statusCode := statusByID[id]
+		if statusCode == status.NodeStatusOnline || statusCode == status.NodeStatusDisabled {
 			continue
 		}
 		recovered = append(recovered, id)
@@ -200,11 +201,11 @@ func isUnauthorized(err error) bool {
 	return strings.Contains(msg, "401") || strings.Contains(msg, "unauthorized")
 }
 
-func markNodeStatus(ctx context.Context, svcCtx *svc.ServiceContext, nodeIDs []uint64, status string) {
+func markNodeStatus(ctx context.Context, svcCtx *svc.ServiceContext, nodeIDs []uint64, statusCode int) {
 	if svcCtx == nil || len(nodeIDs) == 0 {
 		return
 	}
-	if err := svcCtx.Repositories.Node.UpdateStatusByIDs(ctx, nodeIDs, status); err != nil && !errors.Is(err, repository.ErrNotFound) {
-		logx.WithContext(ctx).Errorf("node status update failed (%s): %v", status, err)
+	if err := svcCtx.Repositories.Node.UpdateStatusByIDs(ctx, nodeIDs, statusCode); err != nil && !errors.Is(err, repository.ErrNotFound) {
+		logx.WithContext(ctx).Errorf("node status update failed (%d): %v", statusCode, err)
 	}
 }

@@ -14,6 +14,7 @@ import (
 	"github.com/zero-net-panel/zero-net-panel/internal/logic/paymentutil"
 	"github.com/zero-net-panel/zero-net-panel/internal/logic/subscriptionutil"
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 	"github.com/zero-net-panel/zero-net-panel/internal/security"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
@@ -97,7 +98,7 @@ func (l *CreateLogic) Create(req *types.UserCreateOrderRequest) (resp *types.Use
 		return nil, err
 	}
 
-	if !plan.Visible || !strings.EqualFold(plan.Status, "active") {
+	if !plan.Visible || plan.Status != status.PlanStatusActive {
 		return nil, repository.ErrInvalidArgument
 	}
 
@@ -115,7 +116,7 @@ func (l *CreateLogic) Create(req *types.UserCreateOrderRequest) (resp *types.Use
 		if option.PlanID != plan.ID {
 			return nil, repository.ErrInvalidArgument
 		}
-		if !option.Visible || !strings.EqualFold(option.Status, "active") {
+		if !option.Visible || option.Status != status.PlanBillingOptionStatusActive {
 			return nil, repository.ErrInvalidArgument
 		}
 		billingOption = option
@@ -270,7 +271,7 @@ func (l *CreateLogic) Create(req *types.UserCreateOrderRequest) (resp *types.Use
 				}
 				return err
 			}
-			if !strings.EqualFold(coupon.Status, repository.CouponStatusActive) {
+			if coupon.Status != repository.CouponStatusActive {
 				return repository.ErrInvalidArgument
 			}
 			if !coupon.StartsAt.IsZero() && now.Before(coupon.StartsAt) {
@@ -455,8 +456,8 @@ func (l *CreateLogic) Create(req *types.UserCreateOrderRequest) (resp *types.Use
 			createdPayments = append(createdPayments, payment)
 		}
 
-		if strings.EqualFold(createdOrder.Status, repository.OrderStatusPaid) &&
-			strings.EqualFold(createdOrder.PaymentStatus, repository.OrderPaymentStatusSucceeded) {
+		if createdOrder.Status == repository.OrderStatusPaid &&
+			createdOrder.PaymentStatus == repository.OrderPaymentStatusSucceeded {
 			txRepos, err := repository.NewRepositories(tx)
 			if err != nil {
 				return err
@@ -470,7 +471,7 @@ func (l *CreateLogic) Create(req *types.UserCreateOrderRequest) (resp *types.Use
 
 		if appliedCoupon != nil && discountCents > 0 {
 			status := repository.CouponRedemptionReserved
-			if strings.EqualFold(createdOrder.Status, repository.OrderStatusPaid) {
+			if createdOrder.Status == repository.OrderStatusPaid {
 				status = repository.CouponRedemptionApplied
 			}
 			_, err := couponRepo.CreateRedemption(l.ctx, repository.CouponRedemption{

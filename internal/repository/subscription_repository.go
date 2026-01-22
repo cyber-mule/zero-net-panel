@@ -10,6 +10,8 @@ import (
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 )
 
 // Subscription 表示用户订阅信息。
@@ -20,7 +22,7 @@ type Subscription struct {
 	PlanName             string         `gorm:"size:255"`
 	PlanID               uint64         `gorm:"index"`
 	PlanSnapshot         map[string]any `gorm:"serializer:json"`
-	Status               string         `gorm:"size:32"`
+	Status               int            `gorm:"column:status"`
 	TemplateID           uint64
 	AvailableTemplateIDs []uint64 `gorm:"serializer:json"`
 	Token                string   `gorm:"size:255"`
@@ -43,8 +45,8 @@ type ListSubscriptionsOptions struct {
 	Sort          string
 	Direction     string
 	Query         string
-	Status        string
-	ExcludeStatus []string
+	Status        int
+	ExcludeStatus []int
 	UserID        *uint64
 	PlanName      string
 	PlanID        uint64
@@ -112,7 +114,7 @@ func (r *subscriptionRepository) ListActiveByPlanIDs(ctx context.Context, planID
 	var subscriptions []Subscription
 	if err := r.db.WithContext(ctx).
 		Where("plan_id IN ?", planIDs).
-		Where("LOWER(status) = ?", "active").
+		Where("status = ?", status.SubscriptionStatusActive).
 		Order("updated_at DESC").
 		Find(&subscriptions).Error; err != nil {
 		return nil, err
@@ -161,7 +163,7 @@ func (r *subscriptionRepository) GetActiveByUser(ctx context.Context, userID uin
 
 	var subscription Subscription
 	if err := r.db.WithContext(ctx).
-		Where("user_id = ? AND status = ?", userID, "active").
+		Where("user_id = ? AND status = ?", userID, status.SubscriptionStatusActive).
 		Where("expires_at > ?", time.Now().UTC()).
 		Order("expires_at DESC").
 		First(&subscription).Error; err != nil {
@@ -180,12 +182,12 @@ func (r *subscriptionRepository) DisableOtherActive(ctx context.Context, userID 
 	}
 
 	updates := map[string]any{
-		"status":     "disabled",
+		"status":     status.SubscriptionStatusDisabled,
 		"updated_at": time.Now().UTC(),
 	}
 
 	query := r.db.WithContext(ctx).Model(&Subscription{}).
-		Where("user_id = ? AND status = ?", userID, "active")
+		Where("user_id = ? AND status = ?", userID, status.SubscriptionStatusActive)
 	if excludeID != 0 {
 		query = query.Where("id <> ?", excludeID)
 	}
@@ -201,7 +203,7 @@ type UpdateSubscriptionInput struct {
 	PlanName             *string
 	PlanID               *uint64
 	PlanSnapshot         *map[string]any
-	Status               *string
+	Status               *int
 	TemplateID           *uint64
 	AvailableTemplateIDs *[]uint64
 	Token                *string
@@ -225,8 +227,8 @@ func (r *subscriptionRepository) Create(ctx context.Context, sub Subscription) (
 		sub.CreatedAt = now
 	}
 	sub.UpdatedAt = now
-	if sub.Status == "" {
-		sub.Status = "active"
+	if sub.Status == 0 {
+		sub.Status = status.SubscriptionStatusActive
 	}
 	if sub.LastRefreshedAt.IsZero() {
 		sub.LastRefreshedAt = now
@@ -257,7 +259,7 @@ func (r *subscriptionRepository) Update(ctx context.Context, id uint64, input Up
 		updates["plan_snapshot"] = *input.PlanSnapshot
 	}
 	if input.Status != nil {
-		updates["status"] = strings.TrimSpace(*input.Status)
+		updates["status"] = *input.Status
 	}
 	if input.TemplateID != nil {
 		updates["template_id"] = *input.TemplateID
@@ -333,7 +335,7 @@ func (r *subscriptionRepository) UpdateTemplate(ctx context.Context, subscriptio
 		if subscription.UserID != userID {
 			return ErrForbidden
 		}
-		if strings.EqualFold(subscription.Status, "disabled") {
+		if subscription.Status == status.SubscriptionStatusDisabled {
 			return ErrNotFound
 		}
 
@@ -390,13 +392,13 @@ func (r *subscriptionRepository) listWithOptions(ctx context.Context, opts ListS
 		like := fmt.Sprintf("%%%s%%", query)
 		base = base.Where("(LOWER(name) LIKE ? OR LOWER(plan_name) LIKE ?)", like, like)
 	}
-	if status := strings.TrimSpace(strings.ToLower(opts.Status)); status != "" {
-		base = base.Where("LOWER(status) = ?", status)
+	if opts.Status != 0 {
+		base = base.Where("status = ?", opts.Status)
 	}
 	if len(opts.ExcludeStatus) > 0 {
 		excluded := normalizeStatusFilters(opts.ExcludeStatus)
 		if len(excluded) > 0 {
-			base = base.Where("LOWER(status) NOT IN ?", excluded)
+			base = base.Where("status NOT IN ?", excluded)
 		}
 	}
 	if planName := strings.TrimSpace(strings.ToLower(opts.PlanName)); planName != "" {
@@ -473,22 +475,21 @@ func normalizeListSubscriptionsOptions(opts ListSubscriptionsOptions) ListSubscr
 	return opts
 }
 
-func normalizeStatusFilters(values []string) []string {
+func normalizeStatusFilters(values []int) []int {
 	if len(values) == 0 {
 		return nil
 	}
-	seen := make(map[string]struct{}, len(values))
-	result := make([]string, 0, len(values))
+	seen := make(map[int]struct{}, len(values))
+	result := make([]int, 0, len(values))
 	for _, value := range values {
-		normalized := strings.ToLower(strings.TrimSpace(value))
-		if normalized == "" {
+		if value <= 0 {
 			continue
 		}
-		if _, ok := seen[normalized]; ok {
+		if _, ok := seen[value]; ok {
 			continue
 		}
-		seen[normalized] = struct{}{}
-		result = append(result, normalized)
+		seen[value] = struct{}{}
+		result = append(result, value)
 	}
 	return result
 }

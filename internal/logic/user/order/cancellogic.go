@@ -51,7 +51,7 @@ func (l *CancelLogic) Cancel(req *types.UserCancelOrderRequest) (*types.UserOrde
 		return nil, err
 	}
 
-	if strings.EqualFold(order.Status, repository.OrderStatusCancelled) {
+	if order.Status == repository.OrderStatusCancelled {
 		balance, err := l.svcCtx.Repositories.Balance.GetBalance(l.ctx, user.ID)
 		if err != nil {
 			return nil, err
@@ -64,8 +64,8 @@ func (l *CancelLogic) Cancel(req *types.UserCancelOrderRequest) (*types.UserOrde
 		return &resp, nil
 	}
 
-	if !strings.EqualFold(order.Status, repository.OrderStatusPending) {
-		if !strings.EqualFold(order.Status, repository.OrderStatusPaid) || order.TotalCents != 0 {
+	if order.Status != repository.OrderStatusPending {
+		if order.Status != repository.OrderStatusPaid || order.TotalCents != 0 {
 			return nil, repository.ErrInvalidArgument
 		}
 	}

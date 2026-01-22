@@ -27,7 +27,7 @@ type AdminListPlansRequest {
 	sort      string `form:"sort,optional" json:"sort,optional"`
 	direction string `form:"direction,optional" json:"direction,optional"`
 	q         string `form:"q,optional" json:"q,optional"`
-	status    string `form:"status,optional" json:"status,optional"`
+	status    int    `form:"status,optional" json:"status,optional"`
 	visible   bool   `form:"visible,optional" json:"visible,optional"`
 }
 
@@ -45,7 +45,7 @@ type AdminCreatePlanRequest {
 	traffic_multipliers map[string]float64 `form:"traffic_multipliers,optional" json:"traffic_multipliers,optional"`
 	devices_limit       int                `form:"devices_limit,optional" json:"devices_limit,optional"`
 	sort_order          int                `form:"sort_order,optional" json:"sort_order,optional"`
-	status              string             `form:"status,optional" json:"status,optional"`
+	status              int                `form:"status,optional" json:"status,optional"`
 	visible             bool               `form:"visible,optional" json:"visible,optional"`
 }
 
@@ -64,7 +64,7 @@ type AdminUpdatePlanRequest {
 	traffic_multipliers map[string]float64 `form:"traffic_multipliers,optional" json:"traffic_multipliers,optional"`
 	devices_limit       int                `form:"devices_limit,optional" json:"devices_limit,optional"`
 	sort_order          int                `form:"sort_order,optional" json:"sort_order,optional"`
-	status              string             `form:"status,optional" json:"status,optional"`
+	status              int                `form:"status,optional" json:"status,optional"`
 	visible             bool               `form:"visible,optional" json:"visible,optional"`
 }
 
@@ -84,7 +84,7 @@ type PlanSummary {
 	traffic_multipliers map[string]float64
 	devices_limit       int
 	sort_order          int
-	status              string
+	status              int
 	visible             bool
 	created_at          int64
 	updated_at          int64

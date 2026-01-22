@@ -11,6 +11,7 @@ import (
 
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 	"github.com/zero-net-panel/zero-net-panel/internal/security"
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
 )
@@ -51,7 +52,7 @@ func (l *ChangePasswordLogic) Change(req *types.UserChangePasswordRequest) (*typ
 	if err != nil {
 		return nil, err
 	}
-	if !strings.EqualFold(user.Status, "active") {
+	if user.Status != status.UserStatusActive {
 		return nil, repository.ErrForbidden
 	}
 

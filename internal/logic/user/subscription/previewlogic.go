@@ -15,6 +15,7 @@ import (
 	subscriptionutil "github.com/zero-net-panel/zero-net-panel/internal/logic/subscriptionutil"
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 	"github.com/zero-net-panel/zero-net-panel/internal/security"
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
 	subtemplate "github.com/zero-net-panel/zero-net-panel/pkg/subscription/template"
@@ -51,7 +52,7 @@ func (l *PreviewLogic) Preview(req *types.UserSubscriptionPreviewRequest) (*type
 	if sub.UserID != user.ID {
 		return nil, repository.ErrForbidden
 	}
-	if strings.EqualFold(sub.Status, "disabled") {
+	if sub.Status == status.SubscriptionStatusDisabled {
 		return nil, repository.ErrNotFound
 	}
 
@@ -70,7 +71,7 @@ func (l *PreviewLogic) Preview(req *types.UserSubscriptionPreviewRequest) (*type
 	}
 
 	now := time.Now().UTC()
-	isActive := strings.EqualFold(sub.Status, "active")
+	isActive := sub.Status == status.SubscriptionStatusActive
 	identityData := map[string]any{
 		"version":    0,
 		"status":     "",
@@ -227,10 +228,10 @@ func maxInt64(a, b int64) int64 {
 }
 
 func entryVisible(entry repository.ProtocolEntry) bool {
-	if strings.ToLower(entry.Status) != "active" {
+	if entry.Status != status.ProtocolEntryStatusActive {
 		return false
 	}
-	if strings.ToLower(entry.Binding.Status) != "active" {
+	if entry.Binding.Status != status.ProtocolBindingStatusActive {
 		return false
 	}
 	return true

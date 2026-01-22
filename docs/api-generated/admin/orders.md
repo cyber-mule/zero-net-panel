@@ -15,9 +15,9 @@
 type AdminListOrdersRequest struct {
 	Page int 
 	Per_page int 
-	Status string 
+	Status int 
 	Payment_method string 
-	Payment_status string 
+	Payment_status int 
 	Number string 
 	Sort string 
 	Direction string 
@@ -78,8 +78,8 @@ type AdminOrderDetail struct {
 	Id uint64 
 	Number string 
 	User_id uint64 
-	Status string 
-	Payment_status string 
+	Status int 
+	Payment_status int 
 	Payment_intent_id *string 
 	Payment_reference *string 
 	Payment_failure_code *string 
@@ -141,8 +141,8 @@ type AdminOrderDetail struct {
 	Id uint64 
 	Number string 
 	User_id uint64 
-	Status string 
-	Payment_status string 
+	Status int 
+	Payment_status int 
 	Payment_intent_id *string 
 	Payment_reference *string 
 	Payment_failure_code *string 
@@ -207,8 +207,8 @@ type AdminOrderDetail struct {
 	Id uint64 
 	Number string 
 	User_id uint64 
-	Status string 
-	Payment_status string 
+	Status int 
+	Payment_status int 
 	Payment_intent_id *string 
 	Payment_reference *string 
 	Payment_failure_code *string 
@@ -273,8 +273,8 @@ type AdminOrderDetail struct {
 	Id uint64 
 	Number string 
 	User_id uint64 
-	Status string 
-	Payment_status string 
+	Status int 
+	Payment_status int 
 	Payment_intent_id *string 
 	Payment_reference *string 
 	Payment_failure_code *string 
@@ -318,7 +318,7 @@ type OrderUserSummary struct {
 type AdminPaymentCallbackRequest struct {
 	Order_id uint64 
 	Payment_id uint64 
-	Status string 
+	Status int 
 	Reference string `form:"reference,optional" json:"reference,optional"`
 	Failure_code string `form:"failure_code,optional" json:"failure_code,optional"`
 	Failure_message string `form:"failure_message,optional" json:"failure_message,optional"`
@@ -340,8 +340,8 @@ type AdminOrderDetail struct {
 	Id uint64 
 	Number string 
 	User_id uint64 
-	Status string 
-	Payment_status string 
+	Status int 
+	Payment_status int 
 	Payment_intent_id *string 
 	Payment_reference *string 
 	Payment_failure_code *string 
@@ -402,8 +402,8 @@ type AdminOrderDetail struct {
 	Id uint64 
 	Number string 
 	User_id uint64 
-	Status string 
-	Payment_status string 
+	Status int 
+	Payment_status int 
 	Payment_intent_id *string 
 	Payment_reference *string 
 	Payment_failure_code *string 
@@ -447,7 +447,7 @@ type OrderUserSummary struct {
 type AdminPaymentCallbackRequest struct {
 	Order_id uint64 
 	Payment_id uint64 
-	Status string 
+	Status int 
 	Reference string `form:"reference,optional" json:"reference,optional"`
 	Failure_code string `form:"failure_code,optional" json:"failure_code,optional"`
 	Failure_message string `form:"failure_message,optional" json:"failure_message,optional"`
@@ -469,8 +469,8 @@ type AdminOrderDetail struct {
 	Id uint64 
 	Number string 
 	User_id uint64 
-	Status string 
-	Payment_status string 
+	Status int 
+	Payment_status int 
 	Payment_intent_id *string 
 	Payment_reference *string 
 	Payment_failure_code *string 

@@ -51,7 +51,7 @@ type AdminListNodesRequest {
 	sort      string `form:"sort,optional" json:"sort,optional"`
 	direction string `form:"direction,optional" json:"direction,optional"`
 	q         string `form:"q,optional" json:"q,optional"`
-	status    string `form:"status,optional" json:"status,optional"`
+	status    int    `form:"status,optional" json:"status,optional"`
 	protocol  string `form:"protocol,optional" json:"protocol,optional"`
 }
 
@@ -61,7 +61,7 @@ type NodeSummary {
 	region              string
 	country             string
 	isp                 string
-	status              string
+	status              int
 	tags                []string
 	capacity_mbps       int
 	description         string
@@ -89,7 +89,7 @@ type AdminCreateNodeRequest {
 	region              string   `form:"region,optional" json:"region,optional"`
 	country             string   `form:"country,optional" json:"country,optional"`
 	isp                 string   `form:"isp,optional" json:"isp,optional"`
-	status              string   `form:"status,optional" json:"status,optional"`
+	status              int      `form:"status,optional" json:"status,optional"`
 	tags                []string `form:"tags,optional" json:"tags,optional"`
 	capacity_mbps       int      `form:"capacity_mbps,optional" json:"capacity_mbps,optional"`
 	description         string   `form:"description,optional" json:"description,optional"`
@@ -117,7 +117,7 @@ type AdminUpdateNodeRequest {
 	region              string   `form:"region,optional" json:"region,optional"`
 	country             string   `form:"country,optional" json:"country,optional"`
 	isp                 string   `form:"isp,optional" json:"isp,optional"`
-	status              string   `form:"status,optional" json:"status,optional"`
+	status              int      `form:"status,optional" json:"status,optional"`
 	tags                []string `form:"tags,optional" json:"tags,optional"`
 	capacity_mbps       int      `form:"capacity_mbps,optional" json:"capacity_mbps,optional"`
 	description         string   `form:"description,optional" json:"description,optional"`
@@ -160,7 +160,7 @@ type NodeKernelSummary {
 	protocol       string
 	endpoint       string
 	revision       string
-	status         string
+	status         int
 	config         map[string]interface{}
 	last_synced_at int64
 }
@@ -175,7 +175,7 @@ type AdminUpsertNodeKernelRequest {
 	protocol       string
 	endpoint       string
 	revision       string                 `form:"revision,optional" json:"revision,optional"`
-	status         string                 `form:"status,optional" json:"status,optional"`
+	status         int                    `form:"status,optional" json:"status,optional"`
 	config         map[string]interface{} `form:"config,optional" json:"config,optional"`
 	last_synced_at int64                  `form:"last_synced_at,optional" json:"last_synced_at,optional"`
 }
@@ -200,7 +200,7 @@ type AdminSyncNodeKernelResponse {
 
 type NodeStatusSyncResult {
 	node_id   uint64
-	status    string
+	status    int
 	message   string
 	synced_at int64
 }

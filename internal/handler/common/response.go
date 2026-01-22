@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/rest/httpx"
 
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
@@ -46,7 +47,10 @@ func RespondError(w http.ResponseWriter, r *http.Request, err error) {
 	}
 
 	if status == http.StatusInternalServerError {
-		httpx.ErrorCtx(r.Context(), w, err)
+		logx.WithContext(r.Context()).Errorf("unhandled error: %v", err)
+		httpx.WriteJsonCtx(r.Context(), w, status, map[string]any{
+			"message": "internal server error",
+		})
 		return
 	}
 

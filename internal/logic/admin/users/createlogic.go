@@ -11,6 +11,7 @@ import (
 
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 	"github.com/zero-net-panel/zero-net-panel/internal/security"
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
 )
@@ -52,12 +53,13 @@ func (l *CreateLogic) Create(req *types.AdminCreateUserRequest) (*types.AdminUse
 		}
 	}
 
-	status := "active"
+	statusCode := status.UserStatusActive
 	if req.Status != nil {
-		status = normalizeStatus(*req.Status)
-		if status == "" || (status != "active" && status != "disabled" && status != "pending") {
-			return nil, repository.ErrInvalidArgument
+		normalized, err := normalizeStatus(*req.Status)
+		if err != nil {
+			return nil, err
 		}
+		statusCode = normalized
 	}
 
 	now := time.Now().UTC()
@@ -66,7 +68,7 @@ func (l *CreateLogic) Create(req *types.AdminCreateUserRequest) (*types.AdminUse
 		if *req.EmailVerified {
 			verifiedAt = now
 		}
-	} else if status == "active" {
+	} else if statusCode == status.UserStatusActive {
 		verifiedAt = now
 	}
 
@@ -86,7 +88,7 @@ func (l *CreateLogic) Create(req *types.AdminCreateUserRequest) (*types.AdminUse
 			DisplayName:     displayName,
 			PasswordHash:    string(passwordHash),
 			Roles:           roles,
-			Status:          status,
+			Status:          statusCode,
 			EmailVerifiedAt: verifiedAt,
 		})
 		if err != nil {
@@ -108,7 +110,7 @@ func (l *CreateLogic) Create(req *types.AdminCreateUserRequest) (*types.AdminUse
 			ResourceType: "user",
 			ResourceID:   fmt.Sprintf("%d", user.ID),
 			Metadata: map[string]any{
-				"status": status,
+				"status": statusCode,
 				"roles":  roles,
 			},
 		})

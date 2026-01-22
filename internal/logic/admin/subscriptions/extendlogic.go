@@ -10,6 +10,7 @@ import (
 	subscriptionutil "github.com/zero-net-panel/zero-net-panel/internal/logic/subscriptionutil"
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 	"github.com/zero-net-panel/zero-net-panel/internal/security"
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
 )
@@ -53,15 +54,15 @@ func (l *ExtendLogic) Extend(req *types.AdminExtendSubscriptionRequest) (*types.
 		target = base.Add(duration)
 	}
 
-	updateStatus := ""
-	if sub.Status == "expired" && target.After(time.Now().UTC()) {
-		updateStatus = "active"
+	updateStatus := 0
+	if sub.Status == status.SubscriptionStatusExpired && target.After(time.Now().UTC()) {
+		updateStatus = status.SubscriptionStatusActive
 	}
 
 	input := repository.UpdateSubscriptionInput{
 		ExpiresAt: &target,
 	}
-	if updateStatus != "" {
+	if updateStatus != 0 {
 		input.Status = &updateStatus
 	}
 

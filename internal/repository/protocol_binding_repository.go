@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 )
 
 // ProtocolBinding binds a protocol configuration to a node instance.
@@ -20,10 +22,10 @@ type ProtocolBinding struct {
 	Listen          string         `gorm:"size:512"`
 	Connect         string         `gorm:"size:512"`
 	AccessPort      int            `gorm:"column:access_port"`
-	Status          string         `gorm:"size:32"`
+	Status          int            `gorm:"column:status"`
 	KernelID        string         `gorm:"size:128;index"`
-	SyncStatus      string         `gorm:"size:32"`
-	HealthStatus    string         `gorm:"size:32"`
+	SyncStatus      int            `gorm:"column:sync_status"`
+	HealthStatus    int            `gorm:"column:health_status"`
 	LastSyncedAt    time.Time      `gorm:"column:last_synced_at"`
 	LastHeartbeatAt time.Time      `gorm:"column:last_heartbeat_at"`
 	LastSyncError   string         `gorm:"type:text"`
@@ -47,7 +49,7 @@ type ListProtocolBindingsOptions struct {
 	Sort      string
 	Direction string
 	Query     string
-	Status    string
+	Status    int
 	Protocol  string
 	NodeID    *uint64
 }
@@ -61,10 +63,10 @@ type UpdateProtocolBindingInput struct {
 	Listen          *string
 	Connect         *string
 	AccessPort      *int
-	Status          *string
+	Status          *int
 	KernelID        *string
-	SyncStatus      *string
-	HealthStatus    *string
+	SyncStatus      *int
+	HealthStatus    *int
 	LastSyncedAt    *time.Time
 	LastHeartbeatAt *time.Time
 	LastSyncError   *string
@@ -84,8 +86,8 @@ type ProtocolBindingRepository interface {
 	Create(ctx context.Context, binding ProtocolBinding) (ProtocolBinding, error)
 	Update(ctx context.Context, id uint64, input UpdateProtocolBindingInput) (ProtocolBinding, error)
 	UpdateSyncState(ctx context.Context, id uint64, input UpdateProtocolBindingInput) (ProtocolBinding, error)
-	UpdateHealthByKernelID(ctx context.Context, kernelID string, status string, observedAt time.Time, message string) (ProtocolBinding, error)
-	UpdateHealthByKernelIDForNodes(ctx context.Context, kernelID string, nodeIDs []uint64, status string, observedAt time.Time, message string) (ProtocolBinding, error)
+	UpdateHealthByKernelID(ctx context.Context, kernelID string, statusCode int, observedAt time.Time, message string) (ProtocolBinding, error)
+	UpdateHealthByKernelIDForNodes(ctx context.Context, kernelID string, nodeIDs []uint64, statusCode int, observedAt time.Time, message string) (ProtocolBinding, error)
 	Delete(ctx context.Context, id uint64) error
 }
 
@@ -113,8 +115,8 @@ func (r *protocolBindingRepository) List(ctx context.Context, opts ListProtocolB
 		like := fmt.Sprintf("%%%s%%", query)
 		base = base.Where("(LOWER(name) LIKE ? OR LOWER(description) LIKE ?)", like, like)
 	}
-	if status := strings.TrimSpace(strings.ToLower(opts.Status)); status != "" {
-		base = base.Where("LOWER(status) = ?", status)
+	if opts.Status != 0 {
+		base = base.Where("status = ?", opts.Status)
 	}
 	if opts.NodeID != nil {
 		base = base.Where("node_id = ?", *opts.NodeID)
@@ -218,23 +220,20 @@ func (r *protocolBindingRepository) Create(ctx context.Context, binding Protocol
 	binding.Role = strings.TrimSpace(binding.Role)
 	binding.Listen = strings.TrimSpace(binding.Listen)
 	binding.Connect = strings.TrimSpace(binding.Connect)
-	binding.Status = strings.TrimSpace(binding.Status)
 	binding.KernelID = strings.TrimSpace(binding.KernelID)
 	binding.Protocol = strings.ToLower(strings.TrimSpace(binding.Protocol))
-	binding.SyncStatus = strings.TrimSpace(binding.SyncStatus)
-	binding.HealthStatus = strings.TrimSpace(binding.HealthStatus)
 	binding.Description = strings.TrimSpace(binding.Description)
 	if binding.NodeID == 0 || binding.Protocol == "" || binding.Role == "" {
 		return ProtocolBinding{}, ErrInvalidArgument
 	}
-	if binding.Status == "" {
-		binding.Status = "active"
+	if binding.Status == 0 {
+		binding.Status = status.ProtocolBindingStatusActive
 	}
-	if binding.SyncStatus == "" {
-		binding.SyncStatus = "pending"
+	if binding.SyncStatus == 0 {
+		binding.SyncStatus = status.ProtocolBindingSyncStatusPending
 	}
-	if binding.HealthStatus == "" {
-		binding.HealthStatus = "unknown"
+	if binding.HealthStatus == 0 {
+		binding.HealthStatus = status.ProtocolBindingHealthStatusUnknown
 	}
 	if binding.Tags == nil {
 		binding.Tags = []string{}
@@ -251,6 +250,8 @@ func (r *protocolBindingRepository) Create(ctx context.Context, binding Protocol
 		binding.CreatedAt = now
 	}
 	binding.UpdatedAt = now
+	binding.LastSyncedAt = NormalizeTime(binding.LastSyncedAt)
+	binding.LastHeartbeatAt = NormalizeTime(binding.LastHeartbeatAt)
 
 	if err := r.db.WithContext(ctx).Create(&binding).Error; err != nil {
 		return ProtocolBinding{}, translateError(err)
@@ -283,7 +284,7 @@ func (r *protocolBindingRepository) UpdateSyncState(ctx context.Context, id uint
 
 	updates := map[string]any{}
 	if input.SyncStatus != nil {
-		updates["sync_status"] = strings.TrimSpace(*input.SyncStatus)
+		updates["sync_status"] = *input.SyncStatus
 	}
 	if input.LastSyncedAt != nil {
 		updates["last_synced_at"] = input.LastSyncedAt.UTC()
@@ -305,7 +306,7 @@ func (r *protocolBindingRepository) UpdateSyncState(ctx context.Context, id uint
 	return r.Get(ctx, id)
 }
 
-func (r *protocolBindingRepository) UpdateHealthByKernelID(ctx context.Context, kernelID string, status string, observedAt time.Time, message string) (ProtocolBinding, error) {
+func (r *protocolBindingRepository) UpdateHealthByKernelID(ctx context.Context, kernelID string, statusCode int, observedAt time.Time, message string) (ProtocolBinding, error) {
 	if err := ctx.Err(); err != nil {
 		return ProtocolBinding{}, err
 	}
@@ -313,13 +314,12 @@ func (r *protocolBindingRepository) UpdateHealthByKernelID(ctx context.Context, 
 	if kernelID == "" {
 		return ProtocolBinding{}, ErrInvalidArgument
 	}
-	status = strings.TrimSpace(status)
-	if status == "" {
-		status = "unknown"
+	if statusCode == 0 {
+		statusCode = status.ProtocolBindingHealthStatusUnknown
 	}
 
 	updates := map[string]any{
-		"health_status": status,
+		"health_status": statusCode,
 		"updated_at":    time.Now().UTC(),
 	}
 	if !observedAt.IsZero() {
@@ -352,7 +352,7 @@ func (r *protocolBindingRepository) UpdateHealthByKernelID(ctx context.Context, 
 	return binding, nil
 }
 
-func (r *protocolBindingRepository) UpdateHealthByKernelIDForNodes(ctx context.Context, kernelID string, nodeIDs []uint64, status string, observedAt time.Time, message string) (ProtocolBinding, error) {
+func (r *protocolBindingRepository) UpdateHealthByKernelIDForNodes(ctx context.Context, kernelID string, nodeIDs []uint64, statusCode int, observedAt time.Time, message string) (ProtocolBinding, error) {
 	if err := ctx.Err(); err != nil {
 		return ProtocolBinding{}, err
 	}
@@ -360,13 +360,12 @@ func (r *protocolBindingRepository) UpdateHealthByKernelIDForNodes(ctx context.C
 	if kernelID == "" || len(nodeIDs) == 0 {
 		return ProtocolBinding{}, ErrInvalidArgument
 	}
-	status = strings.TrimSpace(status)
-	if status == "" {
-		status = "unknown"
+	if statusCode == 0 {
+		statusCode = status.ProtocolBindingHealthStatusUnknown
 	}
 
 	updates := map[string]any{
-		"health_status": status,
+		"health_status": statusCode,
 		"updated_at":    time.Now().UTC(),
 	}
 	if !observedAt.IsZero() {
@@ -432,16 +431,16 @@ func (r *protocolBindingRepository) buildBindingUpdates(input UpdateProtocolBind
 		updates["access_port"] = *input.AccessPort
 	}
 	if input.Status != nil {
-		updates["status"] = strings.TrimSpace(*input.Status)
+		updates["status"] = *input.Status
 	}
 	if input.KernelID != nil {
 		updates["kernel_id"] = strings.TrimSpace(*input.KernelID)
 	}
 	if input.SyncStatus != nil {
-		updates["sync_status"] = strings.TrimSpace(*input.SyncStatus)
+		updates["sync_status"] = *input.SyncStatus
 	}
 	if input.HealthStatus != nil {
-		updates["health_status"] = strings.TrimSpace(*input.HealthStatus)
+		updates["health_status"] = *input.HealthStatus
 	}
 	if input.LastSyncedAt != nil {
 		updates["last_synced_at"] = input.LastSyncedAt.UTC()

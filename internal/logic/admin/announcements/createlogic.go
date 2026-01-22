@@ -8,6 +8,7 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
 )
@@ -38,7 +39,7 @@ func (l *CreateLogic) Create(req *types.AdminCreateAnnouncementRequest) (*types.
 		Audience:    defaultAudience(req.Audience),
 		IsPinned:    req.IsPinned,
 		Priority:    req.Priority,
-		Status:      "draft",
+		Status:      status.AnnouncementStatusDraft,
 		VisibleFrom: now,
 		CreatedBy:   strings.TrimSpace(req.CreatedBy),
 		UpdatedBy:   strings.TrimSpace(req.CreatedBy),

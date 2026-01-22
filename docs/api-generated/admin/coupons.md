@@ -16,7 +16,7 @@ type AdminListCouponsRequest struct {
 	Page int `form:"page,optional" json:"page,optional"`
 	Per_page int `form:"per_page,optional" json:"per_page,optional"`
 	Q string `form:"q,optional" json:"q,optional"`
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 	Sort string `form:"sort,optional" json:"sort,optional"`
 	Direction string `form:"direction,optional" json:"direction,optional"`
 }
@@ -60,7 +60,7 @@ type AdminCreateCouponRequest struct {
 	Code string 
 	Name string 
 	Description string `form:"description,optional" json:"description,optional"`
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 	Discount_type string 
 	Discount_value int64 
 	Currency string `form:"currency,optional" json:"currency,optional"`
@@ -83,7 +83,7 @@ type CouponSummary struct {
 	Code string 
 	Name string 
 	Description string 
-	Status string 
+	Status int 
 	Discount_type string 
 	Discount_value int64 
 	Currency string 
@@ -115,7 +115,7 @@ type AdminUpdateCouponRequest struct {
 	Id uint64 `path:"id"`
 	Name string `form:"name,optional" json:"name,optional"`
 	Description string `form:"description,optional" json:"description,optional"`
-	Status string `form:"status,optional" json:"status,optional"`
+	Status int `form:"status,optional" json:"status,optional"`
 	Discount_type string `form:"discount_type,optional" json:"discount_type,optional"`
 	Discount_value int64 `form:"discount_value,optional" json:"discount_value,optional"`
 	Currency string `form:"currency,optional" json:"currency,optional"`
@@ -138,7 +138,7 @@ type CouponSummary struct {
 	Code string 
 	Name string 
 	Description string 
-	Status string 
+	Status int 
 	Discount_type string 
 	Discount_value int64 
 	Currency string 

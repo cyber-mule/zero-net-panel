@@ -173,9 +173,9 @@ type Order struct {
     PlanSnapshot    JSON      // 套餐快照
     TotalCents      int64     // 总金额（分）
     Currency        string
-    Status          string    // pending_payment, paid, cancelled, refunded, partially_refunded
+    Status          int       // 0=unknown, 1=pending_payment, 2=paid, 3=payment_failed, 4=cancelled, 5=partially_refunded, 6=refunded
     PaymentMethod   string    // balance, external
-    PaymentStatus   string    // pending, succeeded, failed
+    PaymentStatus   int       // 0=unknown, 1=pending, 2=succeeded, 3=failed
     RefundedCents   int64     // 已退款金额（分）
     Metadata        JSON
     CreatedAt       time.Time
@@ -221,7 +221,7 @@ type OrderPayment struct {
     Currency           string
     Method             string
     Channel            string    // 支付渠道
-    Status             string
+    Status             int       // 0=unknown, 1=pending, 2=succeeded, 3=failed
     Reference          string    // 外部支付引用
     ReturnURL          string
     FailureCode        string
@@ -311,7 +311,7 @@ type SubscriptionTemplate struct {
     Variables     JSON
     IsDefault     bool
     Version       int
-    Status        string    // draft, published, archived
+    Status        int       // 0=unknown, 1=draft, 2=published, 3=archived
     CreatedAt     time.Time
     UpdatedAt     time.Time
 }
@@ -718,7 +718,7 @@ func TestCreateOrderWithBalancePayment(t *testing.T) {
     // 5. 验证结果
     assert.NoError(t, err)
     assert.NotNil(t, resp)
-    assert.Equal(t, "paid", resp.Order.Status)
+    assert.Equal(t, 2, resp.Order.Status)
 }
 ```
 

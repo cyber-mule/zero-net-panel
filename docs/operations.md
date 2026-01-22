@@ -53,7 +53,7 @@
    ```json
    {
      "binding_id": 3,
-     "status": "synced",
+     "status": 1,
      "message": "ok",
      "synced_at": 1719766500
    }
@@ -68,10 +68,10 @@
    批量响应示例：
    ```json
    {
-     "results": [
-       {"binding_id": 3, "status": "synced", "message": "ok", "synced_at": 1719766500},
-       {"binding_id": 4, "status": "error", "message": "kernel control not configured", "synced_at": 1719766500}
-     ]
+      "results": [
+        {"binding_id": 3, "status": 1, "message": "ok", "synced_at": 1719766500},
+        {"binding_id": 4, "status": 2, "message": "kernel control not configured", "synced_at": 1719766500}
+      ]
    }
    ```
 
@@ -120,7 +120,7 @@
          "durationDays": 30,
          "traffic": "300 GB",
          "features": ["优先节点", "高速带宽"],
-         "status": "published"
+          "status": 2
        }
      ]
    }
