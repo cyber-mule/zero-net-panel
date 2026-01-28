@@ -381,19 +381,19 @@ type AdminProtocolBindingListResponse struct {
 
 // AdminCreateProtocolBindingRequest 创建协议绑定请求。
 type AdminCreateProtocolBindingRequest struct {
-	Name        string         `json:"name"`
+	Name        string         `json:"name,optional"`
 	NodeID      uint64         `json:"node_id"`
 	Protocol    string         `json:"protocol"`
 	Role        string         `json:"role"`
-	Listen      string         `json:"listen"`
-	Connect     string         `json:"connect"`
-	AccessPort  int            `json:"access_port"`
-	Status      int            `json:"status"`
+	Listen      string         `json:"listen,optional"`
+	Connect     string         `json:"connect,optional"`
+	AccessPort  int            `json:"access_port,optional"`
+	Status      int            `json:"status,optional"`
 	KernelID    string         `json:"kernel_id"`
-	Tags        []string       `json:"tags"`
-	Description string         `json:"description"`
+	Tags        []string       `json:"tags,optional"`
+	Description string         `json:"description,optional"`
 	Profile     map[string]any `json:"profile"`
-	Metadata    map[string]any `json:"metadata"`
+	Metadata    map[string]any `json:"metadata,optional"`
 }
 
 // AdminUpdateProtocolBindingRequest 更新协议绑定请求。
@@ -465,15 +465,15 @@ type AdminProtocolEntryListResponse struct {
 
 // AdminCreateProtocolEntryRequest 管理端创建协议发布请求。
 type AdminCreateProtocolEntryRequest struct {
-	Name         string         `json:"name"`
+	Name         string         `json:"name,optional"`
 	BindingID    uint64         `json:"binding_id"`
-	Protocol     string         `json:"protocol"`
-	Status       int            `json:"status"`
+	Protocol     string         `json:"protocol,optional"`
+	Status       int            `json:"status,optional"`
 	EntryAddress string         `json:"entry_address"`
 	EntryPort    int            `json:"entry_port"`
-	Tags         []string       `json:"tags"`
-	Description  string         `json:"description"`
-	Profile      map[string]any `json:"profile"`
+	Tags         []string       `json:"tags,optional"`
+	Description  string         `json:"description,optional"`
+	Profile      map[string]any `json:"profile,optional"`
 }
 
 // AdminUpdateProtocolEntryRequest 管理端更新协议发布请求。
@@ -510,8 +510,8 @@ type AdminSyncProtocolBindingRequest struct {
 
 // AdminSyncProtocolBindingsRequest 批量协议下发请求。
 type AdminSyncProtocolBindingsRequest struct {
-	BindingIDs []uint64 `json:"binding_ids"`
-	NodeIDs    []uint64 `json:"node_ids"`
+	BindingIDs []uint64 `json:"binding_ids,optional"`
+	NodeIDs    []uint64 `json:"node_ids,optional"`
 }
 
 // AdminSyncProtocolBindingsResponse 批量协议下发响应。
@@ -530,7 +530,7 @@ type ProtocolBindingStatusSyncResult struct {
 
 // AdminSyncProtocolBindingStatusRequest 手动同步协议健康状态请求。
 type AdminSyncProtocolBindingStatusRequest struct {
-	NodeIDs []uint64 `json:"node_ids"`
+	NodeIDs []uint64 `json:"node_ids,optional"`
 }
 
 // AdminSyncProtocolBindingStatusResponse 手动同步协议健康状态响应。

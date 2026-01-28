@@ -3,6 +3,7 @@ package nodes
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -79,7 +80,17 @@ func (l *SyncLogic) Sync(req *types.AdminSyncNodeKernelRequest) (resp *types.Adm
 		_ = provider.Close()
 	}()
 
-	config, err := provider.FetchNodeConfig(l.ctx, fmt.Sprintf("%d", req.NodeID))
+	fetchID := strings.TrimSpace(node.Name)
+	if fetchID == "" {
+		fetchID = fmt.Sprintf("%d", req.NodeID)
+	}
+	config, err := provider.FetchNodeConfig(l.ctx, fetchID)
+	if err != nil && errors.Is(err, kernel.ErrNotFound) && fetchID != fmt.Sprintf("%d", req.NodeID) {
+		config, err = provider.FetchNodeConfig(l.ctx, fmt.Sprintf("%d", req.NodeID))
+	}
+	if err != nil && errors.Is(err, kernel.ErrNotFound) {
+		config, err = l.fetchKernelConfigFromProtocols(node, protocol, endpoint, token)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -135,4 +146,72 @@ func resolveNodeControlToken(node repository.Node) string {
 		return "Basic " + encoded
 	}
 	return strings.TrimSpace(node.ControlToken)
+}
+
+func (l *SyncLogic) fetchKernelConfigFromProtocols(node repository.Node, protocol, endpoint, token string) (kernel.NodeConfig, error) {
+	bindings, err := l.svcCtx.Repositories.ProtocolBinding.ListByNodeIDs(l.ctx, []uint64{node.ID})
+	if err != nil {
+		return kernel.NodeConfig{}, err
+	}
+	if len(bindings) == 0 {
+		return kernel.NodeConfig{}, kernel.ErrNotFound
+	}
+
+	kernelIDs := make(map[string]string)
+	for _, binding := range bindings {
+		id := strings.TrimSpace(binding.KernelID)
+		if id == "" {
+			continue
+		}
+		if protocol != "" && !strings.EqualFold(binding.Protocol, protocol) {
+			continue
+		}
+		kernelIDs[id] = strings.ToLower(strings.TrimSpace(binding.Protocol))
+	}
+	if len(kernelIDs) == 0 {
+		return kernel.NodeConfig{}, kernel.ErrNotFound
+	}
+
+	control, err := kernel.NewControlClient(kernel.HTTPOptions{
+		BaseURL: endpoint,
+		Token:   token,
+		Timeout: resolveKernelHTTPTimeout(node),
+	})
+	if err != nil {
+		return kernel.NodeConfig{}, err
+	}
+
+	protocols, err := control.ListProtocols(l.ctx)
+	if err != nil {
+		return kernel.NodeConfig{}, err
+	}
+
+	for _, proto := range protocols {
+		id := strings.TrimSpace(proto.ID)
+		if id == "" {
+			continue
+		}
+		if _, ok := kernelIDs[id]; !ok {
+			continue
+		}
+		payload := map[string]any{
+			"id":          proto.ID,
+			"role":        proto.Role,
+			"protocol":    proto.Protocol,
+			"tags":        proto.Tags,
+			"description": proto.Description,
+			"listen":      proto.Listen,
+			"connect":     proto.Connect,
+			"user_count":  proto.UserCount,
+		}
+		return kernel.NodeConfig{
+			NodeID:      proto.ID,
+			Protocol:    proto.Protocol,
+			Endpoint:    endpoint,
+			Payload:     payload,
+			RetrievedAt: time.Now().UTC(),
+		}, nil
+	}
+
+	return kernel.NodeConfig{}, kernel.ErrNotFound
 }

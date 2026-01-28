@@ -141,6 +141,35 @@ func (c *ControlClient) RegisterServiceEvent(ctx context.Context, req ServiceEve
 	return record, nil
 }
 
+// ListProtocols fetches protocol summaries from kernel control plane.
+func (c *ControlClient) ListProtocols(ctx context.Context) ([]ProtocolSummary, error) {
+	endpoint := c.buildURL("/protocols")
+
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	if err != nil {
+		return nil, err
+	}
+	c.applyAuth(httpReq)
+	httpReq.Header.Set("Accept", "application/json")
+
+	resp, err := c.client.Do(httpReq)
+	if err != nil {
+		return nil, err
+	}
+	defer closeBody(resp.Body)
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
+		return nil, fmt.Errorf("kernel control: %s: %s", resp.Status, strings.TrimSpace(string(body)))
+	}
+
+	var protocols []ProtocolSummary
+	if err := json.NewDecoder(resp.Body).Decode(&protocols); err != nil {
+		return nil, err
+	}
+	return protocols, nil
+}
+
 // GetStatus fetches runtime status snapshot (nodes only when supported).
 func (c *ControlClient) GetStatus(ctx context.Context) (StatusResponse, error) {
 	endpoint := c.buildURL("/status?include=nodes")

@@ -202,7 +202,10 @@ func (r *protocolEntryRepository) Update(ctx context.Context, id uint64, input U
 		return ProtocolEntry{}, err
 	}
 
-	updates := r.buildEntryUpdates(input)
+	updates, err := r.buildEntryUpdates(input)
+	if err != nil {
+		return ProtocolEntry{}, ErrInvalidArgument
+	}
 	if len(updates) == 0 {
 		return ProtocolEntry{}, ErrInvalidArgument
 	}
@@ -224,7 +227,7 @@ func (r *protocolEntryRepository) Delete(ctx context.Context, id uint64) error {
 	return nil
 }
 
-func (r *protocolEntryRepository) buildEntryUpdates(input UpdateProtocolEntryInput) map[string]any {
+func (r *protocolEntryRepository) buildEntryUpdates(input UpdateProtocolEntryInput) (map[string]any, error) {
 	updates := map[string]any{}
 	if input.Name != nil {
 		updates["name"] = strings.TrimSpace(*input.Name)
@@ -245,15 +248,23 @@ func (r *protocolEntryRepository) buildEntryUpdates(input UpdateProtocolEntryInp
 		updates["entry_port"] = *input.EntryPort
 	}
 	if input.Tags != nil {
-		updates["tags"] = append([]string(nil), (*input.Tags)...)
+		serialized, err := serializeStringSlice(*input.Tags)
+		if err != nil {
+			return nil, err
+		}
+		updates["tags"] = serialized
 	}
 	if input.Description != nil {
 		updates["description"] = strings.TrimSpace(*input.Description)
 	}
 	if input.Profile != nil {
-		updates["profile"] = *input.Profile
+		serialized, err := serializeAnyMap(*input.Profile)
+		if err != nil {
+			return nil, err
+		}
+		updates["profile"] = serialized
 	}
-	return updates
+	return updates, nil
 }
 
 func normalizeListProtocolEntriesOptions(opts ListProtocolEntriesOptions) ListProtocolEntriesOptions {

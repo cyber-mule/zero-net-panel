@@ -32,7 +32,7 @@ func NewHTTPProvider(opts HTTPOptions) (*HTTPDiscoveryProvider, error) {
 	}
 
 	return &HTTPDiscoveryProvider{
-		baseURL: strings.TrimSuffix(opts.BaseURL, "/"),
+		baseURL: strings.TrimSuffix(strings.TrimSpace(opts.BaseURL), "/"),
 		token:   opts.Token,
 		client: &http.Client{
 			Timeout: timeout,
@@ -47,22 +47,14 @@ func (p *HTTPDiscoveryProvider) Name() string {
 
 // FetchNodeConfig 从 HTTP 服务拉取节点配置。
 func (p *HTTPDiscoveryProvider) FetchNodeConfig(ctx context.Context, nodeID string) (NodeConfig, error) {
-	endpoint := fmt.Sprintf("%s/nodes/%s/config", p.baseURL, url.PathEscape(nodeID))
+	endpoint := p.buildURL(fmt.Sprintf("/nodes/%s/config", url.PathEscape(nodeID)))
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
 	if err != nil {
 		return NodeConfig{}, err
 	}
 
-	if p.token != "" {
-		token := strings.TrimSpace(p.token)
-		lower := strings.ToLower(token)
-		if strings.HasPrefix(lower, "bearer ") || strings.HasPrefix(lower, "basic ") {
-			req.Header.Set("Authorization", token)
-		} else {
-			req.Header.Set("Authorization", "Bearer "+token)
-		}
-	}
+	p.applyAuth(req)
 	req.Header.Set("Accept", "application/json")
 
 	resp, err := p.client.Do(req)
@@ -79,7 +71,7 @@ func (p *HTTPDiscoveryProvider) FetchNodeConfig(ctx context.Context, nodeID stri
 	case http.StatusOK:
 		// continue
 	case http.StatusNotFound:
-		return NodeConfig{}, ErrNotFound
+		return p.fetchNodeConfigFromProtocols(ctx, nodeID)
 	default:
 		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
 		return NodeConfig{}, fmt.Errorf("kernel http provider: %s: %s", resp.Status, strings.TrimSpace(string(body)))
@@ -138,6 +130,87 @@ func (p *HTTPDiscoveryProvider) FetchNodeConfig(ctx context.Context, nodeID stri
 	}
 
 	return result, nil
+}
+
+func (p *HTTPDiscoveryProvider) buildURL(path string) string {
+	if strings.HasSuffix(p.baseURL, "/v1") {
+		return p.baseURL + path
+	}
+	return p.baseURL + "/v1" + path
+}
+
+func (p *HTTPDiscoveryProvider) fetchNodeConfigFromProtocols(ctx context.Context, nodeID string) (NodeConfig, error) {
+	endpoint := p.buildURL("/protocols")
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	if err != nil {
+		return NodeConfig{}, err
+	}
+	p.applyAuth(req)
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := p.client.Do(req)
+	if err != nil {
+		return NodeConfig{}, err
+	}
+	defer func(body io.ReadCloser) {
+		if cerr := body.Close(); cerr != nil {
+			fmt.Printf("kernel http provider: close response body: %v\n", cerr)
+		}
+	}(resp.Body)
+
+	switch resp.StatusCode {
+	case http.StatusOK:
+		// continue
+	case http.StatusNotFound:
+		return NodeConfig{}, ErrNotFound
+	default:
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
+		return NodeConfig{}, fmt.Errorf("kernel http provider: %s: %s", resp.Status, strings.TrimSpace(string(body)))
+	}
+
+	var protocols []ProtocolSummary
+	if err := json.NewDecoder(resp.Body).Decode(&protocols); err != nil {
+		return NodeConfig{}, fmt.Errorf("kernel http provider: decode response: %w", err)
+	}
+
+	for _, proto := range protocols {
+		if proto.ID != nodeID {
+			continue
+		}
+		payload := map[string]any{
+			"id":          proto.ID,
+			"role":        proto.Role,
+			"protocol":    proto.Protocol,
+			"tags":        proto.Tags,
+			"description": proto.Description,
+			"listen":      proto.Listen,
+			"connect":     proto.Connect,
+			"user_count":  proto.UserCount,
+		}
+		return NodeConfig{
+			NodeID:      proto.ID,
+			Protocol:    proto.Protocol,
+			Endpoint:    p.baseURL,
+			Payload:     payload,
+			RetrievedAt: time.Now().UTC(),
+		}, nil
+	}
+
+	return NodeConfig{}, ErrNotFound
+}
+
+func (p *HTTPDiscoveryProvider) applyAuth(req *http.Request) {
+	if strings.TrimSpace(p.token) == "" {
+		return
+	}
+	token := strings.TrimSpace(p.token)
+	lower := strings.ToLower(token)
+	if strings.HasPrefix(lower, "bearer ") || strings.HasPrefix(lower, "basic ") {
+		req.Header.Set("Authorization", token)
+		return
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
 }
 
 // Close 实现接口，无额外资源需释放。

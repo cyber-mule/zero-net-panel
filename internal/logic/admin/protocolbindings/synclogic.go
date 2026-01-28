@@ -278,7 +278,7 @@ func (l *SyncLogic) ensureServiceEventRegistration(binding repository.ProtocolBi
 	}
 
 	req := kernel.ServiceEventRegistrationRequest{
-		Event:    "user.traffic.reported",
+		Event:    "user_traffic_reported",
 		Callback: callback,
 	}
 	if secret := strings.TrimSpace(l.svcCtx.Config.Webhook.SharedToken); secret != "" {

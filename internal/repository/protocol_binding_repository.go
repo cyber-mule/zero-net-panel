@@ -265,7 +265,10 @@ func (r *protocolBindingRepository) Update(ctx context.Context, id uint64, input
 		return ProtocolBinding{}, err
 	}
 
-	updates := r.buildBindingUpdates(input)
+	updates, err := r.buildBindingUpdates(input)
+	if err != nil {
+		return ProtocolBinding{}, ErrInvalidArgument
+	}
 	if len(updates) == 0 {
 		return ProtocolBinding{}, ErrInvalidArgument
 	}
@@ -407,7 +410,7 @@ func (r *protocolBindingRepository) Delete(ctx context.Context, id uint64) error
 	return nil
 }
 
-func (r *protocolBindingRepository) buildBindingUpdates(input UpdateProtocolBindingInput) map[string]any {
+func (r *protocolBindingRepository) buildBindingUpdates(input UpdateProtocolBindingInput) (map[string]any, error) {
 	updates := map[string]any{}
 	if input.Name != nil {
 		updates["name"] = strings.TrimSpace(*input.Name)
@@ -452,18 +455,30 @@ func (r *protocolBindingRepository) buildBindingUpdates(input UpdateProtocolBind
 		updates["last_sync_error"] = strings.TrimSpace(*input.LastSyncError)
 	}
 	if input.Tags != nil {
-		updates["tags"] = append([]string(nil), (*input.Tags)...)
+		serialized, err := serializeStringSlice(*input.Tags)
+		if err != nil {
+			return nil, err
+		}
+		updates["tags"] = serialized
 	}
 	if input.Description != nil {
 		updates["description"] = strings.TrimSpace(*input.Description)
 	}
 	if input.Profile != nil {
-		updates["profile"] = *input.Profile
+		serialized, err := serializeAnyMap(*input.Profile)
+		if err != nil {
+			return nil, err
+		}
+		updates["profile"] = serialized
 	}
 	if input.Metadata != nil {
-		updates["metadata"] = *input.Metadata
+		serialized, err := serializeAnyMap(*input.Metadata)
+		if err != nil {
+			return nil, err
+		}
+		updates["metadata"] = serialized
 	}
-	return updates
+	return updates, nil
 }
 
 func normalizeListProtocolBindingsOptions(opts ListProtocolBindingsOptions) ListProtocolBindingsOptions {
