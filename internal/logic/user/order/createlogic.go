@@ -14,8 +14,8 @@ import (
 	"github.com/zero-net-panel/zero-net-panel/internal/logic/paymentutil"
 	"github.com/zero-net-panel/zero-net-panel/internal/logic/subscriptionutil"
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
-	"github.com/zero-net-panel/zero-net-panel/internal/status"
 	"github.com/zero-net-panel/zero-net-panel/internal/security"
+	"github.com/zero-net-panel/zero-net-panel/internal/status"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
 	"github.com/zero-net-panel/zero-net-panel/pkg/metrics"
@@ -154,23 +154,7 @@ func (l *CreateLogic) Create(req *types.UserCreateOrderRequest) (resp *types.Use
 		billingOptionName = strings.TrimSpace(billingOption.Name)
 	}
 
-	totalCents := unitPriceCents * int64(quantity)
-	if method == repository.PaymentMethodExternal && totalCents > 0 {
-		if channel == "" {
-			return nil, repository.ErrInvalidArgument
-		}
-		paymentChannel, err = l.svcCtx.Repositories.PaymentChannel.GetByCode(l.ctx, channel)
-		if err != nil {
-			if errors.Is(err, repository.ErrNotFound) {
-				return nil, repository.ErrInvalidArgument
-			}
-			return nil, err
-		}
-		if !paymentChannel.Enabled {
-			return nil, repository.ErrInvalidArgument
-		}
-		channel = paymentChannel.Code
-	}
+	var finalTotalCents int64
 
 	orderNumber := repository.GenerateOrderNumber()
 
@@ -320,6 +304,32 @@ func (l *CreateLogic) Create(req *types.UserCreateOrderRequest) (resp *types.Use
 			metadata["coupon_id"] = coupon.ID
 			metadata["discount_cents"] = discountCents
 		}
+
+		finalTotalCents = totalCents
+		effectiveMethod := method
+		if totalCents == 0 {
+			effectiveMethod = repository.PaymentMethodBalance
+			delete(metadata, "payment_channel")
+			delete(metadata, "payment_return_url")
+		}
+		if effectiveMethod == repository.PaymentMethodExternal && totalCents > 0 {
+			if channel == "" {
+				return repository.ErrInvalidArgument
+			}
+			paymentChannel, err = l.svcCtx.Repositories.PaymentChannel.GetByCode(l.ctx, channel)
+			if err != nil {
+				if errors.Is(err, repository.ErrNotFound) {
+					return repository.ErrInvalidArgument
+				}
+				return err
+			}
+			if !paymentChannel.Enabled {
+				return repository.ErrInvalidArgument
+			}
+			channel = paymentChannel.Code
+		}
+		method = effectiveMethod
+		paymentMethod = effectiveMethod
 
 		orderModel := repository.Order{
 			Number:         orderNumber,
@@ -507,7 +517,7 @@ func (l *CreateLogic) Create(req *types.UserCreateOrderRequest) (resp *types.Use
 		return nil, err
 	}
 
-	if method == repository.PaymentMethodExternal && totalCents > 0 && len(createdPayments) > 0 {
+	if method == repository.PaymentMethodExternal && finalTotalCents > 0 && len(createdPayments) > 0 {
 		initResult, err := paymentutil.Initiate(l.ctx, paymentutil.InitiateParams{
 			Channel:   paymentChannel,
 			Order:     createdOrder,

@@ -178,6 +178,69 @@ func TestCreateOrderWithBalancePayment(t *testing.T) {
 	require.Equal(t, template.ID, subs[0].TemplateID)
 }
 
+func TestCreateOrderFreeSkipsPaymentFlow(t *testing.T) {
+	svcCtx, cleanup := setupCreateLogicTest(t)
+	defer cleanup()
+
+	ctx := context.Background()
+	now := time.Now().UTC()
+
+	user := repository.User{
+		Email:       "buyer-free@test.dev",
+		DisplayName: "Buyer Free",
+		Roles:       []string{"user"},
+		Status:      status.UserStatusActive,
+		CreatedAt:   now,
+		UpdatedAt:   now,
+	}
+	require.NoError(t, svcCtx.DB.Create(&user).Error)
+
+	plan := repository.Plan{
+		Name:              "Free",
+		Slug:              "free-plan",
+		Description:       "Free plan",
+		PriceCents:        0,
+		Currency:          "CNY",
+		DurationDays:      30,
+		TrafficLimitBytes: 1024,
+		DevicesLimit:      1,
+		Status:            status.PlanStatusActive,
+		Visible:           true,
+		CreatedAt:         now,
+		UpdatedAt:         now,
+	}
+	require.NoError(t, svcCtx.DB.Create(&plan).Error)
+	seedDefaultTemplate(t, svcCtx.DB)
+
+	claims := security.UserClaims{ID: user.ID, Email: user.Email, Roles: []string{"user"}}
+	reqCtx := security.WithUser(ctx, claims)
+
+	logic := NewCreateLogic(reqCtx, svcCtx)
+	resp, err := logic.Create(&types.UserCreateOrderRequest{
+		PlanID:        plan.ID,
+		PaymentMethod: repository.PaymentMethodExternal,
+	})
+	require.NoError(t, err)
+
+	require.Equal(t, repository.OrderStatusPaid, resp.Order.Status)
+	require.Equal(t, repository.OrderPaymentStatusSucceeded, resp.Order.PaymentStatus)
+	require.Equal(t, repository.PaymentMethodBalance, resp.Order.PaymentMethod)
+	require.Empty(t, resp.Order.PaymentIntentID)
+	require.Empty(t, resp.Order.Payments)
+	require.Nil(t, resp.Transaction)
+	require.Equal(t, int64(0), resp.Balance.BalanceCents)
+
+	storedOrder, _, err := svcCtx.Repositories.Order.Get(ctx, resp.Order.ID)
+	require.NoError(t, err)
+	require.Equal(t, repository.OrderStatusPaid, storedOrder.Status)
+	require.Equal(t, repository.OrderPaymentStatusSucceeded, storedOrder.PaymentStatus)
+	require.Equal(t, repository.PaymentMethodBalance, storedOrder.PaymentMethod)
+
+	subs, _, err := svcCtx.Repositories.Subscription.ListByUser(ctx, user.ID, repository.ListSubscriptionsOptions{})
+	require.NoError(t, err)
+	require.Len(t, subs, 1)
+}
+
 func TestCreateOrderWithExternalPayment(t *testing.T) {
 	svcCtx, cleanup := setupCreateLogicTest(t)
 	defer cleanup()
