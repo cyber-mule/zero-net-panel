@@ -1,4 +1,4 @@
-# Zero Network Panel API 参考
+﻿# Zero Network Panel API 参考
 
 > 本文档基于 `internal/handler/routes.go` 与 `internal/types` 整理，描述当前实现的接口与字段。
 > 自动生成的 Markdown 文档可通过 `./scripts/gen-api-docs.sh` 生成，输出到 `docs/api-generated/`。
@@ -764,6 +764,12 @@ AdminSubscriptionSummary 字段：
   - `templates` []SubscriptionTemplateSummary
   - `pagination` PaginationMeta
 
+#### GET /api/v1/{adminPrefix}/subscription-templates/clients
+
+- 说明：订阅模板支持的客户端列表（服务端下发，默认来自 Zero Core 内置规则）
+- 响应：
+  - `clients` []SubscriptionTemplateClient
+
 TemplateVariable 字段：
 
 - `value_type` string
@@ -781,6 +787,14 @@ SubscriptionTemplateSummary 字段：
 - `updated_at` int64
 - `published_at` int64
 - `last_published_by` string
+  - `format` 表示输出格式（如 `json`/`yaml`），渲染始终使用 Go template；为空时默认 `text`
+
+SubscriptionTemplateClient 字段：
+
+- `client_type` string
+- `display_name` string
+- `user_agent_tokens` []string
+- `source` string
 
 #### POST /api/v1/{adminPrefix}/subscription-templates
 
@@ -1328,7 +1342,7 @@ AdminOrderDetail 字段：
 - 说明：客户端订阅拉取（免登录）
 - 路径参数：`token` string
 - 响应：**非 JSON**，直接返回订阅内容
-  - `Content-Type`：`text/plain` 或 `application/json`（取决于模板格式）
+  - `Content-Type`：`application/json`（format=json）/ `text/yaml`（format=yaml|yml）/ 其他默认为 `text/plain`
   - `ETag`：内容哈希
 - 规则：
   - 仅 `status=1` 且未过期的订阅可拉取
@@ -1653,3 +1667,4 @@ UserPaymentChannelSummary 字段：
   - `refunded_cents` int64
   - `refunded_at` int64（可选）
   - `updated_at` int64
+

@@ -3,7 +3,6 @@ package template
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"net/url"
 	"strings"
 	"text/template"
@@ -40,18 +39,8 @@ var (
 
 // Render 根据模板格式渲染订阅内容。
 func Render(format, content string, data map[string]any) (string, error) {
-	switch strings.ToLower(strings.TrimSpace(format)) {
-	case "", "go_template", "gotemplate", "text/template":
-		return renderGoTemplate(content, data)
-	case "json":
-		buf, err := json.MarshalIndent(data, "", "  ")
-		if err != nil {
-			return "", err
-		}
-		return string(buf), nil
-	default:
-		return "", fmt.Errorf("subscription template: unsupported format %s", format)
-	}
+	_ = format
+	return renderGoTemplate(content, data)
 }
 
 func renderGoTemplate(content string, data map[string]any) (string, error) {

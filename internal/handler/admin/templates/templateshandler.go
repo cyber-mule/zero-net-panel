@@ -32,6 +32,20 @@ func AdminListSubscriptionTemplatesHandler(svcCtx *svc.ServiceContext) http.Hand
 	}
 }
 
+// AdminListSubscriptionTemplateClientsHandler returns supported client types.
+func AdminListSubscriptionTemplateClientsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		logic := admintemplates.NewClientListLogic(r.Context(), svcCtx)
+		resp, err := logic.List()
+		if err != nil {
+			handlercommon.RespondError(w, r, err)
+			return
+		}
+
+		httpx.OkJsonCtx(r.Context(), w, resp)
+	}
+}
+
 // AdminCreateSubscriptionTemplateHandler creates a template draft.
 func AdminCreateSubscriptionTemplateHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

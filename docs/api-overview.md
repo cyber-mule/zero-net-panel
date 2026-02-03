@@ -9,7 +9,7 @@
 | 仪表盘 | `/api/v1/{admin}/dashboard` | 展示模块导航、权限控制 |
 | 用户管理 | `/api/v1/{admin}/users` | 用户列表、创建、禁用、角色调整、重置密码、强制下线 |
 | 节点管理 | `/api/v1/{admin}/nodes` | 节点查询、创建、更新、禁用、删除（软删除）、协议内核同步、状态同步 |
-| 订阅模板 | `/api/v1/{admin}/subscription-templates` | 模板 CRUD、发布、历史追溯 |
+| 订阅模板 | `/api/v1/{admin}/subscription-templates` | 模板 CRUD、发布、历史追溯、客户端列表 |
 | 订阅管理 | `/api/v1/{admin}/subscriptions` | 订阅列表、创建、调整、禁用、延长有效期 |
 | 套餐管理 | `/api/v1/{admin}/plans` | 套餐列表、创建、更新，字段涵盖价格、时长、流量限制等 |
 | 套餐计费选项 | `/api/v1/{admin}/plans/{plan_id}/billing-options` | 为套餐维护多周期/多价格选项（小时/天/月/年） |

@@ -59,7 +59,7 @@ func seedDefaultTemplate(t *testing.T, db *gorm.DB) repository.SubscriptionTempl
 		Name:        "Default Template",
 		Description: "Test template",
 		ClientType:  "clash",
-		Format:      "go_template",
+		Format:      "yaml",
 		Content:     "test",
 		IsDefault:   true,
 		Version:     1,

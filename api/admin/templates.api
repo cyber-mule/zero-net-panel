@@ -12,6 +12,10 @@ service znp {
 	@handler AdminListSubscriptionTemplates
 	get /admin/subscription-templates (AdminListSubscriptionTemplatesRequest) returns (AdminSubscriptionTemplateListResponse)
 
+	@doc "List subscription template clients"
+	@handler AdminListSubscriptionTemplateClients
+	get /admin/subscription-templates/clients returns (AdminSubscriptionTemplateClientListResponse)
+
 	@doc "Create subscription template"
 	@handler AdminCreateSubscriptionTemplate
 	post /admin/subscription-templates (AdminCreateSubscriptionTemplateRequest) returns (SubscriptionTemplateSummary)
@@ -62,9 +66,20 @@ type SubscriptionTemplateSummary {
 	last_published_by string
 }
 
+type SubscriptionTemplateClient {
+	client_type       string
+	display_name      string
+	user_agent_tokens []string
+	source            string
+}
+
 type AdminSubscriptionTemplateListResponse {
 	templates  []SubscriptionTemplateSummary
 	pagination PaginationMeta
+}
+
+type AdminSubscriptionTemplateClientListResponse {
+	clients []SubscriptionTemplateClient
 }
 
 type AdminCreateSubscriptionTemplateRequest {

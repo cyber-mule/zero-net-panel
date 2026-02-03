@@ -296,10 +296,11 @@ Content-Type: application/json
 ### 6.5 订阅拉取地址（客户端）
 
 - `GET /api/v1/subscriptions/{token}`
+- 客户端列表由服务端下发：`GET /api/v1/{adminPrefix}/subscription-templates/clients`（默认 `source=zero-core`）
 - 根据 `User-Agent` 自动选择模板：
   - 命中 `clash` 相关客户端 → `client_type=clash`
   - 命中 `sing-box` 客户端 → `client_type=sing-box`
-  - 常见识别关键字：`mihomo`、`clash-verge`、`surge`、`quantumult`、`stash`、`shadowrocket`、`loon`、`nekobox`、`v2rayn`、`v2rayng`
+  - 常见识别关键字：`zero-core`、`zerocore`、`mihomo`、`clash-verge`、`surge`、`quantumult`、`stash`、`shadowrocket`、`loon`、`nekobox`、`v2rayn`、`v2rayng`
 - 未识别则回退订阅默认模板
 - 订阅 `status!=1` 或已过期时返回 `404`
 

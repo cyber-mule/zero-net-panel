@@ -425,7 +425,7 @@ func seedTemplates(tx *gorm.DB) error {
 		Name:        "Clash Premium 默认模板",
 		Description: "提供 Clash Premium YAML 订阅示例",
 		ClientType:  "clash",
-		Format:      "go_template",
+		Format:      "yaml",
 		Content:     `# Clash Premium subscription\nproxies:\n  - name: {{ .subscription.name }}\n    type: trojan\n    server: {{ index .nodes 0 "hostname" }}\n    port: {{ index .nodes 0 "port" }}\n    password: {{ .user_identity.password }}\n`,
 		Variables: map[string]repository.TemplateVariable{
 			"subscription.name":      {ValueType: "string", Description: "订阅展示名称"},
@@ -461,7 +461,7 @@ func seedTemplates(tx *gorm.DB) error {
 		Name:        "Sing-box JSON 模板",
 		Description: "返回标准 JSON 结构的订阅",
 		ClientType:  "sing-box",
-		Format:      "go_template",
+		Format:      "json",
 		Content:     `{{ toJSON .subscription }}`,
 		Variables: map[string]repository.TemplateVariable{
 			"subscription": {ValueType: "object", Description: "订阅完整上下文", Required: true},
@@ -488,6 +488,166 @@ func seedTemplates(tx *gorm.DB) error {
 		PublishedBy: "system",
 	}
 	if err := tx.Create(&singHistory).Error; err != nil {
+		return err
+	}
+
+	zeroCorePublishedAt := now.Add(-4 * time.Hour)
+	zeroCoreTemplate := repository.SubscriptionTemplate{
+		Name:        "Zero Core Default Template",
+		Description: "Default Zero Core client subscription config",
+		ClientType:  "zero-core",
+		Format:      "json",
+		Content: `{{- $nodes := .nodes -}}
+{
+  "logging": {
+    "level": "info",
+    "stdout": true
+  },
+  "api": {
+    "listen": "127.0.0.1:23870",
+    "auth": {
+      "access_key": "client-api-key",
+      "access_secret": "client-api-secret",
+      "nonce_ttl_seconds": 300,
+      "allow_insecure": true
+    }
+  },
+  "inbounds": [
+    {
+      "listen": "127.0.0.1:7890",
+      "profile": {
+        "id": "local-mixed",
+        "role": "listener",
+        "protocol": "mixed",
+        "tags": [
+          "client",
+          "default"
+        ],
+        "profile": {
+          "http": {
+            "server": {
+              "allow_plain_http": true,
+              "realm": "Zero Core Local"
+            }
+          },
+          "socks": {
+            "server": {
+              "allow_no_auth": true
+            }
+          }
+        }
+      }
+    }
+  ],
+  "outbounds": [
+    {{- range $i, $node := $nodes }}
+    {{- if $i}},{{ end }}
+    {
+      "profile": {
+        "id": "{{ index $node \"protocol\" }}-{{ index $node \"entry_id\" }}",
+        "role": "connector",
+        "protocol": "{{ index $node \"protocol\" }}",
+        "tags": [
+          "client",
+          "{{ index $node \"protocol\" }}"
+        ],
+        "profile":
+          {{- if eq (index $node "protocol") "ss" }}
+          {
+            "client": {
+              "method": "aes-128-gcm",
+              "password": "{{ $.user_identity.password }}",
+              "udp_over_tcp": false,
+              "endpoints": [
+                {
+                  "address": "{{ index $node \"entry_address\" }}",
+                  "port": {{ index $node \"entry_port\" }}
+                }
+              ]
+            }
+          }
+          {{- else if eq (index $node "protocol") "vless" }}
+          {
+            "client": {
+              "endpoints": [
+                {
+                  "address": "{{ index $node \"entry_address\" }}",
+                  "port": {{ index $node \"entry_port\" }},
+                  "user_id": "{{ $.user_identity.uuid }}"
+                }
+              ]
+            }
+          }
+          {{- else }}
+          {{ toJSON (index $node "profile") }}
+          {{- end }}
+      }
+    }
+    {{- end }}
+    {{- if $nodes }},{{ end }}
+    {
+      "profile": {
+        "id": "direct",
+        "role": "connector",
+        "protocol": "direct",
+        "tags": [
+          "client",
+          "direct"
+        ],
+        "profile": {}
+      }
+    }
+  ],
+  "pipeline": {
+    "strategies": [
+      {
+        "name": "protocol-prefer",
+        "type": "fallback",
+        "nodes": [
+          {{- range $i, $node := $nodes }}
+          {{- if $i}},{{ end }}
+          "{{ index $node \"protocol\" }}-{{ index $node \"entry_id\" }}"
+          {{- end }}
+          {{- if $nodes }},{{ end }}
+          "direct"
+        ]
+      }
+    ],
+    "default": {
+      "name": "default-protocols",
+      "action": "select_strategy",
+      "strategy": "protocol-prefer"
+    }
+  }
+}
+`,
+		Variables: map[string]repository.TemplateVariable{
+			"nodes":                  {ValueType: "array", Description: "Protocol entries for the subscription", Required: true},
+			"user_identity.password": {ValueType: "string", Description: "User credential password", Required: true},
+			"user_identity.uuid":     {ValueType: "string", Description: "User UUID credential", Required: true},
+		},
+		IsDefault:       true,
+		Version:         1,
+		CreatedAt:       now.Add(-48 * time.Hour),
+		UpdatedAt:       zeroCorePublishedAt,
+		PublishedAt:     &zeroCorePublishedAt,
+		LastPublishedBy: "system",
+	}
+	if err := tx.Create(&zeroCoreTemplate).Error; err != nil {
+		return err
+	}
+
+	zeroCoreHistory := repository.SubscriptionTemplateHistory{
+		TemplateID:  zeroCoreTemplate.ID,
+		Version:     zeroCoreTemplate.Version,
+		Content:     zeroCoreTemplate.Content,
+		Variables:   zeroCoreTemplate.Variables,
+		Format:      zeroCoreTemplate.Format,
+		Changelog:   "Initial template",
+		PublishedAt: zeroCorePublishedAt,
+		PublishedBy: "system",
+	}
+	if err := tx.Create(&zeroCoreHistory).Error; err != nil {
 		return err
 	}
 

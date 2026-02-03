@@ -154,9 +154,11 @@ func (l *PreviewLogic) Preview(req *types.UserSubscriptionPreviewRequest) (*type
 	etag := hex.EncodeToString(hash[:])
 
 	contentType := "text/plain; charset=utf-8"
-	switch tpl.Format {
+	switch strings.ToLower(strings.TrimSpace(tpl.Format)) {
 	case "json":
 		contentType = "application/json"
+	case "yaml", "yml":
+		contentType = "text/yaml; charset=utf-8"
 	}
 
 	return &types.UserSubscriptionPreviewResponse{

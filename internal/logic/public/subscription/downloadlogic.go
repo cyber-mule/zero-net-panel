@@ -16,6 +16,7 @@ import (
 	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 	"github.com/zero-net-panel/zero-net-panel/internal/status"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
+	subscriptionclient "github.com/zero-net-panel/zero-net-panel/pkg/subscription/client"
 	subtemplate "github.com/zero-net-panel/zero-net-panel/pkg/subscription/template"
 )
 
@@ -129,8 +130,11 @@ func (l *DownloadLogic) Download(token, userAgent string) (DownloadResult, error
 	etag := hex.EncodeToString(hash[:])
 
 	contentType := "text/plain; charset=utf-8"
-	if tpl.Format == "json" {
+	switch strings.ToLower(strings.TrimSpace(tpl.Format)) {
+	case "json":
 		contentType = "application/json"
+	case "yaml", "yml":
+		contentType = "text/yaml; charset=utf-8"
 	}
 
 	return DownloadResult{
@@ -142,7 +146,7 @@ func (l *DownloadLogic) Download(token, userAgent string) (DownloadResult, error
 }
 
 func (l *DownloadLogic) resolveTemplate(sub repository.Subscription, userAgent string) (repository.SubscriptionTemplate, error) {
-	clientType := detectClientType(userAgent)
+	clientType := subscriptionclient.DetectClientType(userAgent)
 	available := append([]uint64(nil), sub.AvailableTemplateIDs...)
 	if sub.TemplateID != 0 && !containsUint64(available, sub.TemplateID) {
 		available = append(available, sub.TemplateID)
@@ -199,43 +203,6 @@ func selectTemplate(templates []repository.SubscriptionTemplate, orderedIDs []ui
 	}
 
 	return repository.SubscriptionTemplate{}, false
-}
-
-func detectClientType(userAgent string) string {
-	ua := strings.ToLower(strings.TrimSpace(userAgent))
-	if ua == "" {
-		return ""
-	}
-
-	type rule struct {
-		client string
-		tokens []string
-	}
-	rules := []rule{
-		{client: "sing-box", tokens: []string{"sing-box", "singbox"}},
-		{client: "clash", tokens: []string{"clash", "clash.meta", "clashmeta", "clash-verge", "clash verge", "clashx", "clashforwindows", "mihomo", "mihomo-party"}},
-		{client: "surge", tokens: []string{"surge"}},
-		{client: "quantumult", tokens: []string{"quantumult", "quantumult x", "quantumultx"}},
-		{client: "stash", tokens: []string{"stash"}},
-		{client: "shadowrocket", tokens: []string{"shadowrocket"}},
-		{client: "loon", tokens: []string{"loon"}},
-		{client: "hiddify", tokens: []string{"hiddify"}},
-		{client: "v2rayn", tokens: []string{"v2rayn"}},
-		{client: "v2rayng", tokens: []string{"v2rayng"}},
-		{client: "nekobox", tokens: []string{"nekobox", "neko box"}},
-		{client: "kitsunebi", tokens: []string{"kitsunebi"}},
-		{client: "potatso", tokens: []string{"potatso"}},
-		{client: "surfboard", tokens: []string{"surfboard"}},
-	}
-
-	for _, item := range rules {
-		for _, token := range item.tokens {
-			if strings.Contains(ua, token) {
-				return item.client
-			}
-		}
-	}
-	return ""
 }
 
 func isSubscriptionActive(sub repository.Subscription, now time.Time) bool {

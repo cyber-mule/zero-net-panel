@@ -574,10 +574,23 @@ type SubscriptionTemplateSummary struct {
 	LastPublishedBy string                      `json:"last_published_by"`
 }
 
+// SubscriptionTemplateClient 模板支持的客户端信息。
+type SubscriptionTemplateClient struct {
+	ClientType      string   `json:"client_type"`
+	DisplayName     string   `json:"display_name"`
+	UserAgentTokens []string `json:"user_agent_tokens"`
+	Source          string   `json:"source"`
+}
+
 // AdminSubscriptionTemplateListResponse 模板列表。
 type AdminSubscriptionTemplateListResponse struct {
 	Templates  []SubscriptionTemplateSummary `json:"templates"`
 	Pagination PaginationMeta                `json:"pagination"`
+}
+
+// AdminSubscriptionTemplateClientListResponse 模板客户端列表。
+type AdminSubscriptionTemplateClientListResponse struct {
+	Clients []SubscriptionTemplateClient `json:"clients"`
 }
 
 // AdminCreateSubscriptionTemplateRequest 创建模板。

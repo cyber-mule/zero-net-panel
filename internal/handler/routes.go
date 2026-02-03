@@ -478,6 +478,12 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Handler: admintemplates.AdminListSubscriptionTemplatesHandler(serverCtx),
 			},
 			{
+				// List subscription template clients
+				Method:  http.MethodGet,
+				Path:    "/admin/subscription-templates/clients",
+				Handler: admintemplates.AdminListSubscriptionTemplateClientsHandler(serverCtx),
+			},
+			{
 				// Create subscription template
 				Method:  http.MethodPost,
 				Path:    "/admin/subscription-templates",

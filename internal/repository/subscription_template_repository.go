@@ -189,7 +189,7 @@ func (r *subscriptionTemplateRepository) Create(ctx context.Context, input Creat
 
 	format := strings.ToLower(strings.TrimSpace(input.Format))
 	if format == "" {
-		format = "go_template"
+		format = "text"
 	}
 
 	tpl := SubscriptionTemplate{
