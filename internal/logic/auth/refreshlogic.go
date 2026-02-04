@@ -35,7 +35,7 @@ func NewRefreshLogic(ctx context.Context, svcCtx *svc.ServiceContext) *RefreshLo
 func (l *RefreshLogic) Refresh(req *types.AuthRefreshRequest) (*types.AuthRefreshResponse, error) {
 	token := strings.TrimSpace(req.RefreshToken)
 	if token == "" {
-		return nil, repository.ErrInvalidArgument
+		return nil, repository.NewInvalidArgument("refresh token is required")
 	}
 
 	claims, err := l.svcCtx.Auth.ParseRefreshToken(token)

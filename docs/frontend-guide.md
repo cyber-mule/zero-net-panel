@@ -1,4 +1,4 @@
-# 前端项目开发指南
+﻿# 前端项目开发指南
 
 本文档面向需要对接 Zero Network Panel（ZNP）后端的前端团队，覆盖环境配置、鉴权策略、接口映射和常见坑位。
 
@@ -108,7 +108,7 @@ async function request(url, options = {}) {
 
 ### 用户端
 
-- 订阅列表/预览/切换模板：`GET /subscriptions`、`GET /subscriptions/{id}/preview`、`POST /subscriptions/{id}/template`
+- 订阅列表/切换模板：`GET /subscriptions`、`POST /subscriptions/{id}/template`
 - 套餐列表：`GET /plans`
 - 节点状态：`GET /nodes`
 - 公告列表：`GET /announcements`
@@ -259,41 +259,7 @@ Content-Type: application/json
 
 提示：`kernel_statuses` 表示同步记录状态，不是实时心跳。
 
-### 6.4 订阅预览与鉴权字段
-
-- `GET /api/v1/user/subscriptions/{id}/preview`
-- 查询参数：`template_id`（可选）
-  - 用户侧订阅列表默认不返回 `status=2`（disabled），`status=3`（expired）仍可展示用于续费
-
-响应字段：
-
-- `content`：渲染后的订阅内容
-- `content_type`：`text/plain` 或 `application/json`
-- `etag`：内容哈希
-- `generated_at`：生成时间
-
-模板变量中的鉴权字段：
-
-- `user_identity.account_id` / `user_identity.password`
-- `user_identity.account` / `user_identity.id` / `user_identity.uuid`
-
-当订阅 `status != 1` 时：
-
-- `nodes`/`protocol_bindings` 输出为空数组
-- `user_identity` 字段为空字符串
-  - `status=2`（disabled）时接口返回 `404`
-
-当订阅 `status = 1` 时：
-
-- `nodes`/`protocol_bindings` 仅包含套餐绑定的协议
-  - `nodes[].access_address` / `nodes[].access_port` 作为客户端入口地址优先使用
-  - 为空时回退到 `listen`/`connect`
-
-模板变量中的套餐快照字段：
-
-- `subscription.plan_snapshot`：套餐快照（含 `binding_ids`、`traffic_multipliers` 等），用于保证订阅长期一致性
-
-### 6.5 订阅拉取地址（客户端）
+### 6.4 订阅拉取地址（客户端）
 
 - `GET /api/v1/subscriptions/{token}`
 - 客户端列表由服务端下发：`GET /api/v1/{adminPrefix}/subscription-templates/clients`（默认 `source=zero-core`）

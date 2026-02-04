@@ -7,7 +7,6 @@ import (
 
 	handlercommon "github.com/zero-net-panel/zero-net-panel/internal/handler/common"
 	adminplans "github.com/zero-net-panel/zero-net-panel/internal/logic/admin/plans"
-	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
 )
@@ -17,7 +16,7 @@ func AdminListPlansHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.AdminListPlansRequest
 		if err := httpx.Parse(r, &req); err != nil {
-			handlercommon.RespondError(w, r, repository.ErrInvalidArgument)
+			handlercommon.RespondInvalidRequest(w, r, err)
 			return
 		}
 
@@ -37,7 +36,7 @@ func AdminCreatePlanHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.AdminCreatePlanRequest
 		if err := httpx.Parse(r, &req); err != nil {
-			handlercommon.RespondError(w, r, repository.ErrInvalidArgument)
+			handlercommon.RespondInvalidRequest(w, r, err)
 			return
 		}
 
@@ -57,7 +56,7 @@ func AdminUpdatePlanHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.AdminUpdatePlanRequest
 		if err := httpx.Parse(r, &req); err != nil {
-			handlercommon.RespondError(w, r, repository.ErrInvalidArgument)
+			handlercommon.RespondInvalidRequest(w, r, err)
 			return
 		}
 

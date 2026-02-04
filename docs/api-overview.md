@@ -2,6 +2,12 @@
 
 本文档汇总 Zero Net Panel 已实现的 REST API 模块，并补充关键业务的端到端流程、错误码与排障建议，方便前后端协作与第三方集成。
 
+## 字段必填/选填（go-zero）
+
+- 请求字段是否必填由 `internal/types` 的标签决定：带 `,optional` 的字段为可选，其余为必填。
+- 缺少必填字段或类型不匹配时会返回 `400`，错误消息格式为 `invalid request: ...`。
+- 业务层校验失败会返回更具体的 `message` 提示。
+
 ## 管理端模块
 
 | 模块 | 路径 | 说明 |
@@ -120,6 +126,7 @@
 
 ### 协议绑定与发布流程
 
+0. 可选：通过 `GET /api/v1/{admin}/protocols` 获取当前已配置协议列表，前端用于下拉选项避免硬编码。
 1. 创建协议绑定 `POST /api/v1/{admin}/protocol-bindings`：必填 `node_id`、`protocol`、`role`（`listener`/`connector`）、`kernel_id`（字符串，需与内核协议 ID 对齐）、`profile`（内核实际配置）；常用字段 `listen`、`connect`、`access_port`。
 2. 创建协议发布 `POST /api/v1/{admin}/protocol-entries`：必填 `binding_id`、`entry_address`、`entry_port`；`profile` 填写对外公开配置（如 reality 公钥、short_id 等）。
 3. 更新绑定或发布（可选）：`PATCH /api/v1/{admin}/protocol-bindings/{id}` / `PATCH /api/v1/{admin}/protocol-entries/{id}`。
@@ -152,7 +159,7 @@
 
 1. 管理端准备订阅模板：`POST /api/v1/{admin}/subscription-templates` 创建，`POST /api/v1/{admin}/subscription-templates/{id}/publish` 发布。
 2. 创建订阅 `POST /api/v1/{admin}/subscriptions`：必填 `user_id`、`name`、`plan_id`、`template_id`、`expires_at`、`traffic_total_bytes`、`devices_limit`；可选 `available_template_ids`、`token`。
-3. 用户侧拉取与预览：`GET /api/v1/user/subscriptions`、`GET /api/v1/user/subscriptions/{id}/preview`；切换模板 `POST /api/v1/user/subscriptions/{id}/template`。
+3. 用户侧拉取与切换模板：`GET /api/v1/user/subscriptions`；切换模板 `POST /api/v1/user/subscriptions/{id}/template`。
 4. 公开订阅（免登录）：`GET /api/v1/subscriptions/{token}`。
 
 | 接口 | 错误码 | 说明 | 排障建议 |

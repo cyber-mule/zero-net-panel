@@ -2293,7 +2293,30 @@ type AdminDeleteProtocolEntryRequest struct {
 3. response definition
 
 
-### 49. "Get third-party security settings"
+### 49. "List protocols"
+
+1. route definition
+
+- Url: /api/v1/admin/protocols
+- Method: GET
+- Request: `-`
+- Response: `AdminProtocolListResponse`
+
+2. request definition
+
+
+
+3. response definition
+
+
+
+```golang
+type AdminProtocolListResponse struct {
+	Protocols []string 
+}
+```
+
+### 50. "Get third-party security settings"
 
 1. route definition
 
@@ -2327,7 +2350,7 @@ type SecuritySetting struct {
 }
 ```
 
-### 50. "Update third-party security settings"
+### 51. "Update third-party security settings"
 
 1. route definition
 
@@ -2372,7 +2395,7 @@ type SecuritySetting struct {
 }
 ```
 
-### 51. "Get site settings"
+### 52. "Get site settings"
 
 1. route definition
 
@@ -2404,7 +2427,7 @@ type SiteSetting struct {
 }
 ```
 
-### 52. "Update site settings"
+### 53. "Update site settings"
 
 1. route definition
 
@@ -2445,7 +2468,7 @@ type SiteSetting struct {
 }
 ```
 
-### 53. "List subscriptions"
+### 54. "List subscriptions"
 
 1. route definition
 
@@ -2491,7 +2514,7 @@ type PaginationMeta struct {
 }
 ```
 
-### 54. "Create subscription"
+### 55. "Create subscription"
 
 1. route definition
 
@@ -2555,7 +2578,7 @@ type AdminSubscriptionUserSummary struct {
 }
 ```
 
-### 55. "Get subscription detail"
+### 56. "Get subscription detail"
 
 1. route definition
 
@@ -2608,7 +2631,7 @@ type AdminSubscriptionUserSummary struct {
 }
 ```
 
-### 56. "Update subscription"
+### 57. "Update subscription"
 
 1. route definition
 
@@ -2672,7 +2695,7 @@ type AdminSubscriptionUserSummary struct {
 }
 ```
 
-### 57. "Disable subscription"
+### 58. "Disable subscription"
 
 1. route definition
 
@@ -2726,7 +2749,7 @@ type AdminSubscriptionUserSummary struct {
 }
 ```
 
-### 58. "Extend subscription expiry"
+### 59. "Extend subscription expiry"
 
 1. route definition
 
@@ -2782,7 +2805,7 @@ type AdminSubscriptionUserSummary struct {
 }
 ```
 
-### 59. "List subscription templates"
+### 60. "List subscription templates"
 
 1. route definition
 
@@ -2825,36 +2848,6 @@ type PaginationMeta struct {
 	Total_count int64 
 	Has_next bool 
 	Has_prev bool 
-}
-```
-
-### 60. "List subscription template clients"
-
-1. route definition
-
-- Url: /api/v1/admin/subscription-templates/clients
-- Method: GET
-- Request: `-`
-- Response: `AdminSubscriptionTemplateClientListResponse`
-
-2. request definition
-
-
-
-3. response definition
-
-
-
-```golang
-type AdminSubscriptionTemplateClientListResponse struct {
-	Clients []SubscriptionTemplateClient 
-}
-
-type SubscriptionTemplateClient struct {
-	Client_type string 
-	Display_name string 
-	User_agent_tokens []string 
-	Source string 
 }
 ```
 
@@ -3039,7 +3032,30 @@ type SubscriptionTemplateHistoryEntry struct {
 }
 ```
 
-### 65. "List users with filters"
+### 65. "List subscription template clients"
+
+1. route definition
+
+- Url: /api/v1/admin/subscription-templates/clients
+- Method: GET
+- Request: `-`
+- Response: `AdminSubscriptionTemplateClientListResponse`
+
+2. request definition
+
+
+
+3. response definition
+
+
+
+```golang
+type AdminSubscriptionTemplateClientListResponse struct {
+	Clients []SubscriptionTemplateClient 
+}
+```
+
+### 66. "List users with filters"
 
 1. route definition
 
@@ -3082,7 +3098,7 @@ type PaginationMeta struct {
 }
 ```
 
-### 66. "Create a new user"
+### 67. "Create a new user"
 
 1. route definition
 
@@ -3131,7 +3147,7 @@ type AdminUserSummary struct {
 }
 ```
 
-### 67. "Rotate user credential"
+### 68. "Rotate user credential"
 
 1. route definition
 
@@ -3171,7 +3187,7 @@ type CredentialSummary struct {
 }
 ```
 
-### 68. "Force user logout"
+### 69. "Force user logout"
 
 1. route definition
 
@@ -3201,7 +3217,7 @@ type AdminForceLogoutResponse struct {
 }
 ```
 
-### 69. "Reset user password"
+### 70. "Reset user password"
 
 1. route definition
 
@@ -3232,7 +3248,7 @@ type AdminResetUserPasswordResponse struct {
 }
 ```
 
-### 70. "Update user roles"
+### 71. "Update user roles"
 
 1. route definition
 
@@ -3277,7 +3293,7 @@ type AdminUserSummary struct {
 }
 ```
 
-### 71. "Update user status (active/disabled)"
+### 72. "Update user status (active/disabled)"
 
 1. route definition
 
@@ -3322,7 +3338,7 @@ type AdminUserSummary struct {
 }
 ```
 
-### 72. "Request password reset code"
+### 73. "Request password reset code"
 
 1. route definition
 
@@ -3352,7 +3368,7 @@ type AuthForgotPasswordResponse struct {
 }
 ```
 
-### 73. "Authenticate user and issue token"
+### 74. "Authenticate user and issue token"
 
 1. route definition
 
@@ -3397,7 +3413,7 @@ type AuthenticatedUser struct {
 }
 ```
 
-### 74. "Refresh access token"
+### 75. "Refresh access token"
 
 1. route definition
 
@@ -3441,7 +3457,7 @@ type AuthenticatedUser struct {
 }
 ```
 
-### 75. "Register new user account"
+### 76. "Register new user account"
 
 1. route definition
 
@@ -3489,7 +3505,7 @@ type AuthenticatedUser struct {
 }
 ```
 
-### 76. "Reset password using verification code"
+### 77. "Reset password using verification code"
 
 1. route definition
 
@@ -3521,7 +3537,7 @@ type AuthResetPasswordResponse struct {
 }
 ```
 
-### 77. "Verify user email with code"
+### 78. "Verify user email with code"
 
 1. route definition
 
@@ -3566,7 +3582,7 @@ type AuthenticatedUser struct {
 }
 ```
 
-### 78. "Service health check"
+### 79. "Service health check"
 
 1. route definition
 
@@ -3594,7 +3610,7 @@ type PingResponse struct {
 }
 ```
 
-### 79. "Get user balance"
+### 80. "Get user balance"
 
 1. route definition
 
@@ -3639,7 +3655,7 @@ type PaginationMeta struct {
 }
 ```
 
-### 80. "Rotate credential"
+### 81. "Rotate credential"
 
 1. route definition
 
@@ -3677,7 +3693,7 @@ type CredentialSummary struct {
 }
 ```
 
-### 81. "Change email"
+### 82. "Change email"
 
 1. route definition
 
@@ -3719,7 +3735,7 @@ type UserProfile struct {
 }
 ```
 
-### 82. "Send email change code"
+### 83. "Send email change code"
 
 1. route definition
 
@@ -3749,7 +3765,7 @@ type UserEmailChangeCodeResponse struct {
 }
 ```
 
-### 83. "Change password"
+### 84. "Change password"
 
 1. route definition
 
@@ -3780,7 +3796,7 @@ type UserChangePasswordResponse struct {
 }
 ```
 
-### 84. "Get user profile"
+### 85. "Get user profile"
 
 1. route definition
 
@@ -3819,7 +3835,7 @@ type UserProfile struct {
 }
 ```
 
-### 85. "Update user profile"
+### 86. "Update user profile"
 
 1. route definition
 
@@ -3859,7 +3875,7 @@ type UserProfile struct {
 }
 ```
 
-### 86. "List active announcements"
+### 87. "List active announcements"
 
 1. route definition
 
@@ -3890,7 +3906,7 @@ type UserAnnouncementListResponse struct {
 }
 ```
 
-### 87. "List node runtime status (sanitized)"
+### 88. "List node runtime status (sanitized)"
 
 1. route definition
 
@@ -3932,7 +3948,7 @@ type PaginationMeta struct {
 }
 ```
 
-### 88. "Create order from plan"
+### 89. "Create order from plan"
 
 1. route definition
 
@@ -4005,7 +4021,7 @@ type BalanceSnapshot struct {
 }
 ```
 
-### 89. "List user orders"
+### 90. "List user orders"
 
 1. route definition
 
@@ -4051,7 +4067,7 @@ type PaginationMeta struct {
 }
 ```
 
-### 90. "Get user order detail"
+### 91. "Get user order detail"
 
 1. route definition
 
@@ -4117,7 +4133,7 @@ type BalanceSnapshot struct {
 }
 ```
 
-### 91. "Cancel user order"
+### 92. "Cancel user order"
 
 1. route definition
 
@@ -4184,7 +4200,7 @@ type BalanceSnapshot struct {
 }
 ```
 
-### 92. "Get user order payment status"
+### 93. "Get user order payment status"
 
 1. route definition
 
@@ -4226,7 +4242,7 @@ type UserOrderPaymentStatusResponse struct {
 }
 ```
 
-### 93. "List payment channels"
+### 94. "List payment channels"
 
 1. route definition
 
@@ -4256,7 +4272,7 @@ type UserPaymentChannelListResponse struct {
 }
 ```
 
-### 94. "List available plans"
+### 95. "List available plans"
 
 1. route definition
 
@@ -4286,7 +4302,7 @@ type UserPlanListResponse struct {
 }
 ```
 
-### 95. "List user subscriptions"
+### 96. "List user subscriptions"
 
 1. route definition
 
@@ -4327,42 +4343,6 @@ type PaginationMeta struct {
 	Total_count int64 
 	Has_next bool 
 	Has_prev bool 
-}
-```
-
-### 96. "Preview user subscription"
-
-1. route definition
-
-- Url: /api/v1/user/subscriptions/:id/preview
-- Method: GET
-- Request: `UserSubscriptionPreviewRequest`
-- Response: `UserSubscriptionPreviewResponse`
-
-2. request definition
-
-
-
-```golang
-type UserSubscriptionPreviewRequest struct {
-	Id uint64 
-	Template_id uint64 `form:"template_id,optional" json:"template_id,optional"`
-}
-```
-
-
-3. response definition
-
-
-
-```golang
-type UserSubscriptionPreviewResponse struct {
-	Subscription_id uint64 
-	Template_id uint64 
-	Content string 
-	Content_type string 
-	Etag string 
-	Generated_at int64 
 }
 ```
 

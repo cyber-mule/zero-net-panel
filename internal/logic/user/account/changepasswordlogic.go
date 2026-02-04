@@ -39,13 +39,13 @@ func (l *ChangePasswordLogic) Change(req *types.UserChangePasswordRequest) (*typ
 		return nil, repository.ErrUnauthorized
 	}
 	if req == nil {
-		return nil, repository.ErrInvalidArgument
+		return nil, repository.NewInvalidArgument("invalid request")
 	}
 
 	current := strings.TrimSpace(req.CurrentPassword)
 	next := strings.TrimSpace(req.NewPassword)
 	if current == "" || next == "" {
-		return nil, repository.ErrInvalidArgument
+		return nil, repository.NewInvalidArgument("current and new password are required")
 	}
 
 	user, err := l.svcCtx.Repositories.User.Get(l.ctx, actor.ID)

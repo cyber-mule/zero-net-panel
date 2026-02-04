@@ -7,7 +7,6 @@ import (
 
 	handlercommon "github.com/zero-net-panel/zero-net-panel/internal/handler/common"
 	adminentries "github.com/zero-net-panel/zero-net-panel/internal/logic/admin/protocolentries"
-	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
 )
@@ -17,7 +16,7 @@ func AdminListProtocolEntriesHandler(svcCtx *svc.ServiceContext) http.HandlerFun
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.AdminListProtocolEntriesRequest
 		if err := httpx.Parse(r, &req); err != nil {
-			handlercommon.RespondError(w, r, repository.ErrInvalidArgument)
+			handlercommon.RespondInvalidRequest(w, r, err)
 			return
 		}
 
@@ -37,7 +36,7 @@ func AdminCreateProtocolEntryHandler(svcCtx *svc.ServiceContext) http.HandlerFun
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.AdminCreateProtocolEntryRequest
 		if err := httpx.Parse(r, &req); err != nil {
-			handlercommon.RespondError(w, r, repository.ErrInvalidArgument)
+			handlercommon.RespondInvalidRequest(w, r, err)
 			return
 		}
 
@@ -57,7 +56,7 @@ func AdminUpdateProtocolEntryHandler(svcCtx *svc.ServiceContext) http.HandlerFun
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.AdminUpdateProtocolEntryRequest
 		if err := httpx.Parse(r, &req); err != nil {
-			handlercommon.RespondError(w, r, repository.ErrInvalidArgument)
+			handlercommon.RespondInvalidRequest(w, r, err)
 			return
 		}
 
@@ -77,7 +76,7 @@ func AdminDeleteProtocolEntryHandler(svcCtx *svc.ServiceContext) http.HandlerFun
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.AdminDeleteProtocolEntryRequest
 		if err := httpx.Parse(r, &req); err != nil {
-			handlercommon.RespondError(w, r, repository.ErrInvalidArgument)
+			handlercommon.RespondInvalidRequest(w, r, err)
 			return
 		}
 

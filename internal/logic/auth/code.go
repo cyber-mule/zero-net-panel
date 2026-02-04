@@ -61,7 +61,7 @@ func issueAuthCode(ctx context.Context, c cache.Cache, policy codePolicy, purpos
 
 	emailKey := normalizeEmailInput(email)
 	if emailKey == "" {
-		return "", repository.ErrInvalidArgument
+		return "", repository.NewInvalidArgument("email is required")
 	}
 
 	policy = normalizeCodePolicy(policy)
@@ -108,19 +108,19 @@ func verifyAuthCode(ctx context.Context, c cache.Cache, purpose, email, code str
 	}
 	emailKey := normalizeEmailInput(email)
 	if emailKey == "" || strings.TrimSpace(code) == "" {
-		return repository.ErrInvalidArgument
+		return repository.NewInvalidArgument("email and code are required")
 	}
 
 	var record codeRecord
 	if err := c.Get(ctx, codeKey(purpose, emailKey), &record); err != nil {
 		if err == cache.ErrNotFound {
-			return repository.ErrInvalidArgument
+			return repository.NewInvalidArgument("invalid or expired code")
 		}
 		return err
 	}
 
 	if hashCode(code) != record.Hash {
-		return repository.ErrInvalidArgument
+		return repository.NewInvalidArgument("invalid or expired code")
 	}
 
 	_ = c.Del(ctx, codeKey(purpose, emailKey))

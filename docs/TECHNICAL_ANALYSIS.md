@@ -40,7 +40,7 @@ type gormOrderRepository struct {
 // 定义在 internal/repository/errors.go
 var (
     ErrNotFound           = errors.New("record not found")
-    ErrInvalidArgument    = errors.New("invalid argument")
+    ErrInvalidArgument    = &InvalidArgumentError{}
     ErrUnauthorized       = errors.New("unauthorized")
     ErrForbidden          = errors.New("forbidden")
     // ... more errors
@@ -51,6 +51,8 @@ var (
 - ✅ 统一的错误类型
 - ✅ 易于错误码映射
 - ✅ 清晰的错误语义
+
+> `InvalidArgumentError` 会携带更具体的提示信息，但仍可通过 `errors.Is(err, ErrInvalidArgument)` 进行分类判断。
 
 ### 2. 服务上下文模式 (Service Context Pattern)
 

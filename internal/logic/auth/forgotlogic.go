@@ -35,7 +35,7 @@ func NewForgotLogic(ctx context.Context, svcCtx *svc.ServiceContext) *ForgotLogi
 func (l *ForgotLogic) Forgot(req *types.AuthForgotPasswordRequest) (*types.AuthForgotPasswordResponse, error) {
 	email := normalizeEmailInput(req.Email)
 	if email == "" || !isValidEmail(email) {
-		return nil, repository.ErrInvalidArgument
+		return nil, repository.NewInvalidArgument("email is invalid")
 	}
 
 	user, err := l.svcCtx.Repositories.User.GetByEmail(l.ctx, email)

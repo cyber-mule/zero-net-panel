@@ -36,7 +36,7 @@ func NewLoginLogic(ctx context.Context, svcCtx *svc.ServiceContext) *LoginLogic 
 func (l *LoginLogic) Login(req *types.AuthLoginRequest) (*types.AuthLoginResponse, error) {
 	email := strings.TrimSpace(req.Email)
 	if email == "" || strings.TrimSpace(req.Password) == "" {
-		return nil, repository.ErrInvalidArgument
+		return nil, repository.NewInvalidArgument("email and password are required")
 	}
 
 	user, err := l.svcCtx.Repositories.User.GetByEmail(l.ctx, email)

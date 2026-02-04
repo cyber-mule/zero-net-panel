@@ -7,7 +7,6 @@ import (
 
 	handlercommon "github.com/zero-net-panel/zero-net-panel/internal/handler/common"
 	"github.com/zero-net-panel/zero-net-panel/internal/logic/admin/coupons"
-	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
 )
@@ -17,7 +16,7 @@ func AdminListCouponsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.AdminListCouponsRequest
 		if err := httpx.Parse(r, &req); err != nil {
-			handlercommon.RespondError(w, r, repository.ErrInvalidArgument)
+			handlercommon.RespondInvalidRequest(w, r, err)
 			return
 		}
 
@@ -37,7 +36,7 @@ func AdminCreateCouponHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.AdminCreateCouponRequest
 		if err := httpx.Parse(r, &req); err != nil {
-			handlercommon.RespondError(w, r, repository.ErrInvalidArgument)
+			handlercommon.RespondInvalidRequest(w, r, err)
 			return
 		}
 
@@ -57,7 +56,7 @@ func AdminUpdateCouponHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.AdminUpdateCouponRequest
 		if err := httpx.Parse(r, &req); err != nil {
-			handlercommon.RespondError(w, r, repository.ErrInvalidArgument)
+			handlercommon.RespondInvalidRequest(w, r, err)
 			return
 		}
 
@@ -77,7 +76,7 @@ func AdminDeleteCouponHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.AdminDeleteCouponRequest
 		if err := httpx.Parse(r, &req); err != nil {
-			handlercommon.RespondError(w, r, repository.ErrInvalidArgument)
+			handlercommon.RespondInvalidRequest(w, r, err)
 			return
 		}
 

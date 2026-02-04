@@ -36,13 +36,13 @@ func (l *VerifyLogic) Verify(req *types.AuthVerifyRequest) (*types.AuthVerifyRes
 	email := normalizeEmailInput(req.Email)
 	code := strings.TrimSpace(req.Code)
 	if email == "" || code == "" || !isValidEmail(email) {
-		return nil, repository.ErrInvalidArgument
+		return nil, repository.NewInvalidArgument("invalid email or code")
 	}
 
 	user, err := l.svcCtx.Repositories.User.GetByEmail(l.ctx, email)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
-			return nil, repository.ErrInvalidArgument
+			return nil, repository.NewInvalidArgument("invalid email or code")
 		}
 		return nil, err
 	}

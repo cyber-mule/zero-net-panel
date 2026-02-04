@@ -7,7 +7,6 @@ import (
 
 	handlercommon "github.com/zero-net-panel/zero-net-panel/internal/handler/common"
 	"github.com/zero-net-panel/zero-net-panel/internal/logic/admin/planbillingoptions"
-	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
 )
@@ -17,7 +16,7 @@ func AdminListPlanBillingOptionsHandler(svcCtx *svc.ServiceContext) http.Handler
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.AdminListPlanBillingOptionsRequest
 		if err := httpx.Parse(r, &req); err != nil {
-			handlercommon.RespondError(w, r, repository.ErrInvalidArgument)
+			handlercommon.RespondInvalidRequest(w, r, err)
 			return
 		}
 
@@ -37,7 +36,7 @@ func AdminCreatePlanBillingOptionHandler(svcCtx *svc.ServiceContext) http.Handle
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.AdminCreatePlanBillingOptionRequest
 		if err := httpx.Parse(r, &req); err != nil {
-			handlercommon.RespondError(w, r, repository.ErrInvalidArgument)
+			handlercommon.RespondInvalidRequest(w, r, err)
 			return
 		}
 
@@ -57,7 +56,7 @@ func AdminUpdatePlanBillingOptionHandler(svcCtx *svc.ServiceContext) http.Handle
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.AdminUpdatePlanBillingOptionRequest
 		if err := httpx.Parse(r, &req); err != nil {
-			handlercommon.RespondError(w, r, repository.ErrInvalidArgument)
+			handlercommon.RespondInvalidRequest(w, r, err)
 			return
 		}
 

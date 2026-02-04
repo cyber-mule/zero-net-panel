@@ -7,7 +7,6 @@ import (
 
 	handlercommon "github.com/zero-net-panel/zero-net-panel/internal/handler/common"
 	adminbindings "github.com/zero-net-panel/zero-net-panel/internal/logic/admin/protocolbindings"
-	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
 )
@@ -17,7 +16,7 @@ func AdminListProtocolBindingsHandler(svcCtx *svc.ServiceContext) http.HandlerFu
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.AdminListProtocolBindingsRequest
 		if err := httpx.Parse(r, &req); err != nil {
-			handlercommon.RespondError(w, r, repository.ErrInvalidArgument)
+			handlercommon.RespondInvalidRequest(w, r, err)
 			return
 		}
 
@@ -37,7 +36,7 @@ func AdminCreateProtocolBindingHandler(svcCtx *svc.ServiceContext) http.HandlerF
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.AdminCreateProtocolBindingRequest
 		if err := httpx.Parse(r, &req); err != nil {
-			handlercommon.RespondError(w, r, repository.ErrInvalidArgument)
+			handlercommon.RespondInvalidRequest(w, r, err)
 			return
 		}
 
@@ -57,7 +56,7 @@ func AdminUpdateProtocolBindingHandler(svcCtx *svc.ServiceContext) http.HandlerF
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.AdminUpdateProtocolBindingRequest
 		if err := httpx.Parse(r, &req); err != nil {
-			handlercommon.RespondError(w, r, repository.ErrInvalidArgument)
+			handlercommon.RespondInvalidRequest(w, r, err)
 			return
 		}
 
@@ -77,7 +76,7 @@ func AdminDeleteProtocolBindingHandler(svcCtx *svc.ServiceContext) http.HandlerF
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.AdminDeleteProtocolBindingRequest
 		if err := httpx.Parse(r, &req); err != nil {
-			handlercommon.RespondError(w, r, repository.ErrInvalidArgument)
+			handlercommon.RespondInvalidRequest(w, r, err)
 			return
 		}
 
@@ -96,7 +95,7 @@ func AdminSyncProtocolBindingHandler(svcCtx *svc.ServiceContext) http.HandlerFun
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.AdminSyncProtocolBindingRequest
 		if err := httpx.Parse(r, &req); err != nil {
-			handlercommon.RespondError(w, r, repository.ErrInvalidArgument)
+			handlercommon.RespondInvalidRequest(w, r, err)
 			return
 		}
 
@@ -116,7 +115,7 @@ func AdminSyncProtocolBindingsHandler(svcCtx *svc.ServiceContext) http.HandlerFu
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.AdminSyncProtocolBindingsRequest
 		if err := httpx.Parse(r, &req); err != nil {
-			handlercommon.RespondError(w, r, repository.ErrInvalidArgument)
+			handlercommon.RespondInvalidRequest(w, r, err)
 			return
 		}
 
@@ -136,7 +135,7 @@ func AdminSyncProtocolBindingStatusHandler(svcCtx *svc.ServiceContext) http.Hand
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.AdminSyncProtocolBindingStatusRequest
 		if err := httpx.Parse(r, &req); err != nil {
-			handlercommon.RespondError(w, r, repository.ErrInvalidArgument)
+			handlercommon.RespondInvalidRequest(w, r, err)
 			return
 		}
 

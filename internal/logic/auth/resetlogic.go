@@ -38,13 +38,13 @@ func (l *ResetLogic) Reset(req *types.AuthResetPasswordRequest) (*types.AuthRese
 	code := strings.TrimSpace(req.Code)
 	password := strings.TrimSpace(req.Password)
 	if email == "" || code == "" || password == "" || !isValidEmail(email) {
-		return nil, repository.ErrInvalidArgument
+		return nil, repository.NewInvalidArgument("invalid email, code, or password")
 	}
 
 	user, err := l.svcCtx.Repositories.User.GetByEmail(l.ctx, email)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
-			return nil, repository.ErrInvalidArgument
+			return nil, repository.NewInvalidArgument("invalid email or code")
 		}
 		return nil, err
 	}

@@ -69,11 +69,16 @@ func (r *userCredentialRepository) GetActiveByUser(ctx context.Context, userID u
 	}
 
 	var credential UserCredential
-	if err := r.db.WithContext(ctx).
+	result := r.db.WithContext(ctx).
 		Where("user_id = ? AND status = ?", userID, status.UserCredentialStatusActive).
 		Order("version DESC").
-		First(&credential).Error; err != nil {
-		return UserCredential{}, translateError(err)
+		Limit(1).
+		Find(&credential)
+	if result.Error != nil {
+		return UserCredential{}, translateError(result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return UserCredential{}, ErrNotFound
 	}
 	return credential, nil
 }
@@ -101,6 +106,9 @@ func (r *userCredentialRepository) Create(ctx context.Context, credential UserCr
 	if credential.CreatedAt.IsZero() {
 		credential.CreatedAt = now
 	}
+	credential.DeprecatedAt = NormalizeTime(credential.DeprecatedAt)
+	credential.RevokedAt = NormalizeTime(credential.RevokedAt)
+	credential.LastSeenAt = NormalizeTime(credential.LastSeenAt)
 	credential.UpdatedAt = now
 
 	if err := r.db.WithContext(ctx).Create(&credential).Error; err != nil {
@@ -122,13 +130,13 @@ func (r *userCredentialRepository) Update(ctx context.Context, id uint64, input 
 		updates["status"] = *input.Status
 	}
 	if input.DeprecatedAt != nil {
-		updates["deprecated_at"] = input.DeprecatedAt.UTC()
+		updates["deprecated_at"] = NormalizeTime(*input.DeprecatedAt).UTC()
 	}
 	if input.RevokedAt != nil {
-		updates["revoked_at"] = input.RevokedAt.UTC()
+		updates["revoked_at"] = NormalizeTime(*input.RevokedAt).UTC()
 	}
 	if input.LastSeenAt != nil {
-		updates["last_seen_at"] = input.LastSeenAt.UTC()
+		updates["last_seen_at"] = NormalizeTime(*input.LastSeenAt).UTC()
 	}
 	if len(updates) == 0 {
 		return UserCredential{}, ErrInvalidArgument

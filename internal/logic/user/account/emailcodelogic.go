@@ -39,12 +39,12 @@ func (l *EmailChangeCodeLogic) Send(req *types.UserEmailChangeCodeRequest) (*typ
 		return nil, repository.ErrUnauthorized
 	}
 	if req == nil {
-		return nil, repository.ErrInvalidArgument
+		return nil, repository.NewInvalidArgument("invalid request")
 	}
 
 	email := normalizeEmailInput(req.Email)
 	if email == "" || !isValidEmail(email) {
-		return nil, repository.ErrInvalidArgument
+		return nil, repository.NewInvalidArgument("email is invalid")
 	}
 
 	user, err := l.svcCtx.Repositories.User.Get(l.ctx, actor.ID)

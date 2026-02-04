@@ -162,7 +162,6 @@ POST  /api/v1/admin/subscription-templates/{id}/publish  # 发布模板
 **API 端点 / API Endpoints**:
 ```
 GET /api/v1/user/subscriptions                  # 查询订阅
-GET /api/v1/user/subscriptions/{id}/preview    # 预览订阅内容
 ```
 
 ### 4. 套餐管理 / Plan Management

@@ -93,13 +93,17 @@ func (l *DownloadLogic) Download(token, userAgent string) (DownloadResult, error
 	}
 
 	entryContext := normalizeEntryContext(entries)
+	planSnapshot := sub.PlanSnapshot
+	if planSnapshot == nil {
+		planSnapshot = map[string]any{}
+	}
 	data := map[string]any{
 		"subscription": map[string]any{
 			"id":                      sub.ID,
 			"name":                    sub.Name,
 			"plan":                    sub.PlanName,
 			"plan_id":                 sub.PlanID,
-			"plan_snapshot":           sub.PlanSnapshot,
+			"plan_snapshot":           planSnapshot,
 			"status":                  sub.Status,
 			"token":                   sub.Token,
 			"expires_at":              sub.ExpiresAt.Format(time.RFC3339),
@@ -123,7 +127,7 @@ func (l *DownloadLogic) Download(token, userAgent string) (DownloadResult, error
 
 	content, err := subtemplate.Render(tpl.Format, tpl.Content, data)
 	if err != nil {
-		return DownloadResult{}, err
+		return DownloadResult{}, repository.InvalidArgumentf("template render failed (template_id=%d): %v", tpl.ID, err)
 	}
 
 	hash := sha256.Sum256([]byte(content))
@@ -310,7 +314,7 @@ func splitHostPort(address string) (string, int) {
 
 func cloneEntryProfile(profile map[string]any) map[string]any {
 	if profile == nil {
-		return nil
+		return map[string]any{}
 	}
 	cloned := make(map[string]any, len(profile))
 	for key, value := range profile {

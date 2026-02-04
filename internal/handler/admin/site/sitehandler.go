@@ -7,7 +7,6 @@ import (
 
 	handlercommon "github.com/zero-net-panel/zero-net-panel/internal/handler/common"
 	sitelogic "github.com/zero-net-panel/zero-net-panel/internal/logic/admin/site"
-	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
 )
@@ -31,7 +30,7 @@ func AdminUpdateSiteSettingHandler(svcCtx *svc.ServiceContext) http.HandlerFunc 
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.AdminUpdateSiteSettingRequest
 		if err := httpx.Parse(r, &req); err != nil {
-			handlercommon.RespondError(w, r, repository.ErrInvalidArgument)
+			handlercommon.RespondInvalidRequest(w, r, err)
 			return
 		}
 

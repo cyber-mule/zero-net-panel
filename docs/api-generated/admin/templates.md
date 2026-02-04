@@ -44,37 +44,7 @@ type PaginationMeta struct {
 }
 ```
 
-### 2. "List subscription template clients"
-
-1. route definition
-
-- Url: /api/v1/admin/subscription-templates/clients
-- Method: GET
-- Request: `-`
-- Response: `AdminSubscriptionTemplateClientListResponse`
-
-2. request definition
-
-
-
-3. response definition
-
-
-
-```golang
-type AdminSubscriptionTemplateClientListResponse struct {
-	Clients []SubscriptionTemplateClient 
-}
-
-type SubscriptionTemplateClient struct {
-	Client_type string 
-	Display_name string 
-	User_agent_tokens []string 
-	Source string 
-}
-```
-
-### 3. "Create subscription template"
+### 2. "Create subscription template"
 
 1. route definition
 
@@ -121,7 +91,7 @@ type SubscriptionTemplateSummary struct {
 }
 ```
 
-### 4. "Update subscription template"
+### 3. "Update subscription template"
 
 1. route definition
 
@@ -168,7 +138,7 @@ type SubscriptionTemplateSummary struct {
 }
 ```
 
-### 5. "List template publish history"
+### 4. "List template publish history"
 
 1. route definition
 
@@ -199,7 +169,7 @@ type AdminSubscriptionTemplateHistoryResponse struct {
 }
 ```
 
-### 6. "Publish subscription template"
+### 5. "Publish subscription template"
 
 1. route definition
 
@@ -252,6 +222,29 @@ type SubscriptionTemplateHistoryEntry struct {
 	Published_at int64 
 	Published_by string 
 	Variables map[string]TemplateVariable 
+}
+```
+
+### 6. "List subscription template clients"
+
+1. route definition
+
+- Url: /api/v1/admin/subscription-templates/clients
+- Method: GET
+- Request: `-`
+- Response: `AdminSubscriptionTemplateClientListResponse`
+
+2. request definition
+
+
+
+3. response definition
+
+
+
+```golang
+type AdminSubscriptionTemplateClientListResponse struct {
+	Clients []SubscriptionTemplateClient 
 }
 ```
 

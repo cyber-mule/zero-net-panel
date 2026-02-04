@@ -9,6 +9,12 @@ if ! command -v goctl >/dev/null 2>&1; then
     exit 1
 fi
 
+if [[ -z "${OUTPUT_DIR}" || "${OUTPUT_DIR}" == "/" ]]; then
+    echo "refusing to remove unsafe output directory: '${OUTPUT_DIR}'" >&2
+    exit 1
+fi
+
+rm -rf "${OUTPUT_DIR}"
 mkdir -p "${OUTPUT_DIR}"
 
 pushd "${REPO_ROOT}" >/dev/null

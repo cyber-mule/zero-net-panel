@@ -335,6 +335,11 @@ type AdminSyncNodeStatusResponse struct {
 	Results []NodeStatusSyncResult `json:"results"`
 }
 
+// AdminProtocolListResponse 管理端协议列表响应。
+type AdminProtocolListResponse struct {
+	Protocols []string `json:"protocols"`
+}
+
 // AdminListProtocolBindingsRequest 管理端协议绑定列表请求。
 type AdminListProtocolBindingsRequest struct {
 	Page      int     `form:"page,optional" json:"page,optional"`
@@ -678,22 +683,6 @@ type UserSubscriptionSummary struct {
 type UserSubscriptionListResponse struct {
 	Subscriptions []UserSubscriptionSummary `json:"subscriptions"`
 	Pagination    PaginationMeta            `json:"pagination"`
-}
-
-// UserSubscriptionPreviewRequest 用户订阅预览请求。
-type UserSubscriptionPreviewRequest struct {
-	SubscriptionID uint64 `path:"id"`
-	TemplateID     uint64 `form:"template_id,optional" json:"template_id,optional"`
-}
-
-// UserSubscriptionPreviewResponse 用户订阅预览内容。
-type UserSubscriptionPreviewResponse struct {
-	SubscriptionID uint64 `json:"subscription_id"`
-	TemplateID     uint64 `json:"template_id"`
-	Content        string `json:"content"`
-	ContentType    string `json:"content_type"`
-	ETag           string `json:"etag"`
-	GeneratedAt    int64  `json:"generated_at"`
 }
 
 // UserUpdateSubscriptionTemplateRequest 用户更新订阅模板。

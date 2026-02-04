@@ -7,7 +7,6 @@ import (
 
 	handlercommon "github.com/zero-net-panel/zero-net-panel/internal/handler/common"
 	admintemplates "github.com/zero-net-panel/zero-net-panel/internal/logic/admin/templates"
-	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
 )
@@ -17,7 +16,7 @@ func AdminListSubscriptionTemplatesHandler(svcCtx *svc.ServiceContext) http.Hand
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.AdminListSubscriptionTemplatesRequest
 		if err := httpx.Parse(r, &req); err != nil {
-			handlercommon.RespondError(w, r, repository.ErrInvalidArgument)
+			handlercommon.RespondInvalidRequest(w, r, err)
 			return
 		}
 
@@ -51,7 +50,7 @@ func AdminCreateSubscriptionTemplateHandler(svcCtx *svc.ServiceContext) http.Han
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.AdminCreateSubscriptionTemplateRequest
 		if err := httpx.Parse(r, &req); err != nil {
-			handlercommon.RespondError(w, r, repository.ErrInvalidArgument)
+			handlercommon.RespondInvalidRequest(w, r, err)
 			return
 		}
 
@@ -71,7 +70,7 @@ func AdminUpdateSubscriptionTemplateHandler(svcCtx *svc.ServiceContext) http.Han
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.AdminUpdateSubscriptionTemplateRequest
 		if err := httpx.Parse(r, &req); err != nil {
-			handlercommon.RespondError(w, r, repository.ErrInvalidArgument)
+			handlercommon.RespondInvalidRequest(w, r, err)
 			return
 		}
 
@@ -91,7 +90,7 @@ func AdminPublishSubscriptionTemplateHandler(svcCtx *svc.ServiceContext) http.Ha
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.AdminPublishSubscriptionTemplateRequest
 		if err := httpx.Parse(r, &req); err != nil {
-			handlercommon.RespondError(w, r, repository.ErrInvalidArgument)
+			handlercommon.RespondInvalidRequest(w, r, err)
 			return
 		}
 
@@ -111,7 +110,7 @@ func AdminSubscriptionTemplateHistoryHandler(svcCtx *svc.ServiceContext) http.Ha
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.AdminSubscriptionTemplateHistoryRequest
 		if err := httpx.Parse(r, &req); err != nil {
-			handlercommon.RespondError(w, r, repository.ErrInvalidArgument)
+			handlercommon.RespondInvalidRequest(w, r, err)
 			return
 		}
 

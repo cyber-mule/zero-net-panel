@@ -7,7 +7,6 @@ import (
 
 	handlercommon "github.com/zero-net-panel/zero-net-panel/internal/handler/common"
 	adminsubs "github.com/zero-net-panel/zero-net-panel/internal/logic/admin/subscriptions"
-	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
 )
@@ -17,7 +16,7 @@ func AdminListSubscriptionsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc 
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.AdminListSubscriptionsRequest
 		if err := httpx.Parse(r, &req); err != nil {
-			handlercommon.RespondError(w, r, repository.ErrInvalidArgument)
+			handlercommon.RespondInvalidRequest(w, r, err)
 			return
 		}
 
@@ -37,7 +36,7 @@ func AdminGetSubscriptionHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.AdminGetSubscriptionRequest
 		if err := httpx.Parse(r, &req); err != nil {
-			handlercommon.RespondError(w, r, repository.ErrInvalidArgument)
+			handlercommon.RespondInvalidRequest(w, r, err)
 			return
 		}
 
@@ -57,7 +56,7 @@ func AdminCreateSubscriptionHandler(svcCtx *svc.ServiceContext) http.HandlerFunc
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.AdminCreateSubscriptionRequest
 		if err := httpx.Parse(r, &req); err != nil {
-			handlercommon.RespondError(w, r, repository.ErrInvalidArgument)
+			handlercommon.RespondInvalidRequest(w, r, err)
 			return
 		}
 
@@ -77,7 +76,7 @@ func AdminUpdateSubscriptionHandler(svcCtx *svc.ServiceContext) http.HandlerFunc
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.AdminUpdateSubscriptionRequest
 		if err := httpx.Parse(r, &req); err != nil {
-			handlercommon.RespondError(w, r, repository.ErrInvalidArgument)
+			handlercommon.RespondInvalidRequest(w, r, err)
 			return
 		}
 
@@ -97,7 +96,7 @@ func AdminDisableSubscriptionHandler(svcCtx *svc.ServiceContext) http.HandlerFun
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.AdminDisableSubscriptionRequest
 		if err := httpx.Parse(r, &req); err != nil {
-			handlercommon.RespondError(w, r, repository.ErrInvalidArgument)
+			handlercommon.RespondInvalidRequest(w, r, err)
 			return
 		}
 
@@ -117,7 +116,7 @@ func AdminExtendSubscriptionHandler(svcCtx *svc.ServiceContext) http.HandlerFunc
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.AdminExtendSubscriptionRequest
 		if err := httpx.Parse(r, &req); err != nil {
-			handlercommon.RespondError(w, r, repository.ErrInvalidArgument)
+			handlercommon.RespondInvalidRequest(w, r, err)
 			return
 		}
 

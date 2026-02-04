@@ -39,7 +39,7 @@ func (l *RegisterLogic) Register(req *types.AuthRegisterRequest) (*types.AuthReg
 	email := normalizeEmailInput(req.Email)
 	password := strings.TrimSpace(req.Password)
 	if email == "" || password == "" || !isValidEmail(email) {
-		return nil, repository.ErrInvalidArgument
+		return nil, repository.NewInvalidArgument("email or password is invalid")
 	}
 
 	authCfg := l.svcCtx.Config.Auth
@@ -119,12 +119,12 @@ func (l *RegisterLogic) Register(req *types.AuthRegisterRequest) (*types.AuthReg
 	if _, err := l.svcCtx.Repositories.AuditLog.Create(l.ctx, repository.AuditLog{
 		ActorEmail:   email,
 		Action:       "auth.register",
-			ResourceType: "user",
-			ResourceID:   fmt.Sprintf("%d", created.ID),
-			Metadata: map[string]any{
-				"status": statusCode,
-			},
-		}); err != nil {
+		ResourceType: "user",
+		ResourceID:   fmt.Sprintf("%d", created.ID),
+		Metadata: map[string]any{
+			"status": statusCode,
+		},
+	}); err != nil {
 		return nil, err
 	}
 

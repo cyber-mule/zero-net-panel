@@ -12,10 +12,6 @@ service znp {
 	@handler UserListSubscriptions
 	get /user/subscriptions (UserListSubscriptionsRequest) returns (UserSubscriptionListResponse)
 
-	@doc "Preview user subscription"
-	@handler UserSubscriptionPreview
-	get /user/subscriptions/:id/preview (UserSubscriptionPreviewRequest) returns (UserSubscriptionPreviewResponse)
-
 	@doc "Update user subscription template"
 	@handler UserUpdateSubscriptionTemplate
 	post /user/subscriptions/:id/template (UserUpdateSubscriptionTemplateRequest) returns (UserUpdateSubscriptionTemplateResponse)
@@ -52,20 +48,6 @@ type UserSubscriptionSummary {
 type UserSubscriptionListResponse {
 	subscriptions []UserSubscriptionSummary
 	pagination    PaginationMeta
-}
-
-type UserSubscriptionPreviewRequest {
-	id          uint64
-	template_id uint64 `form:"template_id,optional" json:"template_id,optional"`
-}
-
-type UserSubscriptionPreviewResponse {
-	subscription_id uint64
-	template_id     uint64
-	content         string
-	content_type    string
-	etag            string
-	generated_at    int64
 }
 
 type UserUpdateSubscriptionTemplateRequest {

@@ -8,7 +8,6 @@ import (
 
 	handlercommon "github.com/zero-net-panel/zero-net-panel/internal/handler/common"
 	publicsub "github.com/zero-net-panel/zero-net-panel/internal/logic/public/subscription"
-	"github.com/zero-net-panel/zero-net-panel/internal/repository"
 	"github.com/zero-net-panel/zero-net-panel/internal/svc"
 )
 
@@ -21,7 +20,7 @@ func PublicSubscriptionDownloadHandler(svcCtx *svc.ServiceContext) http.HandlerF
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req publicSubscriptionRequest
 		if err := httpx.Parse(r, &req); err != nil {
-			handlercommon.RespondError(w, r, repository.ErrInvalidArgument)
+			handlercommon.RespondInvalidRequest(w, r, err)
 			return
 		}
 

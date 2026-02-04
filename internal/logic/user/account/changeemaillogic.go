@@ -41,14 +41,14 @@ func (l *ChangeEmailLogic) Change(req *types.UserChangeEmailRequest) (*types.Use
 		return nil, repository.ErrUnauthorized
 	}
 	if req == nil {
-		return nil, repository.ErrInvalidArgument
+		return nil, repository.NewInvalidArgument("invalid request")
 	}
 
 	email := normalizeEmailInput(req.Email)
 	code := strings.TrimSpace(req.Code)
 	password := strings.TrimSpace(req.Password)
 	if email == "" || code == "" || password == "" || !isValidEmail(email) {
-		return nil, repository.ErrInvalidArgument
+		return nil, repository.NewInvalidArgument("invalid email, code, or password")
 	}
 
 	user, err := l.svcCtx.Repositories.User.Get(l.ctx, actor.ID)

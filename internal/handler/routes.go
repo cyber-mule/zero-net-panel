@@ -17,6 +17,7 @@ import (
 	adminplans "github.com/zero-net-panel/zero-net-panel/internal/handler/admin/plans"
 	adminprotocolbindings "github.com/zero-net-panel/zero-net-panel/internal/handler/admin/protocolbindings"
 	adminprotocolentries "github.com/zero-net-panel/zero-net-panel/internal/handler/admin/protocolentries"
+	adminprotocols "github.com/zero-net-panel/zero-net-panel/internal/handler/admin/protocols"
 	adminsecurity "github.com/zero-net-panel/zero-net-panel/internal/handler/admin/security"
 	adminsite "github.com/zero-net-panel/zero-net-panel/internal/handler/admin/site"
 	adminsubscriptions "github.com/zero-net-panel/zero-net-panel/internal/handler/admin/subscriptions"
@@ -308,6 +309,18 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Method:  http.MethodPatch,
 				Path:    "/admin/plans/:id",
 				Handler: adminplans.AdminUpdatePlanHandler(serverCtx),
+			},
+		},
+		rest.WithPrefix("/api/v1"),
+	)
+
+	server.AddRoutes(
+		[]rest.Route{
+			{
+				// List protocols
+				Method:  http.MethodGet,
+				Path:    "/admin/protocols",
+				Handler: adminprotocols.AdminListProtocolsHandler(serverCtx),
 			},
 		},
 		rest.WithPrefix("/api/v1"),
@@ -752,12 +765,6 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Method:  http.MethodGet,
 				Path:    "/user/subscriptions",
 				Handler: usersubscriptions.UserListSubscriptionsHandler(serverCtx),
-			},
-			{
-				// Preview user subscription
-				Method:  http.MethodGet,
-				Path:    "/user/subscriptions/:id/preview",
-				Handler: usersubscriptions.UserSubscriptionPreviewHandler(serverCtx),
 			},
 			{
 				// Update user subscription template

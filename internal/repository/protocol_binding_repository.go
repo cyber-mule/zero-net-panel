@@ -82,6 +82,7 @@ type ProtocolBindingRepository interface {
 	ListByIDs(ctx context.Context, ids []uint64) ([]ProtocolBinding, error)
 	ListByNodeIDs(ctx context.Context, nodeIDs []uint64) ([]ProtocolBinding, error)
 	ListAll(ctx context.Context) ([]ProtocolBinding, error)
+	ListProtocols(ctx context.Context) ([]string, error)
 	Get(ctx context.Context, id uint64) (ProtocolBinding, error)
 	Create(ctx context.Context, binding ProtocolBinding) (ProtocolBinding, error)
 	Update(ctx context.Context, id uint64, input UpdateProtocolBindingInput) (ProtocolBinding, error)
@@ -197,6 +198,27 @@ func (r *protocolBindingRepository) ListAll(ctx context.Context) ([]ProtocolBind
 		return nil, err
 	}
 	return bindings, nil
+}
+
+func (r *protocolBindingRepository) ListProtocols(ctx context.Context) ([]string, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
+	var protocols []string
+	if err := r.db.WithContext(ctx).
+		Model(&ProtocolBinding{}).
+		Where("protocol <> ''").
+		Distinct("LOWER(protocol)").
+		Order("LOWER(protocol) ASC").
+		Pluck("LOWER(protocol)", &protocols).Error; err != nil {
+		return nil, err
+	}
+
+	if protocols == nil {
+		protocols = []string{}
+	}
+	return protocols, nil
 }
 
 func (r *protocolBindingRepository) Get(ctx context.Context, id uint64) (ProtocolBinding, error) {

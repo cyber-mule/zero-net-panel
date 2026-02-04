@@ -42,43 +42,7 @@ type PaginationMeta struct {
 }
 ```
 
-### 2. "Preview user subscription"
-
-1. route definition
-
-- Url: /api/v1/user/subscriptions/:id/preview
-- Method: GET
-- Request: `UserSubscriptionPreviewRequest`
-- Response: `UserSubscriptionPreviewResponse`
-
-2. request definition
-
-
-
-```golang
-type UserSubscriptionPreviewRequest struct {
-	Id uint64 
-	Template_id uint64 `form:"template_id,optional" json:"template_id,optional"`
-}
-```
-
-
-3. response definition
-
-
-
-```golang
-type UserSubscriptionPreviewResponse struct {
-	Subscription_id uint64 
-	Template_id uint64 
-	Content string 
-	Content_type string 
-	Etag string 
-	Generated_at int64 
-}
-```
-
-### 3. "Update user subscription template"
+### 2. "Update user subscription template"
 
 1. route definition
 
@@ -111,7 +75,7 @@ type UserUpdateSubscriptionTemplateResponse struct {
 }
 ```
 
-### 4. "Subscription traffic usage"
+### 3. "Subscription traffic usage"
 
 1. route definition
 
@@ -162,4 +126,3 @@ type PaginationMeta struct {
 	Has_prev bool 
 }
 ```
-

@@ -58,3 +58,12 @@ func RespondError(w http.ResponseWriter, r *http.Request, err error) {
 		"message": err.Error(),
 	})
 }
+
+// RespondInvalidRequest formats request parsing/validation errors with details.
+func RespondInvalidRequest(w http.ResponseWriter, r *http.Request, err error) {
+	if err == nil {
+		RespondError(w, r, repository.NewInvalidArgument("invalid request"))
+		return
+	}
+	RespondError(w, r, repository.InvalidArgumentf("invalid request: %v", err))
+}

@@ -6,6 +6,7 @@ import (
 	"auth/auth.api"
 	"admin/dashboard.api"
 	"admin/nodes.api"
+	"admin/protocols.api"
 	"admin/protocol_bindings.api"
 	"admin/protocol_entries.api"
 	"admin/templates.api"
