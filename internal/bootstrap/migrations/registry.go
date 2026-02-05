@@ -250,6 +250,25 @@ var migrationRegistry = []Migration{
 			return nil
 		},
 	},
+	{
+		Version: 2026030501,
+		Name:    "site-setting-subscription-domain",
+		Up: func(ctx context.Context, db *gorm.DB) error {
+			return db.WithContext(ctx).AutoMigrate(&repository.SiteSetting{})
+		},
+		Down: func(ctx context.Context, db *gorm.DB) error {
+			if db == nil {
+				return fmt.Errorf("migrations: database connection is required")
+			}
+			migrator := db.WithContext(ctx).Migrator()
+			if migrator.HasColumn(&repository.SiteSetting{}, "subscription_domain") {
+				if err := migrator.DropColumn(&repository.SiteSetting{}, "subscription_domain"); err != nil {
+					return err
+				}
+			}
+			return nil
+		},
+	},
 }
 
 type statusColumn struct {

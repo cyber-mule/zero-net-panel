@@ -37,6 +37,8 @@ type UserSubscriptionSummary {
 	plan_id                uint64
 	status                 int
 	template_id            uint64
+	token                  string
+	subscription_url       string
 	available_template_ids []uint64
 	expires_at             int64
 	traffic_total_bytes    int64

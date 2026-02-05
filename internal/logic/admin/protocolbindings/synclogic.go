@@ -304,7 +304,7 @@ func (l *SyncLogic) resolveNodeEventCallbackURL() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if raw := strings.TrimSpace(setting.AccessDomain); raw != "" {
+	if raw := strings.TrimSpace(setting.ServiceDomain); raw != "" {
 		callback, err := buildCallbackFromBase(raw, 0, "/api/v1/kernel/events")
 		if err != nil {
 			return "", err
@@ -332,7 +332,7 @@ func (l *SyncLogic) resolveServiceEventCallbackURL() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if raw := strings.TrimSpace(setting.AccessDomain); raw != "" {
+	if raw := strings.TrimSpace(setting.ServiceDomain); raw != "" {
 		callback, err := buildCallbackFromBase(raw, 0, "/api/v1/kernel/service-events")
 		if err != nil {
 			return "", err

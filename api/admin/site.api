@@ -19,7 +19,8 @@ type SiteSetting {
 	id         uint64
 	name       string
 	logo_url   string
-	access_domain string
+	service_domain string
+	subscription_domain string
 	created_at int64
 	updated_at int64
 }
@@ -29,7 +30,8 @@ type AdminSiteSettingResponse {
 }
 
 type AdminUpdateSiteSettingRequest {
-	name          string `form:"name,optional" json:"name,optional"`
-	logo_url      string `form:"logo_url,optional" json:"logo_url,optional"`
-	access_domain string `form:"access_domain,optional" json:"access_domain,optional"`
+	name                string `form:"name,optional" json:"name,optional"`
+	logo_url            string `form:"logo_url,optional" json:"logo_url,optional"`
+	service_domain      string `form:"service_domain,optional" json:"service_domain,optional"`
+	subscription_domain string `form:"subscription_domain,optional" json:"subscription_domain,optional"`
 }

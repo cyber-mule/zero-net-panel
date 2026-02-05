@@ -1,4 +1,4 @@
-﻿### 1. "List announcements"
+### 1. "List announcements"
 
 1. route definition
 
@@ -2421,7 +2421,8 @@ type SiteSetting struct {
 	Id uint64 
 	Name string 
 	Logo_url string 
-	Access_domain string 
+	Service_domain string 
+	Subscription_domain string 
 	Created_at int64 
 	Updated_at int64 
 }
@@ -2444,7 +2445,8 @@ type SiteSetting struct {
 type AdminUpdateSiteSettingRequest struct {
 	Name string `form:"name,optional" json:"name,optional"`
 	Logo_url string `form:"logo_url,optional" json:"logo_url,optional"`
-	Access_domain string `form:"access_domain,optional" json:"access_domain,optional"`
+	Service_domain string `form:"service_domain,optional" json:"service_domain,optional"`
+	Subscription_domain string `form:"subscription_domain,optional" json:"subscription_domain,optional"`
 }
 ```
 
@@ -2462,7 +2464,8 @@ type SiteSetting struct {
 	Id uint64 
 	Name string 
 	Logo_url string 
-	Access_domain string 
+	Service_domain string 
+	Subscription_domain string 
 	Created_at int64 
 	Updated_at int64 
 }

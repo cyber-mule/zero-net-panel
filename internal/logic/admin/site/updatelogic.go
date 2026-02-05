@@ -44,8 +44,11 @@ func (l *UpdateLogic) Update(req *types.AdminUpdateSiteSettingRequest) (*types.A
 	if req.LogoURL != nil {
 		setting.LogoURL = strings.TrimSpace(*req.LogoURL)
 	}
-	if req.AccessDomain != nil {
-		setting.AccessDomain = strings.TrimSpace(*req.AccessDomain)
+	if req.ServiceDomain != nil {
+		setting.ServiceDomain = strings.TrimSpace(*req.ServiceDomain)
+	}
+	if req.SubscriptionDomain != nil {
+		setting.SubscriptionDomain = strings.TrimSpace(*req.SubscriptionDomain)
 	}
 
 	updated, err := l.svcCtx.Repositories.Site.UpsertSiteSetting(l.ctx, setting)

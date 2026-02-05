@@ -12,14 +12,14 @@ import (
 	"github.com/zero-net-panel/zero-net-panel/internal/types"
 )
 
-// ListLogic 查询用户订阅列表。
+// ListLogic 查询用户订阅列表�?
 type ListLogic struct {
 	logx.Logger
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
 }
 
-// NewListLogic 构造函数。
+// NewListLogic 构造函数�?
 func NewListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *ListLogic {
 	return &ListLogic{
 		Logger: logx.WithContext(ctx),
@@ -28,8 +28,8 @@ func NewListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *ListLogic {
 	}
 }
 
-// List 返回订阅列表。
-func (l *ListLogic) List(req *types.UserListSubscriptionsRequest) (*types.UserSubscriptionListResponse, error) {
+// List 返回订阅列表�?
+func (l *ListLogic) List(req *types.UserListSubscriptionsRequest, subscriptionBase string) (*types.UserSubscriptionListResponse, error) {
 	user, ok := security.UserFromContext(l.ctx)
 	if !ok {
 		return nil, repository.ErrForbidden
@@ -52,7 +52,7 @@ func (l *ListLogic) List(req *types.UserListSubscriptionsRequest) (*types.UserSu
 
 	items := make([]types.UserSubscriptionSummary, 0, len(subs))
 	for _, sub := range subs {
-		items = append(items, toUserSummary(sub))
+		items = append(items, toUserSummary(sub, subscriptionBase))
 	}
 
 	page, perPage := normalizePage(req.Page, req.PerPage)

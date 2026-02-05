@@ -1165,7 +1165,7 @@ AnnouncementSummary 字段：
 
 SiteSetting 字段：
 
-- `id`、`name`、`logo_url`、`access_domain`
+- `id`、`name`、`logo_url`、`service_domain`、`subscription_domain`
   - `created_at`、`updated_at`
 
 #### PATCH /api/v1/{adminPrefix}/site-settings
@@ -1174,7 +1174,8 @@ SiteSetting 字段：
   - 请求体：
     - `name` string（可选）
     - `logo_url` string（可选）
-    - `access_domain` string（可选）
+    - `service_domain` string（可选）
+    - `subscription_domain` string（可选）
   - 响应：同 GET
 
 #### GET /api/v1/{adminPrefix}/security-settings

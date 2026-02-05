@@ -13,10 +13,10 @@ import (
 type Config struct {
 	rest.RestConf
 
-	Project  ProjectConfig   `json:"project" yaml:"Project"`
-	Site     SiteConfig      `json:"site" yaml:"Site"`
-	Database database.Config `json:"database" yaml:"Database"`
-	Cache    cache.Config    `json:"cache" yaml:"Cache"`
+	Project     ProjectConfig    `json:"project" yaml:"Project"`
+	Site        SiteConfig       `json:"site" yaml:"Site"`
+	Database    database.Config  `json:"database" yaml:"Database"`
+	Cache       cache.Config     `json:"cache" yaml:"Cache"`
 	CORS        CORSConfig       `json:"cors" yaml:"CORS"`
 	Auth        AuthConfig       `json:"auth" yaml:"Auth"`
 	Credentials CredentialConfig `json:"credentials" yaml:"Credentials"`

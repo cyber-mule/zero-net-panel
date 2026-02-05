@@ -129,12 +129,13 @@ type AdminAuditLogExportResponse struct {
 
 // SiteSetting 站点品牌配置。
 type SiteSetting struct {
-	ID           uint64 `json:"id"`
-	Name         string `json:"name"`
-	LogoURL      string `json:"logo_url"`
-	AccessDomain string `json:"access_domain"`
-	CreatedAt    int64  `json:"created_at"`
-	UpdatedAt    int64  `json:"updated_at"`
+	ID                 uint64 `json:"id"`
+	Name               string `json:"name"`
+	LogoURL            string `json:"logo_url"`
+	ServiceDomain      string `json:"service_domain"`
+	SubscriptionDomain string `json:"subscription_domain"`
+	CreatedAt          int64  `json:"created_at"`
+	UpdatedAt          int64  `json:"updated_at"`
 }
 
 // AdminSiteSettingResponse 站点配置响应。
@@ -144,9 +145,10 @@ type AdminSiteSettingResponse struct {
 
 // AdminUpdateSiteSettingRequest 更新站点配置。
 type AdminUpdateSiteSettingRequest struct {
-	Name         *string `json:"name,optional"`
-	LogoURL      *string `json:"logo_url,optional"`
-	AccessDomain *string `json:"access_domain,optional"`
+	Name               *string `json:"name,optional"`
+	LogoURL            *string `json:"logo_url,optional"`
+	ServiceDomain      *string `json:"service_domain,optional"`
+	SubscriptionDomain *string `json:"subscription_domain,optional"`
 }
 
 // AdminListNodesRequest 管理端节点列表查询参数。
@@ -671,6 +673,8 @@ type UserSubscriptionSummary struct {
 	PlanID               uint64   `json:"plan_id"`
 	Status               int      `json:"status"`
 	TemplateID           uint64   `json:"template_id"`
+	Token                string   `json:"token"`
+	SubscriptionURL      string   `json:"subscription_url"`
 	AvailableTemplateIDs []uint64 `json:"available_template_ids"`
 	ExpiresAt            int64    `json:"expires_at"`
 	TrafficTotalBytes    int64    `json:"traffic_total_bytes"`
